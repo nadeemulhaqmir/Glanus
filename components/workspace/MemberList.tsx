@@ -127,7 +127,7 @@ export default function MemberList({ workspaceId }: { workspaceId: string }) {
                 onConfirm={handleRemoveMember}
                 onCancel={() => setConfirmState({ open: false, memberId: null })}
             />
-            <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl shadow-sm border border-slate-800 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
                     <h3 className="text-lg font-medium text-white">Team Members</h3>
                     <span className="text-sm text-slate-500">{members.length} members</span>

@@ -25,8 +25,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
             prisma.auditLog.create({
                 data: {
                     action: 'DELETE',
-                    entityType: 'Asset',
-                    entityId: assetId,
+                    resourceType: 'Asset',
+                    resourceId: assetId,
                     userId: user.id,
                     metadata: {
                         message: 'Asset bulk deleted',

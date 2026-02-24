@@ -33,10 +33,26 @@ export function getCSPHeader(): string {
 }
 
 /**
- * Get all security headers
+ * Get all security headers.
+ * Pass the incoming request so CORS can dynamically match the Origin.
  */
-export function getSecurityHeaders(): SecurityHeaders {
+export function getSecurityHeaders(request?: { headers: { get(name: string): string | null } }): SecurityHeaders {
     const corsOrigins = process.env.CORS_ALLOWED_ORIGINS || '';
+
+    // Dynamic CORS: match the request Origin against the allowed list
+    const corsHeaders: SecurityHeaders = {};
+    if (corsOrigins) {
+        const allowedList = corsOrigins.split(',').map(o => o.trim()).filter(Boolean);
+        const requestOrigin = request?.headers?.get('origin') || '';
+
+        if (requestOrigin && allowedList.includes(requestOrigin)) {
+            corsHeaders['Access-Control-Allow-Origin'] = requestOrigin;
+            corsHeaders['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
+            corsHeaders['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRF-Token, X-Request-Id';
+            corsHeaders['Access-Control-Max-Age'] = '86400';
+            corsHeaders['Vary'] = 'Origin';
+        }
+    }
 
     return {
         // Prevent MIME type sniffing
@@ -57,13 +73,8 @@ export function getSecurityHeaders(): SecurityHeaders {
         // Control referrer information
         'Referrer-Policy': 'strict-origin-when-cross-origin',
 
-        // CORS — configurable via CORS_ALLOWED_ORIGINS env variable
-        ...(corsOrigins ? {
-            'Access-Control-Allow-Origin': corsOrigins,
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token, X-Request-Id',
-            'Access-Control-Max-Age': '86400',
-        } : {}),
+        // CORS — dynamically matched
+        ...corsHeaders,
 
         // Permissions policy (feature policy)
         'Permissions-Policy': [

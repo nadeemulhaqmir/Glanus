@@ -111,8 +111,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     await prisma.auditLog.create({
         data: {
             action: 'CATEGORY_CREATED',
-            entityType: 'AssetCategory',
-            entityId: category.id,
+            resourceType: 'AssetCategory',
+            resourceId: category.id,
             userId: (await (await import('@/lib/api/withAuth')).requireAuth()).id,
             metadata: { categoryName: category.name, slug: category.slug },
         },

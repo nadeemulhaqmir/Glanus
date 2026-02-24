@@ -9,7 +9,7 @@ import {
     DELETE as deleteAsset,
 } from '@/app/api/assets/[id]/route';
 import { setupTestDatabase, teardownTestDatabase } from '../../setup/test-db';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 /**
  * Integration Tests for Asset CRUD API
@@ -343,7 +343,7 @@ describe('Asset CRUD API', () => {
                 where: { assetId: created.id, action: 'ASSET_DELETED' },
             });
             expect(audit).not.toBeNull();
-            expect(audit!.entityType).toBe('Asset');
+            expect(audit!.resourceType).toBe('Asset');
         });
 
         it('should return 404 for already-deleted asset', async () => {

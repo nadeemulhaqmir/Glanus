@@ -104,7 +104,7 @@ export default function WorkspaceWizard({ onComplete, showSampleDataOption = fal
     };
 
     return (
-        <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200 overflow-hidden max-w-4xl w-full mx-auto">
+        <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-800 overflow-hidden max-w-4xl w-full mx-auto">
             {/* Progress Header */}
             <div className="bg-slate-50 border-b border-slate-200 p-6">
                 <div className="flex justify-between items-center max-w-2xl mx-auto">

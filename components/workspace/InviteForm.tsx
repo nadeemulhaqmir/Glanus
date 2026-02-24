@@ -74,7 +74,7 @@ export default function InviteForm({ workspaceId }: { workspaceId: string }) {
     if (!canInvite) return null;
 
     return (
-        <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+        <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl shadow-sm border border-slate-800 p-6 mb-8">
             <h3 className="text-lg font-medium text-white mb-4">Invite New Member</h3>
 
             <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-4 items-start">

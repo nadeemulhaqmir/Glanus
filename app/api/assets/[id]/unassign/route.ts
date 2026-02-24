@@ -42,8 +42,8 @@ export const POST = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'ASSET_UNASSIGNED',
-            entityType: 'Asset',
-            entityId: updatedAsset.id,
+            resourceType: 'Asset',
+            resourceId: updatedAsset.id,
             userId: user.id,
             assetId: updatedAsset.id,
             metadata: {

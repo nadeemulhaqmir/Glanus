@@ -96,7 +96,7 @@ export class WebhookService {
         webhookId: string,
         success: boolean
     ): Promise<void> {
-        const { prisma } = await import('@/lib/prisma');
+        const { prisma } = await import('@/lib/db');
 
         if (success) {
             await prisma.notificationWebhook.update({

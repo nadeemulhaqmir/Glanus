@@ -13,7 +13,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     const assetId = searchParams.get('assetId') || undefined;
     const userId = searchParams.get('userId') || undefined;
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -82,8 +82,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     await prisma.auditLog.create({
         data: {
             action: 'REMOTE_SESSION_STARTED',
-            entityType: 'RemoteSession',
-            entityId: remoteSession.id,
+            resourceType: 'RemoteSession',
+            resourceId: remoteSession.id,
             userId: user.id,
             assetId,
             metadata: { sessionId: remoteSession.id },

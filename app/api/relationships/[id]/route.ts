@@ -101,8 +101,8 @@ export const DELETE = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'RELATIONSHIP_DELETED',
-            entityType: 'AssetRelationship',
-            entityId: id,
+            resourceType: 'AssetRelationship',
+            resourceId: id,
             userId: user.id,
             metadata: {
                 relationshipType: relationship.relationshipType,

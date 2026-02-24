@@ -1,5 +1,5 @@
 import { FieldType, Prisma } from '@prisma/client';
-import { prisma } from './prisma';
+import { prisma } from './db';
 
 /**
  * Validates a field value against its definition

@@ -58,8 +58,7 @@ export default function NewPhysicalAssetPage() {
             success(`Asset "${asset.name}" created successfully`);
             router.push(`/assets/${asset.id}`);
         } catch (error: any) {
-            showError('Error:', error);
-            showError('Failed to create asset', error.message);
+            showError('Failed to create asset', error.message || 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }

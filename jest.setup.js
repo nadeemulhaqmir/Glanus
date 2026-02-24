@@ -81,20 +81,23 @@ jest.mock('@/lib/workspace/auditLog', () => ({
     auditLog: jest.fn(() => Promise.resolve()),
 }))
 
-// Mock global fetch for frontend component tests
-global.fetch = jest.fn(() =>
-    Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-        text: () => Promise.resolve(''),
-    })
-);
-global.Request = class Request {
-    constructor(input, init) {
-        this.url = typeof input === 'string' ? input : input.url;
-        this.method = init?.method || 'GET';
-        this.headers = init?.headers || {};
-    }
-};
-global.Response = class Response { };
-
+// Mock global fetch/Request/Response for jsdom component tests ONLY.
+// In @jest-environment node, these globals exist natively and must not be
+// overridden — NextRequest/NextResponse depend on the real implementations.
+if (typeof globalThis.Response === 'undefined' || !globalThis.Response.json) {
+    global.fetch = jest.fn(() =>
+        Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({}),
+            text: () => Promise.resolve(''),
+        })
+    );
+    global.Request = class Request {
+        constructor(input, init) {
+            this.url = typeof input === 'string' ? input : input.url;
+            this.method = init?.method || 'GET';
+            this.headers = init?.headers || {};
+        }
+    };
+    global.Response = class Response { };
+}

@@ -79,7 +79,7 @@ export default function InvitationPage({ params: paramsPromise }: { params: Prom
     if (inviteState.error) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-                <div className="max-w-md w-full bg-slate-900/50 backdrop-blur-sm shadow-xl rounded-2xl p-8 text-center border border-slate-200">
+                <div className="max-w-md w-full bg-slate-900/50 backdrop-blur-sm shadow-xl rounded-2xl p-8 text-center border border-slate-800">
                     <div className="w-16 h-16 bg-health-critical/10 rounded-full flex items-center justify-center mx-auto mb-4 text-health-critical">
                         <XCircle className="w-8 h-8" />
                     </div>
@@ -97,7 +97,7 @@ export default function InvitationPage({ params: paramsPromise }: { params: Prom
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-            <div className="max-w-md w-full bg-slate-900/50 backdrop-blur-sm shadow-xl rounded-2xl p-8 text-center border border-slate-200 animate-in zoom-in-95 duration-300">
+            <div className="max-w-md w-full bg-slate-900/50 backdrop-blur-sm shadow-xl rounded-2xl p-8 text-center border border-slate-800 animate-in zoom-in-95 duration-300">
                 <div className="w-16 h-16 bg-nerve/10/30 rounded-full flex items-center justify-center mx-auto mb-4 text-nerve">
                     <Mail className="w-8 h-8" />
                 </div>

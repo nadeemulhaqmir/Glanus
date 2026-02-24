@@ -63,8 +63,8 @@ export const PATCH = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'ALERT_RULE_UPDATED',
-            entityType: 'AlertRule',
-            entityId: ruleId,
+            resourceType: 'AlertRule',
+            resourceId: ruleId,
             userId: user.id,
             metadata: { ruleName: alertRule.name, changes: data },
         },
@@ -95,8 +95,8 @@ export const DELETE = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'ALERT_RULE_DELETED',
-            entityType: 'AlertRule',
-            entityId: ruleId,
+            resourceType: 'AlertRule',
+            resourceId: ruleId,
             userId: user.id,
             metadata: { ruleName: existingRule.name },
         },

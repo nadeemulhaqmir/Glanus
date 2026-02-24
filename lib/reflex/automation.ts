@@ -11,6 +11,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { logError } from '@/lib/logger';
 import type { Recommendation } from '@/lib/cortex/reasoning';
 
 // ─── Types ───────────────────────────────────────────────
@@ -297,7 +298,7 @@ export async function processRecommendation(
     if (!consequence.requiresApproval) {
         // Execute asynchronously without blocking
         executeAction(workspaceId, queueItem).catch(err => {
-            console.error('[REFLEX] Async execution failed', err);
+            logError('[REFLEX] Async execution failed', err);
         });
     }
 
@@ -385,7 +386,7 @@ export async function approveAction(
 
     // Execute asynchronously without blocking
     executeAction(workspaceId, queueItem).catch(err => {
-        console.error('[REFLEX] Async execution failed', err);
+        logError('[REFLEX] Async execution failed', err);
     });
 
     return queueItem;

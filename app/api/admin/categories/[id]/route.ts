@@ -111,8 +111,8 @@ export const PUT = withErrorHandler(async (request: NextRequest, { params }: Rou
     await prisma.auditLog.create({
         data: {
             action: 'CATEGORY_UPDATED',
-            entityType: 'AssetCategory',
-            entityId: id,
+            resourceType: 'AssetCategory',
+            resourceId: id,
             userId: user.id,
             metadata: { categoryName: category.name, changes: data } as any,
         },
@@ -158,8 +158,8 @@ export const DELETE = withErrorHandler(async (request: NextRequest, { params }: 
     await prisma.auditLog.create({
         data: {
             action: 'CATEGORY_DELETED',
-            entityType: 'AssetCategory',
-            entityId: id,
+            resourceType: 'AssetCategory',
+            resourceId: id,
             userId: user.id,
             metadata: { categoryName: category.name },
         },

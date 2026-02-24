@@ -4,6 +4,7 @@ import { withErrorHandler } from '@/lib/api/withAuth';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { prisma } from '@/lib/db';
 import { verifyResetToken } from '@/lib/auth/password-reset';
+import { logInfo } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -40,11 +41,17 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     }
 
     // Hash new password and update
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
     await prisma.user.update({
         where: { id: result.userId },
         data: { password: hashedPassword },
     });
 
+    // Note: Account lockout is managed via Redis/in-memory in auth.ts,
+    // and sessions use JWT strategy (no DB sessions to invalidate).
+    // JWT tokens will expire naturally within their short-lived window.
+    logInfo(`[AUTH] Password reset completed for user ${user.email}`);
+
     return apiSuccess({ message: 'Password has been reset successfully. You can now sign in.' });
 });
+

@@ -64,6 +64,7 @@ jobs:
       NEXTAUTH_SECRET: test-secret-key-for-ci
       NEXTAUTH_URL: http://localhost:3000
       CSRF_SECRET: test-csrf-secret-key-for-ci-minimum-32-chars
+      CRON_SECRET: test-cron-secret-for-ci
 
     steps:
       - uses: actions/checkout@v4
@@ -83,8 +84,11 @@ jobs:
       - name: Run database migrations
         run: npx prisma migrate deploy
 
+      - name: Validate Prisma schema in sync
+        run: npx prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --exit-code || echo "⚠️  Schema has changes not yet in a migration"
+
       - name: Run tests
-        run: npm run test:ci
+        run: npm run test:ci -- --runInBand
 
   # ============================================
   # Production Build Check

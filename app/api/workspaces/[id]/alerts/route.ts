@@ -55,8 +55,8 @@ export const POST = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'ALERT_RULE_CREATED',
-            entityType: 'AlertRule',
-            entityId: alertRule.id,
+            resourceType: 'AlertRule',
+            resourceId: alertRule.id,
             userId: user.id,
             metadata: { ruleName: alertRule.name, metric: alertRule.metric, threshold: alertRule.threshold },
         },

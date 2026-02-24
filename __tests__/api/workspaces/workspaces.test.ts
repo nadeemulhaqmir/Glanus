@@ -10,7 +10,7 @@ import {
 } from '@/app/api/workspaces/[id]/route';
 import { GET as getMembers } from '@/app/api/workspaces/[id]/members/route';
 import { setupTestDatabase, teardownTestDatabase } from '../../setup/test-db';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 /**
  * Integration Tests for Workspace API

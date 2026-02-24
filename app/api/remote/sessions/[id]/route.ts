@@ -82,8 +82,8 @@ export const PUT = withErrorHandler(async (
         await prisma.auditLog.create({
             data: {
                 action: 'REMOTE_SESSION_ENDED',
-                entityType: 'RemoteSession',
-                entityId: id,
+                resourceType: 'RemoteSession',
+                resourceId: id,
                 userId: user.id,
                 assetId: updatedSession.assetId,
                 metadata: { duration: updateData.duration, quality, averageLatency, averageFPS },
@@ -119,8 +119,8 @@ export const DELETE = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'REMOTE_SESSION_DELETED',
-            entityType: 'RemoteSession',
-            entityId: id,
+            resourceType: 'RemoteSession',
+            resourceId: id,
             userId: user.id,
             assetId: remoteSession.assetId,
             metadata: { duration },

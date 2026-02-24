@@ -11,8 +11,8 @@ export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export interface SecurityAuditData {
     action: string;
-    entityType?: string;
-    entityId?: string;
+    resourceType?: string;
+    resourceId?: string;
     userId?: string;
     ipAddress?: string;
     userAgent?: string;
@@ -30,8 +30,8 @@ export async function logSecurityEvent(data: SecurityAuditData): Promise<void> {
         await prisma.auditLog.create({
             data: {
                 action: data.action,
-                entityType: data.entityType || 'Security',
-                entityId: data.entityId || 'N/A',
+                resourceType: data.resourceType || 'Security',
+                resourceId: data.resourceId || 'N/A',
                 userId: data.userId,
                 metadata: {
                     ...data.metadata,

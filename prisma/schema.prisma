@@ -239,6 +239,7 @@ model Workspace {
   webhooks          NotificationWebhook[] @relation("WorkspaceWebhooks")
   auditLogs         AuditLog[]
   actionQueueItems  ActionQueueItem[]
+  aiInsights        AIInsight[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -396,9 +397,9 @@ model Asset {
   assignedToId   String?
   assignedTo     User?       @relation(fields: [assignedToId], references: [id])
 
-  // Workspace (Glanus 2.0) — TODO: make required after data migration
-  workspaceId String?
-  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // Workspace (Glanus 2.0) — required for multi-tenant isolation
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // NEW: Dynamic category system
   categoryId String?
@@ -592,8 +593,6 @@ model AuditLog {
   userId       String?
   user         User?      @relation(fields: [userId], references: [id])
   action       String     // e.g., "workspace.updated", "member.invited"
-  entityType   String?    // backward compat alias for resourceType
-  entityId     String?    // backward compat alias for resourceId
   resourceType String?    // e.g., "asset", "member"
   resourceId   String?
   assetId      String?
@@ -602,13 +601,11 @@ model AuditLog {
   details      Json       @default("{}")
   ipAddress    String?
   createdAt    DateTime   @default(now())
-  timestamp    DateTime   @default(now())
 
-  @@index([workspaceId, timestamp])
+  @@index([workspaceId, createdAt])
   @@index([userId])
   @@index([assetId])
   @@index([action])
-  @@index([createdAt])
 }
 
 model AIInsight {
@@ -625,12 +622,17 @@ model AIInsight {
   assetId String?
   asset   Asset?  @relation(fields: [assetId], references: [id])
 
+  // Workspace scoping (Glanus 2.0)
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   acknowledged Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   @@index([type])
   @@index([assetId])
   @@index([acknowledged])
+  @@index([workspaceId])
 }
 
 // ============================================

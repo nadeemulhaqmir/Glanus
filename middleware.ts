@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
     // Create response with security headers
     const response = NextResponse.next();
-    const securityHeaders = getSecurityHeaders();
+    const securityHeaders = getSecurityHeaders(request);
 
     // Apply security headers to all responses
     for (const [key, value] of Object.entries(securityHeaders)) {

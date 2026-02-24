@@ -1,56 +1,135 @@
-import { logError } from '@/lib/logger';
+import { logError, logInfo, logWarn } from '@/lib/logger';
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
+import { createClient } from 'redis';
+import type { RedisClientType } from 'redis';
 import {
     logFailedLogin,
     logSuccessfulLogin,
     logAccountLockout
 } from '@/lib/security/audit';
 
-// Account lockout tracking (in-memory for now, upgrade to Redis later)
-const loginAttempts = new Map<string, { count: number; lockedUntil?: Date }>();
+// ============================================
+// Account Lockout — Redis-backed with in-memory fallback
+// ============================================
 
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5');
 const LOCKOUT_DURATION_MS = parseInt(process.env.LOCKOUT_DURATION_MINUTES || '30') * 60 * 1000;
+const LOCKOUT_DURATION_S = Math.ceil(LOCKOUT_DURATION_MS / 1000);
+
+// Redis client (shared with rate limiter via same REDIS_URL)
+let lockoutRedis: RedisClientType | null = null;
+let lockoutRedisReady = false;
+
+async function getLockoutRedis(): Promise<RedisClientType | null> {
+    if (!process.env.REDIS_URL) return null;
+    if (lockoutRedis && lockoutRedisReady) return lockoutRedis;
+
+    try {
+        lockoutRedis = createClient({ url: process.env.REDIS_URL }) as RedisClientType;
+        lockoutRedis.on('error', () => { lockoutRedisReady = false; });
+        lockoutRedis.on('ready', () => { lockoutRedisReady = true; });
+        await lockoutRedis.connect();
+        logInfo('Redis connected for account lockout');
+        return lockoutRedis;
+    } catch {
+        logWarn('Redis unavailable for lockout, using in-memory fallback');
+        return null;
+    }
+}
+
+// In-memory fallback (used when Redis is unavailable)
+const memoryLockout = new Map<string, { count: number; lockedUntil?: number }>();
+
+function redisKey(email: string): string {
+    return `lockout:${email}`;
+}
 
 /**
  * Check if account is locked
  */
-function isAccountLocked(email: string): boolean {
-    const attempts = loginAttempts.get(email);
-    if (!attempts || !attempts.lockedUntil) return false;
+async function isAccountLocked(email: string): Promise<boolean> {
+    const redis = await getLockoutRedis();
 
-    if (new Date() > attempts.lockedUntil) {
-        // Lockout expired, reset
-        loginAttempts.delete(email);
-        return false;
+    if (redis) {
+        try {
+            const data = await redis.get(redisKey(email));
+            if (!data) return false;
+            const parsed = JSON.parse(data) as { count: number; lockedUntil?: number };
+            if (!parsed.lockedUntil) return false;
+            if (Date.now() > parsed.lockedUntil) {
+                await redis.del(redisKey(email));
+                return false;
+            }
+            return true;
+        } catch {
+            // Fall through to in-memory
+        }
     }
 
+    // In-memory fallback
+    const attempts = memoryLockout.get(email);
+    if (!attempts || !attempts.lockedUntil) return false;
+    if (Date.now() > attempts.lockedUntil) {
+        memoryLockout.delete(email);
+        return false;
+    }
     return true;
 }
 
 /**
  * Record failed login attempt
  */
-function recordFailedAttempt(email: string): number {
-    const attempts = loginAttempts.get(email) || { count: 0 };
-    attempts.count += 1;
+async function recordFailedAttempt(email: string): Promise<number> {
+    const redis = await getLockoutRedis();
 
-    if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
-        attempts.lockedUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+    if (redis) {
+        try {
+            const data = await redis.get(redisKey(email));
+            const current = data
+                ? (JSON.parse(data) as { count: number; lockedUntil?: number })
+                : { count: 0 };
+
+            current.count += 1;
+            if (current.count >= MAX_LOGIN_ATTEMPTS) {
+                current.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+            }
+
+            await redis.set(redisKey(email), JSON.stringify(current), { EX: LOCKOUT_DURATION_S });
+            return current.count;
+        } catch {
+            // Fall through to in-memory
+        }
     }
 
-    loginAttempts.set(email, attempts);
+    // In-memory fallback
+    const attempts = memoryLockout.get(email) || { count: 0 };
+    attempts.count += 1;
+    if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
+        attempts.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+    }
+    memoryLockout.set(email, attempts);
     return attempts.count;
 }
 
 /**
  * Reset login attempts on successful login
  */
-function resetLoginAttempts(email: string): void {
-    loginAttempts.delete(email);
+async function resetLoginAttempts(email: string): Promise<void> {
+    const redis = await getLockoutRedis();
+
+    if (redis) {
+        try {
+            await redis.del(redisKey(email));
+            return;
+        } catch {
+            // Fall through to in-memory
+        }
+    }
+
+    memoryLockout.delete(email);
 }
 
 export const authOptions: NextAuthOptions = {
@@ -75,7 +154,7 @@ export const authOptions: NextAuthOptions = {
                 const userAgent = req?.headers?.['user-agent'] || 'unknown';
 
                 // Check if account is locked
-                if (isAccountLocked(email)) {
+                if (await isAccountLocked(email)) {
                     await logAccountLockout(email, ipAddress, MAX_LOGIN_ATTEMPTS);
                     throw new Error('Account is locked due to too many failed login attempts. Please try again later.');
                 }
@@ -86,7 +165,7 @@ export const authOptions: NextAuthOptions = {
 
                 if (!user || !user.password) {
                     await logFailedLogin(email, ipAddress, userAgent, 'Invalid credentials');
-                    recordFailedAttempt(email);
+                    await recordFailedAttempt(email);
                     throw new Error('Invalid credentials');
                 }
 
@@ -96,7 +175,7 @@ export const authOptions: NextAuthOptions = {
                 );
 
                 if (!isPasswordValid) {
-                    const attemptCount = recordFailedAttempt(email);
+                    const attemptCount = await recordFailedAttempt(email);
                     await logFailedLogin(
                         email,
                         ipAddress,
@@ -122,8 +201,8 @@ export const authOptions: NextAuthOptions = {
                 await prisma.auditLog.create({
                     data: {
                         action: 'USER_LOGIN',
-                        entityType: 'User',
-                        entityId: user.id,
+                        resourceType: 'User',
+                        resourceId: user.id,
                         userId: user.id,
                         metadata: {
                             loginTime: new Date().toISOString(),

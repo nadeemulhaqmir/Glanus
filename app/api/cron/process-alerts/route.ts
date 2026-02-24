@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
             return apiError(401, 'Unauthorized');
         }
 
-        const { prisma } = await import('@/lib/prisma');
+        const { prisma } = await import('@/lib/db');
 
         // Get stats about alert system
         const [

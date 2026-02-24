@@ -14,3 +14,7 @@ public/uploads/*
 # Logs
 logs/
 *.log
+
+# Backups & stale files
+*.bak
+*.backup

@@ -91,7 +91,7 @@ async function computeBaselines(agentId: string): Promise<{
 
 // ─── Deviation Detection ─────────────────────────────────
 
-function classifyDeviation(current: number, baseline: number): MetricDeviation['severity'] {
+export function classifyDeviation(current: number, baseline: number): MetricDeviation['severity'] {
     if (baseline === 0) return 'normal';
     const deviation = ((current - baseline) / baseline) * 100;
 
@@ -101,7 +101,7 @@ function classifyDeviation(current: number, baseline: number): MetricDeviation['
     return 'normal';
 }
 
-function computeDeviations(
+export function computeDeviations(
     cpu: number,
     ram: number,
     disk: number,
@@ -154,7 +154,7 @@ function computeDeviations(
 
 // ─── Health Score ─────────────────────────────────────────
 
-function computeHealthScore(cpu: number, ram: number, disk: number): number {
+export function computeHealthScore(cpu: number, ram: number, disk: number): number {
     let score = 100;
 
     if (cpu > 90) score -= 30;

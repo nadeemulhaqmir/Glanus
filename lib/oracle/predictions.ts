@@ -250,7 +250,7 @@ export async function getSLOStatus(workspaceId: string): Promise<SLOStatus[]> {
 
 // ─── Helpers ─────────────────────────────────────────────
 
-function linearExtrapolation(
+export function linearExtrapolation(
     values: number[],
     threshold: number,
 ): { predictedValue: number; timeToThresholdMs: number; confidence: number } | null {
@@ -294,7 +294,7 @@ function linearExtrapolation(
     };
 }
 
-function classifyForecastSeverity(timeToThresholdMs: number): FailureForecast['severity'] {
+export function classifyForecastSeverity(timeToThresholdMs: number): FailureForecast['severity'] {
     const hours = timeToThresholdMs / (60 * 60 * 1000);
     if (hours < 2) return 'critical';
     if (hours < 12) return 'high';
@@ -302,7 +302,7 @@ function classifyForecastSeverity(timeToThresholdMs: number): FailureForecast['s
     return 'low';
 }
 
-function formatDuration(ms: number): string {
+export function formatDuration(ms: number): string {
     const hours = ms / (60 * 60 * 1000);
     if (hours < 1) return `~${Math.round(hours * 60)} minutes`;
     if (hours < 24) return `~${Math.round(hours)} hours`;

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { withErrorHandler } from '@/lib/api/withAuth';
+import { auditLog } from '@/lib/workspace/auditLog';
 
 // POST /api/invitations/[token]/accept - Accept workspace invitation
 export const POST = withErrorHandler(async (
@@ -97,6 +98,20 @@ export const POST = withErrorHandler(async (
         });
 
         return membership;
+    });
+
+    // Audit log: member joined workspace via invitation
+    await auditLog({
+        workspaceId: invitation.workspaceId,
+        userId: user.id,
+        action: 'member.invited',
+        resourceType: 'WorkspaceMember',
+        resourceId: result.id,
+        details: {
+            role: invitation.role,
+            invitedBy: invitation.invitedBy,
+            acceptedVia: 'invitation_link',
+        },
     });
 
     return apiSuccess({

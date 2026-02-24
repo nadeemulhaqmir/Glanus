@@ -59,8 +59,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     await prisma.auditLog.create({
         data: {
             action: 'USER_SIGNUP',
-            entityType: 'User',
-            entityId: user.id,
+            resourceType: 'User',
+            resourceId: user.id,
             userId: user.id,
             metadata: {
                 signupTime: new Date().toISOString(),

@@ -37,8 +37,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
             prisma.auditLog.create({
                 data: {
                     action: 'UPDATE',
-                    entityType: 'Asset',
-                    entityId: assetId,
+                    resourceType: 'Asset',
+                    resourceId: assetId,
                     userId: user.id,
                     metadata: {
                         message: `Asset bulk assigned to ${targetUser.name}`,

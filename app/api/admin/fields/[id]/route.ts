@@ -57,8 +57,8 @@ export const PUT = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'FIELD_UPDATED',
-            entityType: 'AssetFieldDefinition',
-            entityId: id,
+            resourceType: 'AssetFieldDefinition',
+            resourceId: id,
             userId: user.id,
             metadata: { fieldName: field.name, previousName: existingField.name, changes: data },
         },
@@ -102,8 +102,8 @@ export const DELETE = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'FIELD_DELETED',
-            entityType: 'AssetFieldDefinition',
-            entityId: id,
+            resourceType: 'AssetFieldDefinition',
+            resourceId: id,
             userId: user.id,
             metadata: { fieldName: field.name },
         },

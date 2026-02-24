@@ -2,7 +2,7 @@
 import { alertEvaluator } from './alert-evaluator';
 import { webhookService } from './webhook-service';
 import { emailService } from './email-service';
-import { prisma } from './prisma';
+import { prisma } from './db';
 
 interface NotificationResult {
     workspaceId: string;

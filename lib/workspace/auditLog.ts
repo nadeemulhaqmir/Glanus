@@ -57,7 +57,7 @@ export async function auditLog(entry: AuditLogEntry): Promise<void> {
                 resourceId: entry.resourceId || null,
                 details: entry.details || {},
                 ipAddress: entry.ipAddress || null,
-                timestamp: new Date(),
+                createdAt: new Date(),
             },
         });
 
@@ -105,7 +105,7 @@ export async function getAuditLogs(
         ...(userId && { userId }),
         ...(startDate || endDate
             ? {
-                timestamp: {
+                createdAt: {
                     ...(startDate && { gte: startDate }),
                     ...(endDate && { lte: endDate }),
                 },
@@ -116,7 +116,7 @@ export async function getAuditLogs(
     const [logs, total] = await Promise.all([
         prisma.auditLog.findMany({
             where,
-            orderBy: { timestamp: 'desc' },
+            orderBy: { createdAt: 'desc' },
             skip: (page - 1) * pageSize,
             take: pageSize,
             include: {

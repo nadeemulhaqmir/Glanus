@@ -94,8 +94,8 @@ export const PATCH = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'WORKSPACE_UPDATED',
-            entityType: 'Workspace',
-            entityId: params.id,
+            resourceType: 'Workspace',
+            resourceId: params.id,
             userId: user.id,
             metadata: { workspaceName: updatedWorkspace.name, changes: validation.data },
         },
@@ -123,8 +123,8 @@ export const DELETE = withErrorHandler(async (
     await prisma.auditLog.create({
         data: {
             action: 'WORKSPACE_DELETED',
-            entityType: 'Workspace',
-            entityId: params.id,
+            resourceType: 'Workspace',
+            resourceId: params.id,
             userId: user.id,
             metadata: { deletedAt: new Date().toISOString() },
         },

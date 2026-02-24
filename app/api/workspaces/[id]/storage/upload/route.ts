@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { apiSuccess, apiError } from '@/lib/api/response';
+import { enforceBodySize } from '@/lib/api/body-size';
 import { enforceQuota, incrementStorageUsage } from '@/lib/workspace/quotas';
 import { prisma } from '@/lib/db';
 
@@ -14,6 +15,9 @@ export const POST = withErrorHandler(async (
     request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) => {
+    // Enforce upload size limit (50 MB)
+    const sizeError = enforceBodySize(request, 'upload');
+    if (sizeError) return sizeError;
     const params = await context.params;
     const user = await requireAuth();
     await requireWorkspaceRole(params.id, user.id, 'MEMBER');

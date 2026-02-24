@@ -190,8 +190,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     await prisma.auditLog.create({
         data: {
             action: 'ASSET_CREATED',
-            entityType: 'Asset',
-            entityId: asset.id,
+            resourceType: 'Asset',
+            resourceId: asset.id,
             userId: user.id,
             assetId: asset.id,
             metadata: { assetType: asset.assetType, assetName: asset.name },

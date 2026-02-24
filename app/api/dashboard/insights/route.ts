@@ -40,15 +40,19 @@ export const GET = withErrorHandler(async () => {
 
     const assetIdList = assetIds.map((a) => a.id);
 
-    // Recent insights for those assets
+    // Build insight filter: workspace-scoped OR asset-scoped OR user-scoped
+    const insightFilter = {
+        OR: [
+            { workspaceId: { in: workspaceIds } },
+            { assetId: { in: assetIdList } },
+            { userId: user.id },
+        ],
+    };
+
+    // Recent insights with optimized workspace-scoped query
     const [insights, severityCounts, totalCount, unacknowledgedCount] = await Promise.all([
         prisma.aIInsight.findMany({
-            where: {
-                OR: [
-                    { assetId: { in: assetIdList } },
-                    { userId: user.id },
-                ],
-            },
+            where: insightFilter,
             orderBy: { createdAt: 'desc' },
             take: 20,
             include: {
@@ -61,33 +65,20 @@ export const GET = withErrorHandler(async () => {
         // Severity breakdown
         prisma.aIInsight.groupBy({
             by: ['severity'],
-            where: {
-                OR: [
-                    { assetId: { in: assetIdList } },
-                    { userId: user.id },
-                ],
-            },
+            where: insightFilter,
             _count: true,
         }),
 
         // Total count
         prisma.aIInsight.count({
-            where: {
-                OR: [
-                    { assetId: { in: assetIdList } },
-                    { userId: user.id },
-                ],
-            },
+            where: insightFilter,
         }),
 
         // Unacknowledged count
         prisma.aIInsight.count({
             where: {
                 acknowledged: false,
-                OR: [
-                    { assetId: { in: assetIdList } },
-                    { userId: user.id },
-                ],
+                ...insightFilter,
             },
         }),
     ]);

@@ -4,6 +4,14 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+    // Safety guard: never run seed in production
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+            '🚫 Seed script cannot be run in production! ' +
+            'Set NODE_ENV to "development" or "test" to proceed.'
+        );
+    }
+
     console.log('🌱 Starting database seed...');
 
     // Clear existing data in correct order (respect foreign keys) using Postgres TRUNCATE CASCADE
@@ -16,8 +24,9 @@ async function main() {
 
     console.log('🗑️  Cleared existing data');
 
-    // Create users
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    // Use env-driven password or default for development only
+    const seedPassword = process.env.SEED_PASSWORD || 'password123';
+    const hashedPassword = await bcrypt.hash(seedPassword, 12);
 
     const admin = await prisma.user.create({
         data: {
