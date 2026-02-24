@@ -1,0 +1,1329 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  IT_STAFF
+  USER
+}
+
+enum AssetType {
+  PHYSICAL
+  DIGITAL
+}
+
+enum HostType {
+  ASSET
+  PROVIDER
+  HYBRID
+  ON_PREMISE
+}
+
+enum AssetStatus {
+  AVAILABLE
+  ASSIGNED
+  MAINTENANCE
+  RETIRED
+  LOST
+}
+
+enum SessionStatus {
+  ACTIVE
+  ENDED
+  FAILED
+}
+
+enum HardwareCategory {
+  LAPTOP
+  DESKTOP
+  SERVER
+  MOBILE_DEVICE
+  TABLET
+  PRINTER
+  NETWORK_EQUIPMENT
+  MONITOR
+  PERIPHERAL
+  OTHER
+}
+
+enum SoftwareCategory {
+  WEB_APPLICATION
+  MOBILE_APP
+  DESKTOP_APP
+  SAAS_SUBSCRIPTION
+  DATABASE
+  DEVELOPMENT_TOOL
+  SECURITY_DIGITAL
+  LICENSE
+  API_SERVICE
+  CLOUD_STORAGE
+  VIRTUAL_MACHINE
+  LLM
+  OTHER
+}
+
+enum LicenseType {
+  PERPETUAL
+  SUBSCRIPTION
+  TRIAL
+  OPEN_SOURCE
+  FREEMIUM
+  ENTERPRISE
+}
+
+// ============================================
+// GLANUS 2.0: MULTI-TENANT ENUMS
+// ============================================
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum SubscriptionPlan {
+  FREE
+  PERSONAL
+  TEAM
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+// ============================================
+// GLANUS 2.0 PHASE 2: PARTNER ECOSYSTEM ENUMS
+// ============================================
+
+enum PartnerCertificationLevel {
+  BRONZE    // Entry level, up to 10 workspaces
+  SILVER    // Advanced, up to 50 workspaces
+  GOLD      // Expert, up to 200 workspaces
+  PLATINUM  // Top tier, unlimited
+}
+
+enum PartnerStatus {
+  PENDING    // Application submitted
+  VERIFIED   // Background check + certs verified
+  ACTIVE     // Can accept assignments
+  SUSPENDED  // Temporarily inactive
+  BANNED     // Permanently removed
+}
+
+enum ExamLevel {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum ExamStatus {
+  STARTED
+  PASSED
+  FAILED
+}
+
+enum AssignmentStatus {
+  PENDING    // Assigned, workspace notified
+  ACCEPTED   // Partner accepted
+  ACTIVE     // Currently servicing
+  COMPLETED  // Assignment ended
+  REJECTED   // Partner declined
+  CANCELLED  // Workspace cancelled
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+// ============================================
+// GLANUS 2.0 PHASE 3: AGENT RMM ENUMS
+// ============================================
+
+enum AgentPlatform {
+  WINDOWS
+  MACOS
+  LINUX
+}
+
+enum AgentStatus {
+  ONLINE
+  OFFLINE
+  INSTALLING
+  ERROR
+  UPDATING
+}
+
+enum ScriptStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMEOUT
+}
+
+enum AlertMetric {
+  CPU
+  RAM
+  DISK
+  OFFLINE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// ============================================
+// GLANUS 2.0: WORKSPACE & SUBSCRIPTION MODELS
+// ============================================
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  logo        String?
+  
+  // Branding
+  primaryColor String? @default("#3B82F6")
+  accentColor  String? @default("#10B981")
+  
+  // Settings
+  settings Json? // Flexible settings object
+  
+  // Stripe billing is managed via the Subscription relation
+  
+  // Owner
+  ownerId String
+  owner   User   @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  
+  // Relations
+  members      WorkspaceMember[]
+  invitations  WorkspaceInvitation[]
+  assets       Asset[]
+  locations    Location[]
+  subscription Subscription?
+  
+  // Partner Assignment (Glanus 2.0 Phase 2)
+  partnerAssignment PartnerAssignment? @relation("WorkspacePartnerAssignment")
+ 
+  // Agent RMM (Glanus 2.0 Phase 3)
+  agentConnections  AgentConnection[]  @relation("WorkspaceAgents")
+  scriptExecutions  ScriptExecution[]  @relation("WorkspaceScripts")
+  alertRules        AlertRule[]        @relation("WorkspaceAlertRules")
+  webhooks          NotificationWebhook[] @relation("WorkspaceWebhooks")
+  auditLogs         AuditLog[]
+  actionQueueItems  ActionQueueItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        WorkspaceRole @default(MEMBER)
+  
+  joinedAt DateTime @default(now())
+  
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model WorkspaceInvitation {
+  id          String           @id @default(cuid())
+  workspaceId String
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        WorkspaceRole    @default(MEMBER)
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
+  invitedBy   String
+  inviter     User             @relation("SentInvitations", fields: [invitedBy], references: [id])
+  
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+  
+  @@index([workspaceId])
+  @@index([email])
+  @@index([token])
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Plan
+  plan   SubscriptionPlan   @default(FREE)
+  status SubscriptionStatus @default(ACTIVE)
+  
+  // Billing
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  
+  // Usage Tracking
+  aiCreditsUsed Int @default(0)
+  storageUsedMB Int @default(0)
+  
+  // Limits (based on plan)
+  maxAssets            Int @default(5)
+  maxAICreditsPerMonth Int @default(100)
+  maxStorageMB         Int @default(1024)
+  
+  // Billing Cycle
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  
+  // Partner (Phase 2 - placeholder for now)
+  assignedPartnerId String?
+  // assignedPartner   Partner? @relation(fields: [assignedPartnerId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([workspaceId])
+}
+
+// Location model (Phase 4 - placeholder for workspace relation)
+model Location {
+  id          String  @id @default(cuid())
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  name     String
+  type     String? // OFFICE, DATA_CENTER, REMOTE, WAREHOUSE
+  address  String? @db.Text
+  city     String?
+  region   String?
+  country  String?
+  
+  // Network (Phase 4)
+  networkCIDR  String?
+  vpnEndpoint  String?
+  
+  // Coordinates
+  latitude  Float?
+  longitude Float?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([workspaceId])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Onboarding tracking (Week 2)
+  onboardingCompleted Boolean  @default(false)
+
+  // Workspace relations (Glanus 2.0)
+  ownedWorkspaces      Workspace[]           @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
+  sentInvitations      WorkspaceInvitation[] @relation("SentInvitations")
+
+  // Partner Profile (Glanus 2.0 Phase 2)
+  partnerProfile Partner? @relation("PartnerProfile")
+
+  assets           Asset[]
+  sessions         RemoteSession[]
+  auditLogs        AuditLog[]
+  aiInsights       AIInsight[]
+  assetAssignments AssignmentHistory[]
+
+  // NEW: Dynamic system relations
+  actionExecutions     AssetActionExecution[] @relation("UserActionExecutions")
+  createdRelationships AssetRelationship[]    @relation("UserAssetRelationships")
+
+  @@index([email])
+}
+
+model Asset {
+  id             String      @id @default(cuid())
+  assetType      AssetType   @default(PHYSICAL)
+  name           String
+  manufacturer   String?
+  model          String?
+  serialNumber   String?     @unique
+  status         AssetStatus @default(AVAILABLE)
+  location       String?
+  description    String?     @db.Text
+  purchaseDate   DateTime?
+  purchaseCost   Float?
+  warrantyUntil  DateTime?
+  tags           String[]
+  qrCode         String?     @db.Text
+  assignedToId   String?
+  assignedTo     User?       @relation(fields: [assignedToId], references: [id])
+
+  // Workspace (Glanus 2.0) — TODO: make required after data migration
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // NEW: Dynamic category system
+  categoryId String?
+  category   AssetCategory? @relation("AssetCategory", fields: [categoryId], references: [id])
+
+  // NEW: Dynamic fields and relationships
+  fieldValues         AssetFieldValue[]      @relation("AssetFieldValues")
+  actionExecutions    AssetActionExecution[] @relation("AssetActionExecutions")
+  parentRelationships AssetRelationship[]    @relation("ChildAssetRelationships")
+  childRelationships  AssetRelationship[]    @relation("ParentAssetRelationships")
+
+  // Existing relations
+  physicalAsset PhysicalAsset?
+  digitalAsset  DigitalAsset?
+
+  assignmentHistory AssignmentHistory[]
+  remoteSessions    RemoteSession[]
+  auditLogs         AuditLog[]
+  aiInsights        AIInsight[]
+  
+  // Phase 3: Agent RMM
+  agentConnection AgentConnection? @relation("AssetAgent")
+  agentMetrics    AgentMetric[]    @relation("AssetMetrics")
+  scriptExecutions ScriptExecution[] @relation("AssetScripts")
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  deletedAt         DateTime?
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([assetType])
+  @@index([deletedAt])
+  @@index([categoryId])
+  @@index([workspaceId])
+}
+
+model PhysicalAsset {
+  id      String @id @default(cuid())
+  assetId String @unique
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  category     HardwareCategory
+  manufacturer String?
+  model        String?
+  serialNumber String?          @unique
+
+  // Technical specifications
+  processor  String?
+  ram        Int? // GB
+  storage    Int? // GB
+  osVersion  String?
+  macAddress String?
+  ipAddress  String?
+
+  // MDM fields (for future Phase 8)
+  isManaged   Boolean   @default(false)
+  mdmEnrolled DateTime?
+  lastSeen    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([serialNumber])
+  @@index([manufacturer])
+}
+
+model DigitalAsset {
+  id      String @id @default(cuid())
+  assetId String @unique
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  category    SoftwareCategory
+  version     String?
+  vendor      String?
+  licenseKey  String?          @db.Text
+  licenseType LicenseType?
+
+  // License management
+  seatCount Int?
+  seatsUsed Int?
+
+  // SaaS-specific fields
+  subscriptionTier     String?
+  monthlyRecurringCost Float?
+  renewalDate          DateTime?
+  autoRenew            Boolean   @default(false)
+
+  // Hosting relationship
+  host     String?
+  hostType HostType?
+
+  // Web/Database specific
+  url              String?
+  sslExpiry        DateTime?
+  connectionString String?   @db.Text
+  databaseSize     Int? // MB
+
+  // Installation tracking
+  installedOn String[] // Asset IDs where installed
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([renewalDate])
+  @@index([vendor])
+}
+
+model AssignmentHistory {
+  id           String    @id @default(cuid())
+  assetId      String
+  userId       String
+  assignedAt   DateTime  @default(now())
+  unassignedAt DateTime?
+  notes        String?
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([assetId])
+  @@index([userId])
+}
+
+model RemoteSession {
+  id        String        @id @default(cuid())
+  assetId   String
+  asset     Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  status    SessionStatus @default(ACTIVE)
+  startedAt DateTime      @default(now())
+  endedAt   DateTime?
+  duration  Int? // in seconds
+
+  notes String?
+
+  // WebRTC Signaling fields
+  offer          Json?
+  answer         Json?
+  iceCandidates  Json?     // Array of ICE candidates
+  
+  // Connection Quality
+  quality        String?   @default("high")
+  averageLatency Float?
+  averageFPS     Float?
+  metadata       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assetId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================
+// REFLEX AUTOMATION (Phase 3 Autonomous Execution)
+// ============================================
+
+model ActionQueueItem {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  ruleId       String
+  ruleName     String
+  
+  // Persisted JSON objects of the runtime state
+  ruleSnapshot Json
+  consequence  Json
+  
+  status       String   // pending, approved, executing, completed, rejected, failed
+  
+  triggeredAt  DateTime @default(now())
+  executedAt   DateTime?
+  result       String?  @db.Text
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model AuditLog {
+  id           String     @id @default(cuid())
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id])
+  action       String     // e.g., "workspace.updated", "member.invited"
+  entityType   String?    // backward compat alias for resourceType
+  entityId     String?    // backward compat alias for resourceId
+  resourceType String?    // e.g., "asset", "member"
+  resourceId   String?
+  assetId      String?
+  asset        Asset?     @relation(fields: [assetId], references: [id])
+  metadata     Json?
+  details      Json       @default("{}")
+  ipAddress    String?
+  createdAt    DateTime   @default(now())
+  timestamp    DateTime   @default(now())
+
+  @@index([workspaceId, timestamp])
+  @@index([userId])
+  @@index([assetId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model AIInsight {
+  id          String  @id @default(cuid())
+  type        String
+  title       String
+  description String
+  severity    String?
+  confidence  Float?
+  metadata    Json?
+
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id])
+  assetId String?
+  asset   Asset?  @relation(fields: [assetId], references: [id])
+
+  acknowledged Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([type])
+  @@index([assetId])
+  @@index([acknowledged])
+}
+
+// ============================================
+// DYNAMIC ASSET MANAGEMENT SYSTEM
+// Add this to the end of schema.prisma
+// ============================================
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum FieldType {
+  STRING
+  TEXT
+  NUMBER
+  DECIMAL
+  BOOLEAN
+  DATE
+  DATETIME
+  TIME
+  JSON
+  ARRAY
+  SELECT
+  MULTI_SELECT
+  ASSET_REF
+  USER_REF
+  FILE
+  IMAGE
+  VIDEO
+  URL
+  EMAIL
+  PHONE
+  IP_ADDRESS
+  MAC_ADDRESS
+  COLOR
+  CURRENCY
+}
+
+enum ActionType {
+  POWER
+  NETWORK
+  MAINTENANCE
+  MONITORING
+  DATA
+  SECURITY
+  CUSTOM
+}
+
+enum HandlerType {
+  API
+  SCRIPT
+  WEBHOOK
+  REMOTE_COMMAND
+  MANUAL
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  TIMEOUT
+}
+
+enum RelationshipType {
+  CONTAINS
+  PART_OF
+  INSTALLED_ON
+  HOSTED_ON
+  DEPENDS_ON
+  LOCATED_IN
+  CONNECTED_TO
+  LICENSED_TO
+  COMPONENT_OF
+  DEPLOYED_ON
+  MANAGED_BY
+  CUSTOM
+}
+
+// ============================================
+// CATEGORY SYSTEM
+// ============================================
+
+model AssetCategory {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String? @db.Text
+  icon        String?
+
+  // Hierarchy - parent will be  NULL for root categories (Physical, Digital)
+  parentId String?
+  parent   AssetCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children AssetCategory[] @relation("CategoryHierarchy")
+
+  // Asset type reference (Physical or Digital)  
+  assetTypeValue AssetType // Using existing AssetType enum
+
+  // Configuration
+  allowsChildren Boolean @default(true)
+  isActive       Boolean @default(true)
+  sortOrder      Int     @default(0)
+  metadata       Json?
+
+  // Relationships
+  fieldDefinitions  AssetFieldDefinition[]
+  actionDefinitions AssetActionDefinition[]
+  assets            Asset[]                 @relation("AssetCategory")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([slug])
+  @@index([assetTypeValue])
+}
+
+// ============================================
+// DYNAMIC FIELDS
+// ============================================
+
+model AssetFieldDefinition {
+  id String @id @default(cuid())
+
+  // Field metadata
+  name        String
+  label       String
+  slug        String
+  description String?   @db.Text
+  fieldType   FieldType
+
+  // Category
+  categoryId String
+  category   AssetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Validation
+  isRequired      Boolean @default(false)
+  isUnique        Boolean @default(false)
+  isInherited     Boolean @default(false)
+  defaultValue    String? @db.Text
+  validationRules Json?
+
+  // UI
+  sortOrder    Int     @default(0)
+  isVisible    Boolean @default(true)
+  isSearchable Boolean @default(false)
+  group        String?
+  placeholder  String?
+  helpText     String? @db.Text
+
+  // Values
+  fieldValues AssetFieldValue[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@index([fieldType])
+}
+
+model AssetFieldValue {
+  id String @id @default(cuid())
+
+  // References
+  assetId           String
+  asset             Asset                @relation("AssetFieldValues", fields: [assetId], references: [id], onDelete: Cascade)
+  fieldDefinitionId String
+  fieldDefinition   AssetFieldDefinition @relation(fields: [fieldDefinitionId], references: [id], onDelete: Cascade)
+
+  // Values (polymorphic - use appropriate column based on field type)
+  valueString  String?   @db.Text
+  valueNumber  Float?
+  valueBoolean Boolean?
+  valueDate    DateTime?
+  valueJson    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([assetId, fieldDefinitionId])
+  @@index([assetId])
+  @@index([fieldDefinitionId])
+}
+
+// ============================================
+// DYNAMIC ACTIONS
+// ============================================
+
+model AssetActionDefinition {
+  id String @id @default(cuid())
+
+  // Action metadata
+  name        String
+  label       String
+  slug        String
+  description String? @db.Text
+  icon        String?
+
+  // Category
+  categoryId String
+  category   AssetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Action configuration
+  actionType           ActionType
+  isDestructive        Boolean    @default(false)
+  requiresConfirmation Boolean    @default(false)
+  estimatedDuration    Int?
+
+  // Execution
+  handlerType   HandlerType
+  handlerConfig Json?
+  parameters    Json?
+
+  // UI
+  sortOrder   Int     @default(0)
+  isVisible   Boolean @default(true)
+  buttonColor String?
+
+  // History
+  executions AssetActionExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@index([actionType])
+}
+
+model AssetActionExecution {
+  id String @id @default(cuid())
+
+  // References
+  assetId            String
+  asset              Asset                 @relation("AssetActionExecutions", fields: [assetId], references: [id])
+  actionDefinitionId String
+  actionDefinition   AssetActionDefinition @relation(fields: [actionDefinitionId], references: [id])
+  userId             String?
+  user               User?                 @relation("UserActionExecutions", fields: [userId], references: [id])
+
+  // Execution details
+  status      ExecutionStatus @default(PENDING)
+  startedAt   DateTime        @default(now())
+  completedAt DateTime?
+  duration    Int?
+
+  // Input/Output
+  parameters   Json?
+  result       Json?
+  errorMessage String? @db.Text
+  logs         String? @db.Text
+
+  // Metadata
+  triggerType String?
+  metadata    Json?
+
+  @@index([assetId])
+  @@index([actionDefinitionId])
+  @@index([userId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+// ============================================
+// ASSET RELATIONSHIPS
+// ============================================
+
+model AssetRelationship {
+  id String @id @default(cuid())
+
+  // The relationship
+  parentAssetId    String
+  childAssetId     String
+  relationshipType RelationshipType
+
+  // Metadata
+  quantity Int?
+  position String?
+  metadata Json?
+
+  // Relationships
+  parentAsset Asset @relation("ParentAssetRelationships", fields: [parentAssetId], references: [id], onDelete: Cascade)
+  childAsset  Asset @relation("ChildAssetRelationships", fields: [childAssetId], references: [id], onDelete: Cascade)
+
+  // Audit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   User?    @relation("UserAssetRelationships", fields: [createdById], references: [id])
+
+  @@unique([parentAssetId, childAssetId, relationshipType])
+  @@index([parentAssetId])
+  @@index([childAssetId])
+  @@index([relationshipType])
+}
+
+// ============================================
+// GLANUS 2.0 PHASE 2: PARTNER ECOSYSTEM
+// ============================================
+
+model Partner {
+  id String @id @default(cuid())
+  
+  // Linked to User Account
+  userId String @unique
+  user   User   @relation("PartnerProfile", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Company Info
+  companyName    String
+  businessNumber String? // Tax ID / EIN
+  website        String?
+  phone          String?
+  
+  // Profile
+  bio        String? @db.Text
+  logo       String? // Logo URL
+  coverImage String?
+  
+  // Certification
+  certificationLevel PartnerCertificationLevel @default(BRONZE)
+  certifiedAt        DateTime?
+  examsCompleted     PartnerExam[]
+  
+  // Status
+  status     PartnerStatus @default(PENDING)
+  verifiedAt DateTime?
+  verifiedBy String? // Admin who verified
+  
+  // Location & Service Area
+  address       String?
+  city          String?
+  region        String? // State/Province
+  country       String  @default("US")
+  timezone      String?
+  serviceRadius Int? // Miles they'll travel
+  remoteOnly    Boolean @default(false)
+  
+  // Specializations (JSON arrays)
+  industries     Json? // ["Healthcare", "Finance", ...]
+  certifications Json? // External certs: CompTIA, Cisco, etc.
+  languages      String[] @default(["en"])
+  
+  // Capacity & Availability
+  maxWorkspaces  Int     @default(10) // Based on cert level
+  availableSlots Int     @default(10) // Remaining capacity
+  acceptingNew   Boolean @default(true)
+  
+  // Assignments
+  assignments PartnerAssignment[]
+  
+  // Earnings
+  stripeAccountId String?  @unique // Stripe Connect account
+  stripeOnboarded Boolean  @default(false)
+  totalEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  payouts         PartnerPayout[]
+  
+  // Ratings (denormalized for performance)
+  averageRating Decimal? @db.Decimal(3, 2) // 0.00 - 5.00
+  totalReviews  Int      @default(0)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([status])
+  @@index([certificationLevel])
+  @@index([city, region, country])
+  @@index([averageRating])
+  @@index([acceptingNew])
+}
+
+model PartnerExam {
+  id        String     @id @default(cuid())
+  partnerId String
+  partner   Partner    @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  level  ExamLevel
+  status ExamStatus
+  
+  // Exam Data
+  questions    Json // Array of question IDs
+  answers      Json // User's answers
+  score        Int // Percentage (0-100)
+  passingScore Int  @default(80)
+  
+  // Timing
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  timeLimit   Int       @default(60) // Minutes
+  
+  createdAt DateTime @default(now())
+  
+  @@index([partnerId, level])
+  @@index([status])
+}
+
+model ExamQuestion {
+  id String @id @default(cuid())
+  
+  level    ExamLevel
+  category String // "Networking", "Security", "Hardware", ...
+  
+  question      String  @db.Text
+  options       Json // ["Option A", "Option B", ...]
+  correctAnswer Int // Index of correct option
+  explanation   String? @db.Text
+  
+  difficulty Int     @default(1) // 1-5
+  isActive   Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([level, isActive])
+  @@index([category])
+}
+
+model PartnerAssignment {
+  id String @id @default(cuid())
+  
+  // Partner
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  // Workspace (one-to-one)
+  workspaceId String    @unique // One workspace can only have one partner at a time
+  workspace   Workspace @relation("WorkspacePartnerAssignment", fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Status
+  status      AssignmentStatus @default(PENDING)
+  assignedAt  DateTime         @default(now())
+  acceptedAt  DateTime?
+  completedAt DateTime?
+  
+  // Revenue Share
+  revenueSplit  Decimal @default(0.50) @db.Decimal(3, 2) // 50%
+  totalEarnings Decimal @default(0) @db.Decimal(10, 2)
+  
+  // Rating (workspace rates partner)
+  rating  Int?     // 1-5 stars
+  review  String?  @db.Text
+  ratedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([partnerId, workspaceId])
+  @@index([partnerId, status])
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model PartnerPayout {
+  id        String  @id @default(cuid())
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  // Payout Details
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("USD")
+  periodStart DateTime
+  periodEnd   DateTime
+  
+  // Stripe
+  stripePayoutId String?       @unique
+  status         PayoutStatus  @default(PENDING)
+  
+  // Failure Info
+  failureReason String?
+  retryCount    Int     @default(0)
+  
+  // Metadata
+  workspaceCount      Int // How many workspaces contributed
+  subscriptionDetails Json // Breakdown by workspace
+  
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+  
+  @@index([partnerId, status])
+  @@index([periodStart, periodEnd])
+  @@index([status])
+}
+
+// ============================================
+// GLANUS 2.0 PHASE 3: AGENT RMM MODELS
+// ============================================
+
+model AgentConnection {
+  id String @id @default(cuid())
+  
+  // Linked Asset (one agent per asset)
+  assetId String @unique
+  asset   Asset  @relation("AssetAgent", fields: [assetId], references: [id], onDelete: Cascade)
+  
+  // Workspace
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceAgents", fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Agent Info
+  agentVersion String
+  platform     AgentPlatform
+  hostname     String
+  ipAddress    String?
+  macAddress   String?
+  
+  // Authentication
+  authToken  String  @unique // Secure token for agent-backend auth
+  lastSeen   DateTime @default(now())
+  status     AgentStatus @default(INSTALLING)
+  
+  // Capabilities
+  canMonitor       Boolean @default(true)
+  canRemoteAccess  Boolean @default(false) // For future VNC/RDP
+  canExecuteScript Boolean @default(true)
+  canPatchManage   Boolean @default(false) // For future patch mgmt
+  
+  // Latest Metrics (denormalized for quick access)
+  cpuUsage    Float?
+  ramUsage    Float?
+  diskUsage   Float?
+  networkUp   Float?
+  networkDown Float?
+  
+  // Relations
+  metrics    AgentMetric[]
+  scripts    ScriptExecution[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([workspaceId, status])
+  @@index([lastSeen])
+  @@index([status])
+}
+
+model AgentMetric {
+  id String @id @default(cuid())
+  
+  agentId String
+  agent   AgentConnection @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  assetId String
+  asset   Asset  @relation("AssetMetrics", fields: [assetId], references: [id], onDelete: Cascade)
+  
+  // Timestamp
+  timestamp DateTime @default(now())
+  
+  // CPU Metrics
+  cpuUsage    Float // Percentage (0-100)
+  cpuTemp     Float? // Celsius  
+  
+  // RAM Metrics
+  ramUsage    Float // Percentage (0-100)
+  ramUsed     Float // GB
+  ramTotal    Float // GB
+  
+  // Disk Metrics
+  diskUsage   Float // Percentage (0-100)
+  diskUsed    Float // GB
+  diskTotal   Float // GB
+  
+  // Network Metrics
+  networkUp   Float // KB/s
+  networkDown Float // KB/s
+  
+  // Process Info (top 5 CPU consumers)
+  topProcesses Json? // [{ name, cpu, ram, pid }, ...]
+  
+  @@index([agentId, timestamp])
+  @@index([assetId, timestamp])
+}
+
+model ScriptExecution {
+  id String @id @default(cuid())
+  
+  agentId String
+  agent   AgentConnection @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  assetId String
+  asset   Asset  @relation("AssetScripts", fields: [assetId], references: [id])
+  
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceScripts", fields: [workspaceId], references: [id])
+  
+  // Script
+  scriptName String
+  scriptBody String @db.Text
+  language   String // "powershell", "bash", "python"
+  
+  // Execution
+  status     ScriptStatus @default(PENDING)
+  exitCode   Int?
+  output     String? @db.Text
+  error      String? @db.Text
+  
+  // Timing
+  startedAt   DateTime?
+  completedAt DateTime?
+  
+  // Creator
+  createdAt DateTime @default(now())
+  createdBy String // User ID
+  
+  @@index([agentId, status])
+  @@index([assetId, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([status])
+}
+model AlertRule {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceAlertRules", fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Rule Configuration
+  name        String
+  enabled     Boolean  @default(true)
+  metric      AlertMetric
+  threshold   Float    // Percentage for CPU/RAM/DISK, minutes for OFFLINE
+  duration    Int      @default(0) // Minutes metric must exceed threshold
+  severity    AlertSeverity @default(WARNING)
+  
+  // Notification Settings
+  notifyEmail   Boolean @default(true)
+  notifyWebhook Boolean @default(false)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  
+  @@index([workspaceId, enabled])
+  @@index([metric])
+}
+
+model NotificationWebhook {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceWebhooks", fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Webhook Configuration
+  url         String
+  enabled     Boolean  @default(true)
+  secret      String?  // Optional HMAC secret for signature
+  
+  // Stats
+  lastSuccess DateTime?
+  lastFailure DateTime?
+  failureCount Int     @default(0)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([workspaceId, enabled])
+}
+
+// ============================================
+// AGENT VERSION MANAGEMENT
+// ============================================
+
+model AgentVersion {
+  id            String   @id @default(cuid())
+  version       String   // e.g., "0.1.0"
+  platform      String   // WINDOWS, MACOS, LINUX
+  downloadUrl   String   // URL to installer file
+  checksum      String   // SHA-256 checksum for verification
+  releaseNotes  String?  @db.Text
+  required      Boolean  @default(false) // If true, update is mandatory
+  status        String   @default("ACTIVE") // ACTIVE, DEPRECATED, BETA
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([version, platform])
+  @@index([platform, status])
+}
+
+// ============================================
+// STRIPE WEBHOOK IDEMPOTENCY
+// ============================================
+
+model StripeEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique // Stripe event ID (evt_xxx)
+  type      String   // Event type (checkout.session.completed, etc.)
+  processed Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([eventId])
+  @@index([createdAt])
+}
+
+

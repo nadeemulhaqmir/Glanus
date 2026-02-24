@@ -1,0 +1,16 @@
+node_modules
+.next
+.env
+.env.local
+*.log
+.DS_Store
+dist
+build
+coverage
+*.tsbuildinfo
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs
+logs/
+*.log

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.glanus.agent</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/Glanus Agent.app/Contents/MacOS/glanus-agent</string>
+    </array>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    
+    <key>StandardOutPath</key>
+    <string>/tmp/glanus-agent.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/tmp/glanus-agent.error.log</string>
+    
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+</dict>
+</plist>

@@ -1,0 +1,10 @@
+Package: glanus-agent
+Version: 0.1.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Glanus <support@glanus.com>
+Homepage: https://glanus.com
+Description: Glanus RMM Agent
+ Cross-platform remote monitoring and management agent for Glanus RMM.
+ Provides system monitoring, remote script execution, and automatic updates.

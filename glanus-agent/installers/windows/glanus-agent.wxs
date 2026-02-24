@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" 
+           Name="Glanus Agent" 
+           Language="1033" 
+           Version="!(bind.FileVersion.GlanusAgentExe)"
+           Manufacturer="Glanus"
+           UpgradeCode="12345678-1234-1234-1234-123456789ABC">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine"
+             Description="Glanus RMM Agent Installer"
+             Comments="Remote monitoring and management agent" />
+    
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Feature tree -->
+    <Feature Id="ProductFeature" Title="Glanus Agent" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="GlanusAgentService" />
+    </Feature>
+
+    <!-- Directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Glanus Agent">
+          <Directory Id="CONFIGFOLDER" Name="config" />
+        </Directory>
+      </Directory>
+      
+      <!-- Start Menu shortcuts -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Glanus Agent"/>
+      </Directory>
+    </Directory>
+
+    <!-- Components -->
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="GlanusAgentExe" Guid="*">
+        <File Id="GlanusAgentExe" 
+              Source="$(var.SourceDir)\glanus-agent.exe" 
+              KeyPath="yes" />
+      </Component>
+      
+      <Component Id="ConfigFile" Guid="*">
+        <File Id="ConfigToml" 
+              Source="$(var.SourceDir)\config.toml" 
+              Directory="CONFIGFOLDER"
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Windows Service -->
+    <Component Id="GlanusAgentService" Directory="INSTALLFOLDER" Guid="*">
+      <ServiceInstall Id="InstallGlanusAgentService"
+                      Name="GlanusAgent"
+                      DisplayName="Glanus Agent"
+                      Description="Glanus RMM monitoring and management agent"
+                      Type="ownProcess"
+                      Start="auto"
+                      Account="LocalSystem"
+                      ErrorControl="normal"
+                      Interactive="no">
+        <ServiceDependency Id="Tcpip"/>
+      </ServiceInstall>
+      
+      <ServiceControl Id="StartGlanusAgentService"
+                      Name="GlanusAgent"
+                      Start="install"
+                      Stop="both"
+                      Remove="uninstall"
+                      Wait="yes" />
+    </Component>
+
+    <!-- Start Menu shortcuts -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="*">
+        <Shortcut Id="UninstallProduct"
+                  Name="Uninstall Glanus Agent"
+                  Description="Uninstalls Glanus Agent"
+                  Target="[System64Folder]msiexec.exe"
+                  Arguments="/x [ProductCode]"/>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" 
+                       Key="Software\Glanus\Agent" 
+                       Name="installed" 
+                       Type="integer" 
+                       Value="1"KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <!-- UI -->
+    <UIRef Id="WixUI_Minimal" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    
+  </Product>
+</Wix>

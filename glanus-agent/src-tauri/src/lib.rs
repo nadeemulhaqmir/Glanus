@@ -1,0 +1,247 @@
+// Glanus Agent - Main Library with Backend Communication
+mod monitor;
+mod config;
+mod client;
+mod storage;
+mod registration;
+mod heartbeat;
+mod executor;
+mod commands;
+mod updater;
+
+use std::sync::Mutex;
+use monitor::{SystemMonitor, SystemMetrics};
+use config::AgentConfig;
+use registration::RegistrationManager;
+use heartbeat::HeartbeatManager;
+use tauri::{
+    AppHandle, Manager, State,
+    tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
+    menu::{MenuBuilder, MenuItemBuilder},
+};
+
+// Global state
+struct AppState {
+    monitor: Mutex<SystemMonitor>,
+    config: Mutex<AgentConfig>,
+}
+
+#[tauri::command]
+fn get_metrics(state: State<AppState>) -> Result<SystemMetrics, String> {
+    let mut monitor = state.monitor.lock().map_err(|e| e.to_string())?;
+    monitor.collect_metrics().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_config(state: State<AppState>) -> Result<AgentConfig, String> {
+    let config = state.config.lock().map_err(|e| e.to_string())?;
+    Ok(config.clone())
+}
+
+#[tauri::command]
+fn update_config(new_config: AgentConfig, state: State<AppState>) -> Result<(), String> {
+    let mut config = state.config.lock().map_err(|e| e.to_string())?;
+    *config = new_config.clone();
+    new_config.save().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn register_agent(asset_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let config = {
+        let config_lock = state.config.lock().map_err(|e| e.to_string())?;
+        config_lock.clone()
+    };
+
+    // Check if already registered
+    if RegistrationManager::is_registered(&config) {
+        return Err("Agent is already registered".to_string());
+    }
+
+    // Register
+    let registration_mgr = RegistrationManager::new(config.server.api_url.clone());
+    registration_mgr.register(&config, asset_id)
+        .await
+        .map_err(|e| format!("Registration failed: {}", e))?;
+
+    // Update state
+    let mut config_lock = state.config.lock().map_err(|e| e.to_string())?;
+    *config_lock = AgentConfig::load().map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn is_registered(state: State<AppState>) -> Result<bool, String> {
+    let config = state.config.lock().map_err(|e| e.to_string())?;
+    Ok(RegistrationManager::is_registered(&config))
+}
+
+#[tauri::command]
+fn show_metrics_window(app: AppHandle) -> Result<(), String> {
+    // Create or show metrics window
+    if let Some(window) = app.get_webview_window("metrics") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    } else {
+        tauri::WebviewWindowBuilder::new(
+            &app,
+            "metrics",
+            tauri::WebviewUrl::App("index.html".into())
+        )
+        .title("Glanus Agent - System Metrics")
+        .inner_size(800.0, 600.0)
+        .resizable(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn setup_system_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    // Build menu
+    let show_metrics = MenuItemBuilder::with_id("show_metrics", "View Metrics").build(app)?;
+    let settings = MenuItemBuilder::with_id("settings", "Settings").build(app)?;
+    let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
+    let quit = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
+
+    let menu = MenuBuilder::new(app)
+        .item(&show_metrics)
+        .item(&settings)
+        .item(&separator)
+        .item(&quit)
+        .build()?;
+
+    // Build tray icon
+    let _tray = TrayIconBuilder::new()
+        .menu(&menu)
+        .tooltip("Glanus Agent")
+        .on_menu_event(move |app, event| {
+            match event.id.as_ref() {
+                "show_metrics" => {
+                    if let Err(e) = show_metrics_window(app.clone()) {
+                        eprintln!("Failed to show metrics window: {}", e);
+                    }
+                }
+                "settings" => {
+                    // TODO: Open settings window
+                    println!("Settings clicked");
+                }
+                "quit" => {
+                    app.exit(0);
+                }
+                _ => {}
+            }
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event {
+                // Left click - show/hide metrics window
+                let app = tray.app_handle();
+                if let Err(e) = show_metrics_window(app.clone()) {
+                    eprintln!("Failed to show metrics window: {}", e);
+                }
+            }
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
+/// Start heartbeat loop in background
+fn start_heartbeat_loop(config: AgentConfig) {
+    tokio::spawn(async move {
+        let mut heartbeat_mgr = HeartbeatManager::new(config.server.api_url.clone());
+        
+        // Wait for registration
+        while !RegistrationManager::is_registered(&config) {
+            log::info!("Waiting for agent registration...");
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        }
+
+        log::info!("Agent registered, starting heartbeat loop");
+
+        // Start loop
+        if let Err(e) = heartbeat_mgr.start_loop(&config).await {
+            log::error!("Heartbeat loop failed: {}", e);
+        }
+    });
+}
+
+/// Start update checker loop in background (check every 24 hours)
+fn start_update_checker(config: AgentConfig) {
+    use updater::AutoUpdater;
+    
+    tokio::spawn(async move {
+        let updater = AutoUpdater::new(config.server.api_url.clone());
+        let check_interval = std::time::Duration::from_secs(config.updates.check_interval);
+
+        loop {
+            // Wait for check interval
+            tokio::time::sleep(check_interval).await;
+
+            if !config.updates.enabled {
+                log::debug!("Auto-updates disabled, skipping check");
+                continue;
+            }
+
+            log::info!("Checking for updates...");
+
+            match updater.check_and_install(&config.agent.version).await {
+                Ok(true) => {
+                    log::info!("Update installed successfully, restarting...");
+                    // The installer should restart the agent
+                    std::process::exit(0);
+                }
+                Ok(false) => {
+                    log::info!("No update installed");
+                }
+                Err(e) => {
+                    log::error!("Update check/install failed: {}", e);
+                }
+            }
+        }
+    });
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    let config = AgentConfig::load().unwrap_or_default();
+    let monitor = SystemMonitor::new();
+
+    // Start background tasks
+    start_heartbeat_loop(config.clone());
+    start_update_checker(config.clone());
+
+    tauri::Builder::default()
+        .setup(|app| {
+            if cfg!(debug_assertions) {
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::default()
+                        .level(log::LevelFilter::Info)
+                        .build(),
+                )?;
+            }
+
+            // Setup system tray
+            setup_system_tray(app.handle())?;
+
+            Ok(())
+        })
+        .manage(AppState {
+            monitor: Mutex::new(monitor),
+            config: Mutex::new(config),
+        })
+        .invoke_handler(tauri::generate_handler![
+            get_metrics,
+            get_config,
+            update_config,
+            register_agent,
+            is_registered,
+            show_metrics_window
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Post-installation script for Glanus Agent (DEB)
+set -e
+
+# Reload systemd
+systemctl daemon-reload
+
+# Enable and start service
+systemctl enable glanus-agent.service
+systemctl start glanus-agent.service
+
+echo "Glanus Agent installed and started successfully"
+
+exit 0

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Pre-removal script for Glanus Agent (DEB)
+set -e
+
+if [ "$1" = "remove" ]; then
+    # Stop and disable service
+    systemctl stop glanus-agent.service || true
+    systemctl disable glanus-agent.service || true
+fi
+
+exit 0

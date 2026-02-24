@@ -1,0 +1,205 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+// GET /api/remote/sessions/[id] - Get session details
+export async function GET(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const remoteSession = await prisma.remoteSession.findUnique({
+            where: { id: params.id },
+            include: {
+                asset: {
+                    select: {
+                        id: true,
+                        name: true,
+                        category: true,
+                        status: true,
+                        location: true,
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                    },
+                },
+            },
+        });
+
+        if (!remoteSession) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        }
+
+        return NextResponse.json(remoteSession);
+    } catch (error) {
+        console.error('Error fetching remote session:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch remote session' },
+            { status: 500 }
+        );
+    }
+}
+
+// PUT /api/remote/sessions/[id] - Update session (quality, notes, status)
+export async function PUT(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const data = await request.json();
+        const { quality, notes, status, metadata, averageLatency, averageFPS } = data;
+
+        // Build update data
+        const updateData: any = {};
+        if (quality !== undefined) updateData.quality = quality;
+        if (notes !== undefined) updateData.notes = notes;
+        if (status !== undefined) updateData.status = status;
+        if (metadata !== undefined) updateData.metadata = metadata;
+        if (averageLatency !== undefined) updateData.averageLatency = averageLatency;
+        if (averageFPS !== undefined) updateData.averageFPS = averageFPS;
+
+        // If ending session, calculate duration
+        if (status === 'ENDED') {
+            const currentSession = await prisma.remoteSession.findUnique({
+                where: { id: params.id },
+                select: { startedAt: true },
+            });
+
+            if (currentSession) {
+                const duration = Math.floor(
+                    (new Date().getTime() - new Date(currentSession.startedAt).getTime()) / 1000
+                );
+                updateData.duration = duration;
+                updateData.endedAt = new Date();
+            }
+        }
+
+        const updatedSession = await prisma.remoteSession.update({
+            where: { id: params.id },
+            data: updateData,
+            include: {
+                asset: {
+                    select: {
+                        id: true,
+                        name: true,
+                        category: true,
+                        status: true,
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                    },
+                },
+            },
+        });
+
+        // Create audit log if session ended
+        if (status === 'ENDED') {
+            await prisma.auditLog.create({
+                data: {
+                    action: 'REMOTE_SESSION_ENDED',
+                    entityType: 'RemoteSession',
+                    entityId: params.id,
+                    userId: session.user.id,
+                    assetId: updatedSession.assetId,
+                    metadata: {
+                        duration: updateData.duration,
+                        quality,
+                        averageLatency,
+                        averageFPS,
+                    },
+                },
+            });
+        }
+
+        return NextResponse.json(updatedSession);
+    } catch (error) {
+        console.error('Error updating remote session:', error);
+        return NextResponse.json(
+            { error: 'Failed to update remote session' },
+            { status: 500 }
+        );
+    }
+}
+
+// DELETE /api/remote/sessions/[id] - End/delete session
+export async function DELETE(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const remoteSession = await prisma.remoteSession.findUnique({
+            where: { id: params.id },
+            select: { startedAt: true, assetId: true },
+        });
+
+        if (!remoteSession) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        }
+
+        // Calculate duration
+        const duration = Math.floor(
+            (new Date().getTime() - new Date(remoteSession.startedAt).getTime()) / 1000
+        );
+
+        // Update session to ended status
+        await prisma.remoteSession.update({
+            where: { id: params.id },
+            data: {
+                status: 'ENDED',
+                endedAt: new Date(),
+                duration,
+            },
+        });
+
+        // Create audit log
+        await prisma.auditLog.create({
+            data: {
+                action: 'REMOTE_SESSION_DELETED',
+                entityType: 'RemoteSession',
+                entityId: params.id,
+                userId: session.user.id,
+                assetId: remoteSession.assetId,
+                metadata: {
+                    duration,
+                },
+            },
+        });
+
+        return NextResponse.json({ message: 'Session ended successfully' });
+    } catch (error) {
+        console.error('Error deleting remote session:', error);
+        return NextResponse.json(
+            { error: 'Failed to delete remote session' },
+            { status: 500 }
+        );
+    }
+}

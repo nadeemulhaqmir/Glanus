@@ -1,0 +1,268 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  IT_STAFF
+  USER
+}
+
+enum AssetType {
+  PHYSICAL
+  DIGITAL
+}
+
+enum HostType {
+  ASSET
+  PROVIDER
+  HYBRID
+  ON_PREMISE
+}
+
+model AssetAssignment {
+  id           String    @id @default(cuid())
+  assetId      String
+  userId       String
+  assignedAt   DateTime  @default(now())
+  unassignedAt DateTime?
+  notes        String?
+  assignedBy   String? // User ID who performed the assignment
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@index([assetId])
+  @@index([userId])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets            Asset[]
+  sessions          RemoteSession[]
+  auditLogs         AuditLog[]
+  aiInsights        AIInsight[]
+  assetAssignments  AssignmentHistory[]
+
+  @@index([email])
+}
+
+model Asset {
+
+  // Type-specific relationships
+  physicalAsset PhysicalAsset?
+  digitalAsset  DigitalAsset?
+
+  remoteSessions    RemoteSession[]
+  aiInsights        AIInsight[]
+  assignmentHistory AssetAssignment[]
+  auditLogs         AuditLog[]
+
+  @@index([assetType])
+  @@index([status])
+  @@index([category])
+  @@index([assignedToId])
+  @@index([deletedAt])
+}
+
+model RemoteSession {
+  id        String        @id @default(cuid())
+  assetId   String
+  asset     Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  status    SessionStatus @default(ACTIVE)
+  startedAt DateTime      @default(now())
+  endedAt   DateTime?
+  duration  Int? // in seconds
+
+  // Recording and playback
+  recordingUrl  String? // URL to session recording
+  recordingSize Int? // Size of recording in bytes
+  isRecording   Boolean @default(false)
+
+  // Connection details
+  quality    String? // LOW, MEDIUM, HIGH, AUTO
+  ipAddress  String?
+  deviceInfo Json? // Browser, OS, screen resolution
+
+  // Performance metrics
+  metadata       Json? // Connection stats, latency, FPS, errors
+  averageLatency Int? // Average latency in ms
+  averageFPS     Int? // Average frames per second
+
+  // Session notes
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([assetId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String?
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  assetId    String?
+  asset      Asset?   @relation(fields: [assetId], references: [id])
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([assetId])
+  @@index([createdAt])
+}
+
+model AIInsight {
+  id          String  @id @default(cuid())
+  type        String // 'health_prediction', 'anomaly', 'recommendation', etc.
+  title       String
+  description String
+  severity    String? // 'low', 'medium', 'high', 'critical'
+  confidence  Float? // AI confidence score 0-1
+  metadata    Json?
+
+  userId  String?
+  user    User?   @relation(fields: [userId], references: [id])
+  assetId String?
+  asset   Asset?  @relation(fields: [assetId], references: [id])
+
+  acknowledged Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([type])
+  @@index([assetId])
+  @@index([acknowledged])
+}
+
+// Hardware-specific asset data
+model PhysicalAsset {
+  id              String   @id @default(cuid())
+  assetId         String   @unique
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  category        HardwareCategory
+  manufacturer    String?
+  model           String?
+  serialNumber    String?  @unique
+  
+  // Technical specifications
+  processor       String?
+  ram             Int?     // GB
+  storage         Int?     // GB
+  osVersion       String?
+  macAddress      String?
+  ipAddress       String?
+  
+  // MDM fields (for future Phase 8)
+  isManaged       Boolean  @default(false)
+  mdmEnrolled     DateTime?
+  lastSeen        DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([category])
+  @@index([serialNumber])
+  @@index([manufacturer])
+}
+
+enum HardwareCategory {
+  LAPTOP
+  DESKTOP
+  MOBILE_DEVICE
+  TABLET
+  PRINTER
+  NETWORK_EQUIPMENT
+  MONITOR
+  SERVER
+  PERIPHERAL
+  OTHER
+}
+
+// Software-specific asset data
+model DigitalAsset {
+  id              String   @id @default(cuid())
+  assetId         String   @unique
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  category        SoftwareCategory
+  version         String?
+  vendor          String?
+  licenseKey      String?  @db.Text
+  licenseType     LicenseType?
+  
+  // License management
+  seatCount       Int?
+  seatsUsed       Int?
+  
+  // SaaS-specific fields
+  subscriptionTier String?
+  monthlyRecurringCost Float?
+  renewalDate     DateTime?
+  autoRenew       Boolean  @default(false)
+  
+  // Hosting relationship
+  host            String?
+  hostType        HostType?
+  
+  // Web/Database specific
+  url             String?
+  sslExpiry       DateTime?
+  connectionString String? @db.Text
+  databaseSize    Int?     // MB
+  
+  // Installation tracking
+  installedOn     String[] // Asset IDs where installed
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([category])
+  @@index([renewalDate])
+  @@index([vendor])
+}
+
+enum SoftwareCategory {
+  WEB_APPLICATION
+  MOBILE_APP
+  DESKTOP_APP
+  SAAS_SUBSCRIPTION
+  DATABASE
+  DEVELOPMENT_TOOL
+  SECURITY_SOFTWARE
+  LICENSE
+  API_SERVICE
+  CLOUD_STORAGE
+  VIRTUAL_MACHINE
+  LLM
+  OTHER
+}
+
+enum LicenseType {
+  PERPETUAL
+  SUBSCRIPTION
+  TRIAL
+  OPEN_SOURCE
+  FREEMIUM
+}

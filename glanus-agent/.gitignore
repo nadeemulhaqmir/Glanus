@@ -1,0 +1,10 @@
+# Add to .gitignore to prevent committing installers
+glanus-agent/installers/windows/*.msi
+glanus-agent/installers/windows/*.wixobj
+glanus-agent/installers/windows/*.wixpdb
+glanus-agent/installers/macos/*.pkg
+glanus-agent/installers/macos/build/
+glanus-agent/installers/linux/*.deb
+glanus-agent/installers/linux/build/
+glanus-agent/target/
+glanus-agent/src-tauri/target/

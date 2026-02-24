@@ -1,0 +1,136 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface QuickConnectButtonProps {
+    assetId: string;
+    assetName: string;
+}
+
+export function QuickConnectButton({ assetId, assetName }: QuickConnectButtonProps) {
+    const router = useRouter();
+    const [activeSession, setActiveSession] = useState<any | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        checkForActiveSession();
+    }, [assetId]);
+
+    const checkForActiveSession = async () => {
+        try {
+            const response = await fetch(`/api/remote/sessions?assetId=${assetId}&status=ACTIVE`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.sessions && data.sessions.length > 0) {
+                    setActiveSession(data.sessions[0]);
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for active session:', error);
+        } finally {
+            setChecking(false);
+        }
+    };
+
+    const handleConnect = async () => {
+        // If there's already an active session, join it
+        if (activeSession) {
+            router.push(`/remote/${activeSession.id}`);
+            return;
+        }
+
+        // Create new session
+        setLoading(true);
+        try {
+            const response = await fetch('/api/remote/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assetId,
+                    quality: 'AUTO',
+                    notes: `Remote session for ${assetName}`,
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to create session');
+            }
+
+            const session = await response.json();
+            router.push(`/remote/${session.id}`);
+        } catch (error: any) {
+            console.error('Error creating session:', error);
+            alert(error.message || 'Failed to start remote session');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (checking) {
+        return (
+            <button disabled className="btn bg-gray-200 text-gray-400 cursor-not-allowed">
+                <svg className="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                </svg>
+                Checking...
+            </button>
+        );
+    }
+
+    return (
+        <div>
+            <button
+                onClick={handleConnect}
+                disabled={loading}
+                className={`btn inline-flex items-center gap-2 ${activeSession
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                    }`}
+            >
+                {loading ? (
+                    <>
+                        <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                        </svg>
+                        <span>Connecting...</span>
+                    </>
+                ) : activeSession ? (
+                    <>
+                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                        <span>Join Active Session</span>
+                    </>
+                ) : (
+                    <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            />
+                        </svg>
+                        <span>Remote Connect</span>
+                    </>
+                )}
+            </button>
+            {activeSession && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Active session in progress
+                </p>
+            )}
+        </div>
+    );
+}

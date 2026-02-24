@@ -1,0 +1,24 @@
+[Unit]
+Description=Glanus Agent
+Documentation=https://docs.glanus.com
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/glanus-agent
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/glanus-agent
+
+[Install]
+WantedBy=multi-user.target

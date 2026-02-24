@@ -1,0 +1,219 @@
+// ============================================
+// ASSET RELATIONSHIPS
+// ============================================
+
+model AssetRelationship {
+  id String @id @default(cuid())
+
+  // The relationship
+  parentAssetId    String
+  childAssetId     String
+  relationshipType RelationshipType
+
+  // Metadata
+  quantity Int?
+  position String?
+  metadata Json?
+
+  // Relationships
+  parentAsset Asset @relation("ParentAssetRelationships", fields: [parentAssetId], references: [id], onDelete: Cascade)
+  childAsset  Asset @relation("ChildAssetRelationships", fields: [childAssetId], references: [id], onDelete: Cascade)
+
+  // Audit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   User?    @relation("UserAssetRelationships", fields: [createdById], references: [id])
+
+  @@unique([parentAssetId, childAssetId, relationshipType])
+  @@index([parentAssetId])
+  @@index([childAssetId])
+  @@index([relationshipType])
+}
+
+// ============================================
+// GLANUS 2.0 PHASE 2: PARTNER ECOSYSTEM
+// ============================================
+
+model Partner {
+  id String @id @default(cuid())
+  
+  // Linked to User Account
+  userId String @unique
+  user   User   @relation("PartnerProfile", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Company Info
+  companyName    String
+  businessNumber String? // Tax ID / EIN
+  website        String?
+  phone          String?
+  
+  // Profile
+  bio        String? @db.Text
+  logo       String? // Logo URL
+  coverImage String?
+  
+  // Certification
+  certificationLevel PartnerCertificationLevel @default(BRONZE)
+  certifiedAt        DateTime?
+  examsCompleted     PartnerExam[]
+  
+  // Status
+  status     PartnerStatus @default(PENDING)
+  verifiedAt DateTime?
+  verifiedBy String? // Admin who verified
+  
+  // Location & Service Area
+  address       String?
+  city          String?
+  region        String? // State/Province
+  country       String  @default("US")
+  timezone      String?
+  serviceRadius Int? // Miles they'll travel
+  remoteOnly    Boolean @default(false)
+  
+  // Specializations (JSON arrays)
+  industries     Json? // ["Healthcare", "Finance", ...]
+  certifications Json? // External certs: CompTIA, Cisco, etc.
+  languages      String[] @default(["en"])
+  
+  // Capacity & Availability
+  maxWorkspaces  Int     @default(10) // Based on cert level
+  availableSlots Int     @default(10) // Remaining capacity
+  acceptingNew   Boolean @default(true)
+  
+  // Assignments
+  assignments PartnerAssignment[]
+  
+  // Earnings
+  stripeAccountId String?  @unique // Stripe Connect account
+  stripeOnboarded Boolean  @default(false)
+  totalEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  payouts         PartnerPayout[]
+  
+  // Ratings (denormalized for performance)
+  averageRating Decimal? @db.Decimal(3, 2) // 0.00 - 5.00
+  totalReviews  Int      @default(0)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([status])
+  @@index([certificationLevel])
+  @@index([city, region, country])
+  @@index([averageRating])
+  @@index([acceptingNew])
+}
+
+model PartnerExam {
+  id        String     @id @default(cuid())
+  partnerId String
+  partner   Partner    @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  level  ExamLevel
+  status ExamStatus
+  
+  // Exam Data
+  questions    Json // Array of question IDs
+  answers      Json // User's answers
+  score        Int // Percentage (0-100)
+  passingScore Int  @default(80)
+  
+  // Timing
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  timeLimit   Int       @default(60) // Minutes
+  
+  createdAt DateTime @default(now())
+  
+  @@index([partnerId, level])
+  @@index([status])
+}
+
+model ExamQuestion {
+  id String @id @default(cuid())
+  
+  level    ExamLevel
+  category String // "Networking", "Security", "Hardware", ...
+  
+  question      String  @db.Text
+  options       Json // ["Option A", "Option B", ...]
+  correctAnswer Int // Index of correct option
+  explanation   String? @db.Text
+  
+  difficulty Int     @default(1) // 1-5
+  isActive   Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([level, isActive])
+  @@index([category])
+}
+
+model PartnerAssignment {
+  id String @id @default(cuid())
+  
+  // Partner
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  // Workspace
+  workspaceId String
+  workspace   Workspace @relation("WorkspacePartnerAssignment", fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Status
+  status      AssignmentStatus @default(PENDING)
+  assignedAt  DateTime         @default(now())
+  acceptedAt  DateTime?
+  completedAt DateTime?
+  
+  // Revenue Share
+  revenueSplit  Decimal @default(0.50) @db.Decimal(3, 2) // 50%
+  totalEarnings Decimal @default(0) @db.Decimal(10, 2)
+  
+  // Rating (workspace rates partner)
+  rating  Int?     // 1-5 stars
+  review  String?  @db.Text
+  ratedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([partnerId, workspaceId])
+  @@index([partnerId, status])
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model PartnerPayout {
+  id        String  @id @default(cuid())
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  
+  // Payout Details
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("USD")
+  periodStart DateTime
+  periodEnd   DateTime
+  
+  // Stripe
+  stripePayoutId String?       @unique
+  status         PayoutStatus  @default(PENDING)
+  
+  // Failure Info
+  failureReason String?
+  retryCount    Int     @default(0)
+  
+  // Metadata
+  workspaceCount      Int // How many workspaces contributed
+  subscriptionDetails Json // Breakdown by workspace
+  
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+  
+  @@index([partnerId, status])
+  @@index([periodStart, periodEnd])
+  @@index([status])
+}

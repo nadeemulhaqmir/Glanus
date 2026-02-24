@@ -1,0 +1,74 @@
+// Asset Type Constants
+export const ASSET_TYPES = {
+    PHYSICAL: 'PHYSICAL',
+    DIGITAL: 'DIGITAL',
+} as const;
+
+export const getAssetTypeLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+        PHYSICAL: '💻 Physical',
+        DIGITAL: '☁️ Digital',
+    };
+    return labels[type] || type;
+};
+
+export const getAssetTypeOptions = () => {
+    return Object.keys(ASSET_TYPES).map((key) => ({
+        value: key,
+        label: getAssetTypeLabel(key),
+    }));
+};
+
+// Physical Asset Category Constants
+export const PHYSICAL_CATEGORIES = {
+    LAPTOP: 'LAPTOP',
+    DESKTOP: 'DESKTOP',
+    MOBILE_DEVICE: 'MOBILE_DEVICE',
+    TABLET: 'TABLET',
+    PRINTER: 'PRINTER',
+    NETWORK_EQUIPMENT: 'NETWORK_EQUIPMENT',
+    MONITOR: 'MONITOR',
+    SERVER: 'SERVER',
+    PERIPHERAL: 'PERIPHERAL',
+    OTHER: 'OTHER',
+} as const;
+
+// Asset category and status mappings for UI display (backward compatibility)
+export const ASSET_CATEGORIES = {
+    LAPTOP: { label: '💻 Laptop', value: 'LAPTOP' },
+    DESKTOP: { label: '🖥️ Desktop', value: 'DESKTOP' },
+    SERVER: { label: '🗄️ Server', value: 'SERVER' },
+    PHONE: { label: '📱 Phone', value: 'PHONE' },
+    TABLET: { label: '📱 Tablet', value: 'TABLET' },
+    MONITOR: { label: '🖥️ Monitor', value: 'MONITOR' },
+    PRINTER: { label: '🖨️ Printer', value: 'PRINTER' },
+    NETWORK: { label: '🌐 Network Device', value: 'NETWORK' },
+    ACCESSORY: { label: '🔌 Accessory', value: 'ACCESSORY' },
+    OTHER: { label: '📦 Other', value: 'OTHER' },
+} as const;
+
+export const ASSET_STATUSES = {
+    AVAILABLE: { label: '✅ Available', value: 'AVAILABLE', color: 'green' },
+    ASSIGNED: { label: '👤 Assigned', value: 'ASSIGNED', color: 'blue' },
+    MAINTENANCE: { label: '🔧 Maintenance', value: 'MAINTENANCE', color: 'yellow' },
+    RETIRED: { label: '📦 Retired', value: 'RETIRED', color: 'gray' },
+    LOST: { label: '❌ Lost', value: 'LOST', color: 'red' },
+} as const;
+
+// Helper to get category options for select
+export const getCategoryOptions = () =>
+    Object.values(ASSET_CATEGORIES);
+
+// Helper to get status options for select
+export const getStatusOptions = () =>
+    Object.values(ASSET_STATUSES);
+
+// Helper to get label by value
+export const getCategoryLabel = (value: string) =>
+    ASSET_CATEGORIES[value as keyof typeof ASSET_CATEGORIES]?.label || value;
+
+export const getStatusLabel = (value: string) =>
+    ASSET_STATUSES[value as keyof typeof ASSET_STATUSES]?.label || value;
+
+export const getStatusColor = (value: string) =>
+    ASSET_STATUSES[value as keyof typeof ASSET_STATUSES]?.color || 'gray';

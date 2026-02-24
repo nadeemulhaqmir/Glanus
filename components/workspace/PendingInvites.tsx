@@ -1,0 +1,183 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { Button } from '@/components/ui/Button';
+import { Trash2, RefreshCw, Mail } from 'lucide-react';
+import { Badge, ConfirmDialog } from '@/components/ui';
+import { useToast } from '@/lib/toast';
+
+interface Invitation {
+    id: string;
+    email: string;
+    role: 'ADMIN' | 'MEMBER' | 'VIEWER';
+    status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+    inviter: {
+        name: string | null;
+        email: string;
+    };
+    createdAt: string;
+    expiresAt: string;
+}
+
+export default function PendingInvites({ workspaceId }: { workspaceId: string }) {
+    const [invitations, setInvitations] = useState<Invitation[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const { currentWorkspace } = useWorkspaceStore();
+    const { error: showError, success: showSuccess } = useToast();
+    const [confirmState, setConfirmState] = useState<{ open: boolean; inviteId: string | null }>({
+        open: false,
+        inviteId: null,
+    });
+
+    const fetchInvitations = useCallback(async () => {
+        try {
+            const response = await fetch(`/api/workspaces/${workspaceId}/invitations`);
+            if (response.ok) {
+                const data = await response.json();
+                setInvitations(data.invitations);
+            }
+        } catch {
+            showError('Load Failed', 'Could not load pending invitations.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [workspaceId]);
+
+    useEffect(() => {
+        fetchInvitations();
+
+        // Listen for custom event to refresh list (triggered by InviteForm)
+        const handleRefresh = () => fetchInvitations();
+        window.addEventListener('refresh-invitations', handleRefresh);
+        return () => window.removeEventListener('refresh-invitations', handleRefresh);
+    }, [fetchInvitations]);
+
+    const requestRevoke = (inviteId: string) => {
+        setConfirmState({ open: true, inviteId });
+    };
+
+    const handleRevoke = async () => {
+        const inviteId = confirmState.inviteId;
+        setConfirmState({ open: false, inviteId: null });
+        if (!inviteId) return;
+
+        setActionLoading(inviteId);
+        try {
+            await fetch(`/api/workspaces/${workspaceId}/invitations/${inviteId}`, {
+                method: 'DELETE',
+            });
+            await fetchInvitations();
+        } catch {
+            showError('Revoke Failed', 'Could not revoke invitation.');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleResend = async (invite: Invitation) => {
+        setActionLoading(invite.id);
+        try {
+            // Revoke the existing invitation
+            await fetch(`/api/workspaces/${workspaceId}/invitations/${invite.id}`, {
+                method: 'DELETE',
+            });
+
+            // Re-create with same email and role (sends a fresh email)
+            const res = await fetch(`/api/workspaces/${workspaceId}/invitations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: invite.email, role: invite.role }),
+            });
+
+            if (res.ok) {
+                showSuccess('Invitation Resent', `Fresh invitation sent to ${invite.email}`);
+                await fetchInvitations();
+            } else {
+                const data = await res.json();
+                showError('Resend Failed', data.error || 'Could not resend invitation.');
+            }
+        } catch {
+            showError('Resend Failed', 'Could not resend invitation.');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const currentRole = currentWorkspace?.userRole;
+    const canManage = currentRole === 'OWNER' || currentRole === 'ADMIN';
+
+    if (isLoading) return null;
+
+    const confirmDialog = (
+        <ConfirmDialog
+            open={confirmState.open}
+            title="Revoke Invitation"
+            message="Are you sure you want to revoke this invitation? The recipient will no longer be able to join."
+            confirmLabel="Revoke"
+            variant="danger"
+            onConfirm={handleRevoke}
+            onCancel={() => setConfirmState({ open: false, inviteId: null })}
+        />
+    );
+    if (invitations.length === 0) return null;
+
+    return (
+        <>
+            {confirmDialog}
+            <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+                <div className="px-6 py-4 border-b border-slate-200">
+                    <h3 className="text-lg font-medium text-white">Pending Invitations</h3>
+                </div>
+
+                <div className="divide-y divide-slate-800">
+                    {invitations.map((invite) => (
+                        <div key={invite.id} className="px-6 py-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-white">
+                                        {invite.email}
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                        Invited by {invite.inviter.name || invite.inviter.email} • Expires {new Date(invite.expiresAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <Badge variant="info" className="uppercase text-[10px]">
+                                    {invite.role}
+                                </Badge>
+
+                                {canManage && (
+                                    <>
+                                        <button
+                                            onClick={() => handleResend(invite)}
+                                            disabled={!!actionLoading}
+                                            className="p-1.5 rounded-md hover:bg-nerve/10 text-nerve hover:text-nerve transition-colors"
+                                            title="Resend Invitation"
+                                        >
+                                            <RefreshCw className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => requestRevoke(invite.id)}
+                                            disabled={!!actionLoading}
+                                            className="p-1.5 rounded-md hover:bg-health-critical/10 text-slate-400 hover:text-health-critical transition-colors"
+                                            title="Revoke Invitation"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </>
+    );
+}
