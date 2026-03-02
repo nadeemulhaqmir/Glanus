@@ -86,7 +86,9 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             const response = await csrfFetch(`/api/assets/${id}/actions`);
             if (!response.ok) return; // No actions available
             const data = await response.json();
-            setActions(data);
+            // API may return { data: [...] } or an array directly
+            const actionsList = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+            setActions(actionsList);
         } catch (err: unknown) {
             toastError('Error fetching actions', err instanceof Error ? err.message : 'Unknown error');
         }

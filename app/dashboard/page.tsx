@@ -255,7 +255,7 @@ export default function DashboardPage() {
                                 <p className="text-xs text-slate-500">Currently active remote desktop connections</p>
                             </div>
                             <div className="p-5">
-                                {data && data.activeSessionsList.length > 0 ? (
+                                {data && data.activeSessionsList?.length > 0 ? (
                                     <div className="space-y-3">
                                         {data.activeSessionsList.map((session) => (
                                             <div key={session.id} className="flex items-center justify-between border-b border-slate-800/50 pb-3 last:border-0 last:pb-0">

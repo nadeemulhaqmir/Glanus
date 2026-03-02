@@ -29,7 +29,11 @@ export default function SignupPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(data.error || 'Failed to create account');
+                // Handle error objects (e.g., rate limiter returns {code, message, retryAfter})
+                const errorMsg = typeof data.error === 'string'
+                    ? data.error
+                    : data.error?.message || 'Failed to create account';
+                setError(errorMsg);
                 return;
             }
 

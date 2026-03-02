@@ -67,7 +67,7 @@ const memoryApiLimiter = new RateLimiterMemory({
 });
 
 const memoryStrictApiLimiter = new RateLimiterMemory({
-    points: 100,
+    points: 500,
     duration: 15 * 60,
 });
 
