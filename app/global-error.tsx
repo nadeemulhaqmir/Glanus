@@ -23,8 +23,7 @@ export default function GlobalError({
 
     return (
         <html>
-            <body className="bg-slate-950 text-white flex items-center justify-center min-h-screen"
-                style={{ background: 'linear-gradient(135deg, hsl(228 44% 5%), hsl(228 36% 12%))' }}>
+            <body className="bg-gradient-midnight text-white flex items-center justify-center min-h-screen">
                 <div className="text-center max-w-md px-6">
                     {/* Icon */}
                     <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-health-critical/10 text-health-critical">
@@ -54,7 +53,7 @@ export default function GlobalError({
                     </div>
 
                     {error.digest && (
-                        <p className="mt-8 text-xs text-slate-600">
+                        <p className="mt-8 text-xs text-slate-500">
                             Error ID: {error.digest}
                         </p>
                     )}

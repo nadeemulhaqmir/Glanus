@@ -27,7 +27,10 @@ export default function WorkspaceAlertsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [editingRule, setEditingRule] = useState<AlertRule | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [webhookUrl, setWebhookUrl] = useState('');
+    const [savingWebhook, setSavingWebhook] = useState(false);
 
     useEffect(() => {
         const fetchRules = async () => {
@@ -86,19 +89,64 @@ export default function WorkspaceAlertsPage() {
 
         setSaving(true);
         try {
-            await csrfFetch(`/api/workspaces/${workspaceId}/alerts/${editingRule.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editingRule),
-            });
-            setRules(prev => prev.map(r =>
-                r.id === editingRule.id ? editingRule : r
-            ));
+            if (isCreating) {
+                // Create new rule via POST
+                const res = await csrfFetch(`/api/workspaces/${workspaceId}/alerts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editingRule),
+                });
+                if (!res.ok) throw new Error('Failed to create rule');
+                const data = await res.json();
+                const newRule = data.data?.rule || data.rule || { ...editingRule, id: crypto.randomUUID() };
+                setRules(prev => [...prev, newRule]);
+            } else {
+                // Update existing rule via PATCH
+                await csrfFetch(`/api/workspaces/${workspaceId}/alerts/${editingRule.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editingRule),
+                });
+                setRules(prev => prev.map(r =>
+                    r.id === editingRule.id ? editingRule : r
+                ));
+            }
             setEditingRule(null);
+            setIsCreating(false);
         } catch (err: unknown) {
             showError('Failed to save rule:', err instanceof Error ? err.message : 'An unexpected error occurred');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const createNewRule = () => {
+        setIsCreating(true);
+        setEditingRule({
+            id: '',
+            name: '',
+            enabled: true,
+            metric: 'cpu',
+            threshold: 90,
+            duration: 5,
+            notifyEmail: true,
+            notifyWebhook: false,
+        });
+    };
+
+    const saveWebhook = async () => {
+        setSavingWebhook(true);
+        try {
+            const res = await csrfFetch(`/api/workspaces/${workspaceId}/alerts/webhook`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ webhookUrl }),
+            });
+            if (!res.ok) throw new Error('Failed to save webhook');
+        } catch (err: unknown) {
+            showError('Failed to save webhook:', err instanceof Error ? err.message : 'An unexpected error occurred');
+        } finally {
+            setSavingWebhook(false);
         }
     };
 
@@ -150,8 +198,19 @@ export default function WorkspaceAlertsPage() {
                     >
                         ← Back to Agents
                     </button>
-                    <h1 className="text-3xl font-bold text-white mb-2">Alert Configuration</h1>
-                    <p className="text-slate-400">Configure monitoring alerts for all agents in this workspace</p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold text-white mb-2">Alert Configuration</h1>
+                            <p className="text-slate-400">Configure monitoring alerts for all agents in this workspace</p>
+                        </div>
+                        <button
+                            onClick={createNewRule}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-nerve text-white rounded-lg text-sm font-medium hover:brightness-110 transition-all hover:shadow-lg hover:shadow-nerve/20"
+                        >
+                            <Bell className="w-4 h-4" />
+                            Create Alert Rule
+                        </button>
+                    </div>
                 </div>
 
                 {/* Info Box */}
@@ -231,9 +290,9 @@ export default function WorkspaceAlertsPage() {
 
                 {/* Edit Modal */}
                 {editingRule && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm max-w-2xl w-full p-6">
-                            <h2 className="text-2xl font-bold mb-6">Edit Alert Rule</h2>
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                        <div className="rounded-xl border border-slate-800 bg-slate-900/95 backdrop-blur-xl max-w-2xl w-full p-6">
+                            <h2 className="text-2xl font-bold text-white mb-6">{isCreating ? 'Create Alert Rule' : 'Edit Alert Rule'}</h2>
 
                             <div className="space-y-4">
                                 <div>
@@ -244,7 +303,7 @@ export default function WorkspaceAlertsPage() {
                                         type="text"
                                         value={editingRule.name}
                                         onChange={(e) => setEditingRule({ ...editingRule, name: e.target.value })}
-                                        className="w-full px-4 py-2 border border-slate-700 rounded-md focus:ring-2 focus:ring-nerve/50 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-slate-700 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-nerve/50 focus:border-nerve/30 focus:outline-none"
                                     />
                                 </div>
 
@@ -255,7 +314,7 @@ export default function WorkspaceAlertsPage() {
                                     <select
                                         value={editingRule.metric}
                                         onChange={(e) => setEditingRule({ ...editingRule, metric: e.target.value as AlertRule['metric'] })}
-                                        className="w-full px-4 py-2 border border-slate-700 rounded-md focus:ring-2 focus:ring-nerve/50 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-slate-700 rounded-lg bg-slate-800/50 text-white focus:ring-2 focus:ring-nerve/50 focus:border-nerve/30 focus:outline-none"
                                     >
                                         <option value="cpu">CPU Usage</option>
                                         <option value="ram">RAM Usage</option>
@@ -274,7 +333,7 @@ export default function WorkspaceAlertsPage() {
                                         onChange={(e) => setEditingRule({ ...editingRule, threshold: parseInt(e.target.value) })}
                                         min="0"
                                         max={editingRule.metric === 'offline' ? '1440' : '100'}
-                                        className="w-full px-4 py-2 border border-slate-700 rounded-md focus:ring-2 focus:ring-nerve/50 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-slate-700 rounded-lg bg-slate-800/50 text-white focus:ring-2 focus:ring-nerve/50 focus:border-nerve/30 focus:outline-none"
                                     />
                                 </div>
 
@@ -288,7 +347,7 @@ export default function WorkspaceAlertsPage() {
                                         onChange={(e) => setEditingRule({ ...editingRule, duration: parseInt(e.target.value) })}
                                         min="0"
                                         max="60"
-                                        className="w-full px-4 py-2 border border-slate-700 rounded-md focus:ring-2 focus:ring-nerve/50 focus:border-transparent"
+                                        className="w-full px-4 py-2 border border-slate-700 rounded-lg bg-slate-800/50 text-white focus:ring-2 focus:ring-nerve/50 focus:border-nerve/30 focus:outline-none"
                                     />
                                     <p className="text-xs text-slate-500 mt-1">
                                         Alert triggers after metric exceeds threshold for this long (0 = immediate)
@@ -351,13 +410,19 @@ export default function WorkspaceAlertsPage() {
                             </label>
                             <input
                                 type="url"
+                                value={webhookUrl}
+                                onChange={(e) => setWebhookUrl(e.target.value)}
                                 placeholder="https://hooks.slack.com/services/..."
-                                className="w-full px-4 py-2 border border-slate-700 rounded-md focus:ring-2 focus:ring-nerve/50 focus:border-transparent"
+                                className="w-full px-4 py-2 border border-slate-700 rounded-lg bg-slate-800/50 text-white placeholder:text-slate-500 focus:ring-2 focus:ring-nerve/50 focus:border-nerve/30 focus:outline-none"
                             />
                         </div>
 
-                        <button className="px-4 py-2 bg-nerve text-white rounded-md hover:brightness-110 transition">
-                            Save Webhook
+                        <button
+                            onClick={saveWebhook}
+                            disabled={savingWebhook || !webhookUrl}
+                            className="px-4 py-2 bg-nerve text-white rounded-lg hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {savingWebhook ? 'Saving...' : 'Save Webhook'}
                         </button>
                     </div>
 

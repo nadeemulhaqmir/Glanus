@@ -87,8 +87,7 @@ export default function HomePage() {
                     </div>
 
                     {/* Layer cards */}
-                    <div className="mt-20 grid max-w-5xl gap-4 px-4 sm:grid-cols-2 lg:grid-cols-4 animate-slide-up"
-                        style={{ animationDelay: '0.2s' }}>
+                    <div className="mt-20 grid max-w-5xl gap-4 px-4 sm:grid-cols-2 lg:grid-cols-4 animate-slide-up [animation-delay:0.2s]">
 
                         {/* NERVE */}
                         <div className="group rounded-xl border border-slate-800 bg-slate-900/50 p-5 
@@ -150,7 +149,7 @@ export default function HomePage() {
                 </main>
 
                 {/* Footer */}
-                <footer className="px-6 py-6 text-center text-xs text-slate-600 md:px-12">
+                <footer className="px-6 py-6 text-center text-xs text-slate-500 md:px-12">
                     <div className="flex items-center justify-center gap-4">
                         <p>Glanus — AI-Native IT Operations Platform</p>
                         <span className="text-slate-800">·</span>

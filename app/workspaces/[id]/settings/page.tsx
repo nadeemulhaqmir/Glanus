@@ -85,7 +85,7 @@ export default function WorkspaceSettingsPage({ params: paramsPromise }: { param
                                             : 'bg-nerve/5 text-nerve'
                                         : isDanger
                                             ? 'text-health-critical hover:bg-health-critical/10'
-                                            : 'text-slate-600 hover:bg-slate-800'
+                                            : 'text-slate-400 hover:bg-slate-800'
                                 )}
                             >
                                 <Icon className="w-4 h-4" />
@@ -102,7 +102,7 @@ export default function WorkspaceSettingsPage({ params: paramsPromise }: { param
                                 <Link
                                     key={link.label}
                                     href={link.href}
-                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-800 transition-colors"
+                                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 transition-colors"
                                 >
                                     <Icon className="w-4 h-4" />
                                     {link.label}

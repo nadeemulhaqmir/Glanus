@@ -297,7 +297,7 @@ export default function WorkspaceWizard({ onComplete, showSampleDataOption = fal
                                     />
                                     <div>
                                         <div className="text-sm font-medium text-white">Create sample data</div>
-                                        <div className="text-xs text-slate-600 mt-0.5">
+                                        <div className="text-xs text-slate-500 mt-0.5">
                                             Add demo assets, locations, and alerts to help you get started
                                         </div>
                                     </div>

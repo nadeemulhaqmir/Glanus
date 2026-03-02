@@ -301,7 +301,7 @@ export default function DownloadAgentPage() {
 
                         <div>
                             <h3 className="font-semibold mb-2">macOS</h3>
-                            <ul className="text-sm text- gray-600 space-y-1">
+                            <ul className="text-sm text-slate-400 space-y-1">
                                 <li>• macOS 12 (Monterey) or later</li>
                                 <li>• 100MB disk space</li>
                                 <li>• Admin rights (install only)</li>

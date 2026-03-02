@@ -215,7 +215,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Recent Assets & Active Sessions */}
-                    <div className="grid gap-6 lg:grid-cols-2 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                    <div className="grid gap-6 lg:grid-cols-2 animate-slide-up [animation-delay:0.1s]">
                         {/* Recent Assets */}
                         <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
                             <div className="border-b border-slate-800 px-5 py-4">
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-10 text-center text-xs text-slate-600">
+                    <div className="mt-10 text-center text-xs text-slate-500">
                         <div className="flex items-center justify-center gap-4">
                             <p>Glanus — AI-Native IT Operations Platform</p>
                             <span className="text-slate-800">·</span>

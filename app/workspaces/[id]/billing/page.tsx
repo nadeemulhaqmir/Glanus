@@ -190,7 +190,7 @@ export default function BillingPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">Billing</h1>
-                    <p className="text-slate-600">Manage your subscription and payment methods</p>
+                    <p className="text-slate-400">Manage your subscription and payment methods</p>
                 </div>
                 {currentPlan !== 'FREE' && (
                     <Button onClick={handleManageBilling} variant="secondary" disabled={isLoading}>
@@ -280,7 +280,7 @@ export default function BillingPage() {
                                         ? 'border-purple-500 shadow-lg shadow-purple-100'
                                         : isCurrent
                                             ? 'border-nerve'
-                                            : 'border-slate-200 hover:border-slate-300',
+                                            : 'border-slate-700 hover:border-slate-600',
                                     'bg-slate-900/50 backdrop-blur-sm'
                                 )}
                             >
@@ -298,7 +298,7 @@ export default function BillingPage() {
 
                                 <ul className="space-y-2 mb-6">
                                     {plan.features.map((feature, i) => (
-                                        <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
+                                        <li key={i} className="flex items-center gap-2 text-sm text-slate-400">
                                             <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                                             {feature}
                                         </li>
@@ -362,7 +362,7 @@ function UsageMeter({
                 </div>
                 <span className={clsx(
                     'text-sm font-medium',
-                    isOverLimit ? 'text-health-critical' : isNearLimit ? 'text-yellow-600' : 'text-slate-600'
+                    isOverLimit ? 'text-health-critical' : isNearLimit ? 'text-health-warn' : 'text-slate-400'
                 )}>
                     {current.toLocaleString()}{unit ? ` ${unit}` : ''} / {limit.toLocaleString()}{unit ? ` ${unit}` : ''}
                 </span>

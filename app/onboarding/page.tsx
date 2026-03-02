@@ -99,7 +99,7 @@ export default function OnboardingPage() {
                         </button>
                     </div>
 
-                    <p className="text-center text-xs text-slate-600 mt-8">
+                    <p className="text-center text-xs text-slate-500 mt-8">
                         You can always configure these settings later in your dashboard
                     </p>
                 </div>

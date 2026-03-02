@@ -5,18 +5,31 @@ import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import WorkspaceSwitcher from '@/components/WorkspaceSwitcher';
+import { useWorkspace } from '@/lib/workspace/context';
 
-const NAV_ITEMS = [
-    { href: '/dashboard', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-    { href: '/assets', label: 'Assets', icon: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z' },
-    { href: '/remote', label: 'Remote', icon: 'M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12' },
-    { href: '/dashboard/insights', label: 'Insights', icon: 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z' },
-];
+const ICON_PATHS = {
+    dashboard: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+    assets: 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z',
+    remote: 'M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12',
+    insights: 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z',
+};
+
+function buildNavItems(workspaceId: string | undefined) {
+    const wsPrefix = workspaceId ? `/workspaces/${workspaceId}` : '';
+    return [
+        { href: '/dashboard', label: 'Dashboard', icon: ICON_PATHS.dashboard },
+        { href: wsPrefix ? `${wsPrefix}/analytics` : '/assets', label: 'Assets', icon: ICON_PATHS.assets },
+        { href: wsPrefix ? `${wsPrefix}/agents` : '/remote', label: 'Remote', icon: ICON_PATHS.remote },
+        { href: wsPrefix ? `${wsPrefix}/intelligence` : '/dashboard', label: 'Insights', icon: ICON_PATHS.insights },
+    ];
+}
 
 export function DashboardNav() {
     const { data: session } = useSession();
+    const { workspace } = useWorkspace();
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const NAV_ITEMS = buildNavItems(workspace?.id);
 
     const isActive = (href: string) => {
         if (href === '/dashboard') return pathname === '/dashboard';

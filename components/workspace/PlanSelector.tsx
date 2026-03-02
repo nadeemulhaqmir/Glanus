@@ -104,7 +104,7 @@ export default function PlanSelector({ selectedPlan, onChange }: PlanSelectorPro
 
                         <ul className="space-y-3 mb-6 flex-1">
                             {plan.features.map((feature) => (
-                                <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
+                                <li key={feature} className="flex items-start gap-2 text-sm text-slate-400">
                                     <CheckIcon className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
                                     <span>{feature}</span>
                                 </li>

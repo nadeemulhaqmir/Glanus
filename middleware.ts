@@ -11,8 +11,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSecurityHeaders } from './lib/security/headers';
 import { getToken } from 'next-auth/jwt';
-import { timingSafeEqual } from 'crypto';
-import { logWarn } from './lib/logger';
+// Edge-compatible logger (middleware runs in edge runtime — no Node.js modules)
+const logWarn = (message: string) => console.warn(`[Middleware] ${message}`);
 
 // Routes that don't need CSRF protection
 const CSRF_EXEMPT_PATHS = [
@@ -41,11 +41,19 @@ const PUBLIC_PATHS = [
 ];
 
 /**
- * Timing-safe string comparison
+ * Timing-safe string comparison (edge-runtime compatible)
  */
 function safeCompare(a: string, b: string): boolean {
     if (a.length !== b.length) return false;
-    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+    const encoder = new TextEncoder();
+    const bufA = encoder.encode(a);
+    const bufB = encoder.encode(b);
+    // Constant-time comparison without Node.js crypto
+    let result = 0;
+    for (let i = 0; i < bufA.length; i++) {
+        result |= bufA[i] ^ bufB[i];
+    }
+    return result === 0;
 }
 
 export async function middleware(request: NextRequest) {
