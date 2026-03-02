@@ -21,6 +21,18 @@ const colors = {
 
 winston.addColors(colors)
 
+// Check if we are in the Edge Runtime
+const isEdge = process.env.NEXT_RUNTIME === 'edge';
+
+// Create a light logger for Edge Runtime
+const edgeLogger = {
+    error: (msg: string, meta?: any) => console.error(`[ERROR] ${msg}`, meta || ''),
+    warn: (msg: string, meta?: any) => console.warn(`[WARN] ${msg}`, meta || ''),
+    info: (msg: string, meta?: any) => console.log(`[INFO] ${msg}`, meta || ''),
+    http: (msg: string, meta?: any) => console.log(`[HTTP] ${msg}`, meta || ''),
+    debug: (msg: string, meta?: any) => console.log(`[DEBUG] ${msg}`, meta || ''),
+};
+
 // JSON format for structured logging (production + files)
 const jsonFormat = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -105,36 +117,46 @@ function buildTransports(): winston.transport[] {
 }
 
 // Create the logger instance
-const logger = winston.createLogger({
-    level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
-    levels,
-    format: jsonFormat,
-    transports: buildTransports(),
-    // Only use file-based exception handlers when NOT in container
-    ...(process.env.CONTAINER !== 'true' && !process.env.KUBERNETES_SERVICE_HOST
-        ? {
-            exceptionHandlers: [
-                new DailyRotateFile({
-                    filename: 'logs/exceptions-%DATE%.log',
-                    datePattern: 'YYYY-MM-DD',
-                    maxSize: '20m',
-                    maxFiles: '30d',
-                }),
-            ],
-            rejectionHandlers: [
-                new DailyRotateFile({
-                    filename: 'logs/rejections-%DATE%.log',
-                    datePattern: 'YYYY-MM-DD',
-                    maxSize: '20m',
-                    maxFiles: '30d',
-                }),
-            ],
-        }
-        : {}),
-})
+let logger: any;
+
+if (!isEdge) {
+    logger = winston.createLogger({
+        level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+        levels,
+        format: jsonFormat,
+        transports: buildTransports(),
+        // Only use file-based exception handlers when NOT in container
+        ...(process.env.CONTAINER !== 'true' && !process.env.KUBERNETES_SERVICE_HOST
+            ? {
+                exceptionHandlers: [
+                    new DailyRotateFile({
+                        filename: 'logs/exceptions-%DATE%.log',
+                        datePattern: 'YYYY-MM-DD',
+                        maxSize: '20m',
+                        maxFiles: '30d',
+                    }),
+                ],
+                rejectionHandlers: [
+                    new DailyRotateFile({
+                        filename: 'logs/rejections-%DATE%.log',
+                        datePattern: 'YYYY-MM-DD',
+                        maxSize: '20m',
+                        maxFiles: '30d',
+                    }),
+                ],
+            }
+            : {}),
+    })
+} else {
+    logger = edgeLogger;
+}
 
 // Helper functions for easier logging
 export const logError = (message: string, error?: unknown, meta?: object) => {
+    if (isEdge) {
+        edgeLogger.error(message, { error: String(error), ...meta });
+        return;
+    }
     const errorObj = error instanceof Error ? error : null;
     logger.error(message, { error: errorObj?.message || String(error), stack: errorObj?.stack, ...meta })
 }
