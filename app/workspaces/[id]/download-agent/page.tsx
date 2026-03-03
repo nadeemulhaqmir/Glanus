@@ -14,6 +14,7 @@ export default function DownloadAgentPage() {
     const { error: showError, success: showSuccess } = useToast();
     const [platform, setPlatform] = useState<'windows' | 'macos' | 'linux'>('windows');
     const [generating, setGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [downloadInfo, setDownloadInfo] = useState<{
         downloadUrl: string;
         preAuthToken: string;
@@ -47,6 +48,7 @@ export default function DownloadAgentPage() {
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Download generation failed';
             showError('Error', msg);
+            setError(msg);
         } finally {
             setGenerating(false);
         }
