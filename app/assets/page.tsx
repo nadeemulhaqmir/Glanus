@@ -5,7 +5,6 @@ import { useToast } from '@/lib/toast';
 import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
-import { DashboardNav } from '@/components/DashboardNav';
 import Link from 'next/link';
 import { getCategoryOptions, getStatusOptions, ASSET_CATEGORIES, ASSET_STATUSES } from '@/lib/constants/assetConstants';
 import { ConfirmDialog } from '@/components/ui';
@@ -205,7 +204,6 @@ export default function AssetsPage() {
                 onConfirm={handleBulkDelete}
                 onCancel={() => setShowBulkDeleteConfirm(false)}
             />
-            <DashboardNav />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}

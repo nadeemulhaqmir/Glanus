@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AuthGuard } from '@/components/AuthGuard';
+import { WorkspaceLayout } from '@/components/workspace/WorkspaceLayout';
 
 export const metadata: Metadata = {
     title: 'Dashboard',
@@ -11,5 +12,5 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return <AuthGuard>{children}</AuthGuard>;
+    return <AuthGuard><WorkspaceLayout>{children}</WorkspaceLayout></AuthGuard>;
 }

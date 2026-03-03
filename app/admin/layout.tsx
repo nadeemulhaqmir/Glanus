@@ -4,10 +4,10 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { WorkspaceLayout } from '@/components/workspace/WorkspaceLayout';
 
 export const metadata: Metadata = {
-    title: 'Assets',
-    description: 'Manage and track your IT assets',
+    title: 'Admin',
+    description: 'Administration and configuration',
 };
 
-export default function AssetsLayout({ children }: { children: ReactNode }) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
     return <AuthGuard><WorkspaceLayout>{children}</WorkspaceLayout></AuthGuard>;
 }

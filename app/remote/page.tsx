@@ -4,7 +4,6 @@ import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { DashboardNav } from '@/components/DashboardNav';
 import Link from 'next/link';
 
 interface RemoteSession {
@@ -82,7 +81,6 @@ export default function RemoteSessionsPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            <DashboardNav />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}

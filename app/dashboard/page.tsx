@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DashboardNav } from '@/components/DashboardNav';
 import { formatDateTime } from '@/lib/utils';
 import { useWorkspace } from '@/lib/workspace/context';
 import { csrfFetch } from '@/lib/api/csrfFetch';
@@ -179,7 +178,6 @@ export default function DashboardPage() {
 
             <div className="relative z-10 p-6 md:p-8">
                 <div className="mx-auto max-w-7xl">
-                    <DashboardNav />
 
                     {/* Header */}
                     <div className="mb-8 animate-fade-in">

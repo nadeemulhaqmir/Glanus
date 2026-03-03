@@ -3,7 +3,6 @@ import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { DashboardNav } from '@/components/DashboardNav';
 import { getDigitalAssetCategoryOptions, getLicenseTypeOptions, getHostTypeOptions, isHostRequired, isInstalledOnRelevant } from '@/lib/constants/digitalAssetConstants';
 import { CSRFToken, fetchWithCSRF } from '@/components/security/CSRFToken';
 import { useToast } from '@/lib/toast';
@@ -95,7 +94,6 @@ export default function NewDigitalAssetPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            <DashboardNav />
 
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <div className="mb-6">

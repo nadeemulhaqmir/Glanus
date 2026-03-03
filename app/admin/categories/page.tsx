@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Edit2, Trash2, FolderTree } from 'lucide-react';
 import { AssetCategory } from '@prisma/client';
-import { DashboardNav } from '@/components/DashboardNav';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { NoData, ErrorState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui';
@@ -67,7 +66,6 @@ export default function CategoriesPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-900/30">
-                <DashboardNav />
                 <PageSpinner text="Loading categories..." />
             </div>
         );
@@ -76,7 +74,6 @@ export default function CategoriesPage() {
     if (error) {
         return (
             <div className="min-h-screen bg-slate-900/30">
-                <DashboardNav />
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <ErrorState
                         title="Failed to load categories"
@@ -99,7 +96,6 @@ export default function CategoriesPage() {
                 onConfirm={deleteCategory}
                 onCancel={() => setConfirmState(null)}
             />
-            <DashboardNav />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex justify-between items-center mb-6">
                     <div>

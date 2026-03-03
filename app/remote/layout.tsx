@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { AuthGuard } from '@/components/AuthGuard';
+import { WorkspaceLayout } from '@/components/workspace/WorkspaceLayout';
 
 export const metadata: Metadata = {
     title: 'Remote Desktop',
@@ -6,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function RemoteLayout({ children }: { children: React.ReactNode }) {
-    return <>{children}</>;
+    return <AuthGuard><WorkspaceLayout>{children}</WorkspaceLayout></AuthGuard>;
 }

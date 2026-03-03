@@ -3,7 +3,6 @@ import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { DashboardNav } from '@/components/DashboardNav';
 import Link from 'next/link';
 import { getCategoryOptions, getStatusOptions } from '@/lib/constants/assetConstants';
 
@@ -110,7 +109,6 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
     if (loading) {
         return (
             <div className="min-h-screen bg-background">
-                <DashboardNav />
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="text-center py-12">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-nerve"></div>
@@ -123,7 +121,6 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
 
     return (
         <div className="min-h-screen bg-background">
-            <DashboardNav />
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}

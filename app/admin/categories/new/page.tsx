@@ -8,7 +8,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { DashboardNav } from '@/components/DashboardNav';
 import { useToast } from '@/lib/toast';
 import { ButtonSpinner } from '@/components/ui/Spinner';
 import { CSRFToken, fetchWithCSRF } from '@/components/security/CSRFToken';
@@ -69,7 +68,6 @@ export default function NewCategoryPage() {
 
     return (
         <div className="min-h-screen bg-slate-900/30">
-            <DashboardNav />
             <div className="max-w-2xl mx-auto px-4 py-8">
                 <div className="mb-6">
                     <Link
