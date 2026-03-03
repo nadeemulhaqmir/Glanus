@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';

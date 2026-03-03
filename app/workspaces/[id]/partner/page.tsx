@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
@@ -36,6 +37,7 @@ export default function WorkspacePartnerPage() {
 
     const [assignment, setAssignment] = useState<Assignment | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [rating, setRating] = useState(5);
     const [review, setReview] = useState('');
@@ -57,6 +59,7 @@ export default function WorkspacePartnerPage() {
             }
         } catch (err: unknown) {
             toastError('Failed to Load', err instanceof Error ? err.message : 'Could not load partner assignment');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -76,6 +79,7 @@ export default function WorkspacePartnerPage() {
             fetchAssignment();
         } catch (err: unknown) {
             toastError('Error', err instanceof Error ? err.message : 'Something went wrong');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -95,6 +99,7 @@ export default function WorkspacePartnerPage() {
             setAssignment(null);
         } catch (err: unknown) {
             toastError('Error', err instanceof Error ? err.message : 'Something went wrong');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         }
     };
 
@@ -117,6 +122,7 @@ export default function WorkspacePartnerPage() {
             fetchAssignment();
         } catch (err: unknown) {
             toastError('Error', err instanceof Error ? err.message : 'Something went wrong');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setSubmitting(false);
         }
@@ -125,6 +131,9 @@ export default function WorkspacePartnerPage() {
     if (loading) {
         return <PageSpinner text="Loading partner data…" />;
     }
+
+
+    if (error) return <ErrorState title="Something went wrong" description={error} onRetry={() => window.location.reload()} />;
 
     return (
         <>

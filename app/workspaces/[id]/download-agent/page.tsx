@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useState } from 'react';
@@ -50,6 +51,9 @@ export default function DownloadAgentPage() {
             setGenerating(false);
         }
     };
+
+
+    if (error) return <ErrorState title="Something went wrong" description={error} onRetry={() => window.location.reload()} />;
 
     return (
         <>

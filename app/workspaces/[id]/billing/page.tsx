@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 import { useToast } from '@/lib/toast';
 
@@ -129,6 +130,7 @@ export default function BillingPage() {
             }
         } catch (error: unknown) {
             showError('Checkout failed:', error instanceof Error ? error.message : 'An unexpected error occurred');
+            setError(error instanceof Error ? error.message : 'Something went wrong');
             setNotification({ type: 'error', message: 'Failed to start checkout. Please try again.' });
         } finally {
             setIsLoading(false);
@@ -153,6 +155,7 @@ export default function BillingPage() {
             }
         } catch (error: unknown) {
             showError('Portal failed:', error instanceof Error ? error.message : 'An unexpected error occurred');
+            setError(error instanceof Error ? error.message : 'Something went wrong');
             setNotification({ type: 'error', message: 'Failed to open billing portal.' });
         } finally {
             setIsLoading(false);
@@ -183,6 +186,9 @@ export default function BillingPage() {
                 return null;
         }
     };
+
+
+    if (error) return <ErrorState title="Something went wrong" description={error} onRetry={() => window.location.reload()} />;
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
