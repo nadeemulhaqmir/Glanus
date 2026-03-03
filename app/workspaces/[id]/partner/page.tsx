@@ -1,4 +1,5 @@
 'use client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useEffect, useState } from 'react';
@@ -218,7 +219,7 @@ export default function WorkspacePartnerPage() {
                                 <div className="bg-slate-900/30 rounded-lg p-4">
                                     <p className="text-sm text-slate-400 mb-1">Assigned</p>
                                     <p className="text-lg font-semibold text-white">
-                                        {new Date(assignment.assignedAt).toLocaleDateString()}
+                                        {formatDate(assignment.assignedAt)}
                                     </p>
                                 </div>
                                 <div className="bg-slate-900/30 rounded-lg p-4">
@@ -335,7 +336,7 @@ export default function WorkspacePartnerPage() {
                                 </div>
                                 <p className="text-slate-300">{assignment.review}</p>
                                 <p className="text-sm text-slate-500 mt-2">
-                                    Submitted on {assignment.completedAt && new Date(assignment.completedAt).toLocaleDateString()}
+                                    Submitted on {assignment.completedAt && formatDate(assignment.completedAt)}
                                 </p>
                             </div>
                         )}

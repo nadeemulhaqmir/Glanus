@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/EmptyState';
+import { formatDateTime } from '@/lib/utils';
 import { ArrowLeft, Edit, Trash2, Play, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/lib/toast';
 import { ConfirmDialog } from '@/components/ui';
@@ -319,13 +320,13 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                             <div>
                                 <span className="text-slate-500">Created:</span>
                                 <span className="ml-2 text-white">
-                                    {asset.createdAt && !isNaN(new Date(asset.createdAt).getTime()) ? new Date(asset.createdAt).toLocaleString() : '—'}
+                                    {formatDateTime(asset.createdAt)}
                                 </span>
                             </div>
                             <div>
                                 <span className="text-slate-500">Updated:</span>
                                 <span className="ml-2 text-white">
-                                    {asset.updatedAt && !isNaN(new Date(asset.updatedAt).getTime()) ? new Date(asset.updatedAt).toLocaleString() : '—'}
+                                    {formatDateTime(asset.updatedAt)}
                                 </span>
                             </div>
                         </div>

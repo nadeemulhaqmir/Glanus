@@ -1,4 +1,5 @@
 'use client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { Suspense, useEffect, useState } from 'react';
@@ -217,7 +218,7 @@ function PartnerDashboardContent() {
                                                 <div>
                                                     <h3 className="font-semibold text-white">{assignment.workspace.name}</h3>
                                                     <p className="text-sm text-slate-400">
-                                                        Requested {new Date(assignment.assignedAt).toLocaleDateString()}
+                                                        Requested {formatDate(assignment.assignedAt)}
                                                     </p>
                                                 </div>
                                             </div>

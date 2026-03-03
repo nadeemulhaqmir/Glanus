@@ -1,4 +1,5 @@
 'use client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useToast } from '@/lib/toast';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
@@ -197,7 +198,7 @@ export default function PartnerEarningsPage() {
                                                     {item.workspace.name}
                                                 </Link>
                                                 <p className="text-xs text-slate-400">
-                                                    Since {new Date(item.assignedAt).toLocaleDateString()}
+                                                    Since {formatDate(item.assignedAt)}
                                                 </p>
                                             </div>
                                         </div>
@@ -262,8 +263,8 @@ export default function PartnerEarningsPage() {
                                     {payouts.map((payout) => (
                                         <tr key={payout.id} className="hover:bg-slate-900/30">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                                                {new Date(payout.periodStart).toLocaleDateString()} -{' '}
-                                                {new Date(payout.periodEnd).toLocaleDateString()}
+                                                {formatDate(payout.periodStart)} -{' '}
+                                                {formatDate(payout.periodEnd)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="text-lg font-semibold text-white">
@@ -287,8 +288,8 @@ export default function PartnerEarningsPage() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                                                 {payout.paidAt
-                                                    ? new Date(payout.paidAt).toLocaleDateString()
-                                                    : new Date(payout.createdAt).toLocaleDateString()}
+                                                    ? formatDate(payout.paidAt)
+                                                    : formatDate(payout.createdAt)}
                                             </td>
                                         </tr>
                                     ))}

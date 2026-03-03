@@ -1,4 +1,5 @@
 'use client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useEffect, useState } from 'react';
@@ -155,7 +156,7 @@ export default function AdminPartnersPage() {
                                                         {partner.companyName}
                                                     </Link>
                                                     <p className="text-xs text-slate-500">
-                                                        {new Date(partner.createdAt).toLocaleDateString()}
+                                                        {formatDate(partner.createdAt)}
                                                     </p>
                                                 </div>
                                             </td>

@@ -1,4 +1,5 @@
 'use client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useEffect, useState } from 'react';
@@ -359,7 +360,7 @@ export default function AssetAgentPage() {
                             <InfoRow label="Version" value={agent.agentVersion} />
                             {agent.ipAddress && <InfoRow label="IP Address" value={agent.ipAddress} />}
                             {agent.macAddress && <InfoRow label="MAC Address" value={agent.macAddress} />}
-                            <InfoRow label="Last Seen" value={new Date(agent.lastSeen).toLocaleString()} />
+                            <InfoRow label="Last Seen" value={formatDateTime(agent.lastSeen)} />
                         </div>
                     </div>
 
@@ -379,7 +380,7 @@ export default function AssetAgentPage() {
                                             </span>
                                         </div>
                                         <p className="text-[10px] text-slate-500">
-                                            {new Date(exec.createdAt).toLocaleTimeString()}
+                                            {formatDateTime(exec.createdAt)}
                                             {exec.exitCode !== null && ` • exit ${exec.exitCode}`}
                                         </p>
                                     </div>
@@ -403,7 +404,7 @@ export default function AssetAgentPage() {
                                     <div>
                                         <h3 className="text-sm font-medium text-slate-200">{exec.scriptName}</h3>
                                         <p className="text-xs text-slate-500">
-                                            {exec.language} • {new Date(exec.createdAt).toLocaleString()}
+                                            {exec.language} • {formatDateTime(exec.createdAt)}
                                         </p>
                                     </div>
                                     <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusBadge[exec.status] || 'bg-slate-700/50 text-slate-400 border-slate-600/30'}`}>

@@ -5,16 +5,22 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: Date | string): string {
-    return new Date(date).toLocaleDateString('en-US', {
+export function formatDate(date: Date | string | null | undefined): string {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
     });
 }
 
-export function formatDateTime(date: Date | string): string {
-    return new Date(date).toLocaleString('en-US', {
+export function formatDateTime(date: Date | string | null | undefined): string {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

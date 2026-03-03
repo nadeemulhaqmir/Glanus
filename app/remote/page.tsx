@@ -1,4 +1,5 @@
 'use client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { useToast } from '@/lib/toast';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
@@ -180,7 +181,7 @@ export default function RemoteSessionsPage() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                        {new Date(session.startedAt).toLocaleString()}
+                                        {formatDateTime(session.startedAt)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                                         {formatDuration(session.duration)}

@@ -1,4 +1,5 @@
 'use client';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -193,7 +194,7 @@ export default function PublicPartnerProfilePage() {
                                                 <div>
                                                     <p className="font-semibold text-white">{assignment.workspace.name}</p>
                                                     <p className="text-sm text-slate-400">
-                                                        {new Date(assignment.ratedAt).toLocaleDateString()}
+                                                        {formatDate(assignment.ratedAt)}
                                                     </p>
                                                 </div>
                                                 <div className="flex">
