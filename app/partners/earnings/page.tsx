@@ -1,5 +1,6 @@
 'use client';
 import { ErrorState } from '@/components/ui/EmptyState';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useToast } from '@/lib/toast';
 import { csrfFetch } from '@/lib/api/csrfFetch';
@@ -112,11 +113,7 @@ export default function PartnerEarningsPage() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-midnight">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nerve"></div>
-            </div>
-        );
+        return <PageSpinner text="Loading earnings…" />;
     }
 
 

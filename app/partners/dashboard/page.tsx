@@ -1,5 +1,6 @@
 'use client';
 import { ErrorState } from '@/components/ui/EmptyState';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
@@ -116,27 +117,11 @@ function PartnerDashboardContent() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-midnight">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nerve mx-auto mb-4"></div>
-                    <p className="text-slate-400">Loading dashboard...</p>
-                </div>
-            </div>
-        );
+        return <PageSpinner text="Loading dashboard…" />;
     }
 
     if (error || !partner) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-midnight">
-                <div className="text-center">
-                    <p className="text-health-critical mb-4">{error || 'No partner profile found'}</p>
-                    <Link href="/partners/signup" className="text-nerve hover:underline">
-                        Create Partner Profile
-                    </Link>
-                </div>
-            </div>
-        );
+        return <ErrorState title="Partner profile not found" description={error || 'No partner profile found. Please create one to get started.'} onRetry={() => window.location.reload()} />;
     }
 
     const pendingAssignments = assignments.filter((a) => a.status === 'PENDING');
