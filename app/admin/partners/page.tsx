@@ -31,7 +31,7 @@ interface Partner {
 }
 
 export default function AdminPartnersPage() {
-    const { error: toastError, success: toastSuccess } = useToast();
+    const { error: showError, success: showSuccess } = useToast();
     const [partners, setPartners] = useState<Partner[]>([]);
     const [stats, setStats] = useState<Record<string, number>>({});
     const [filter, setFilter] = useState<string>('');
@@ -52,7 +52,7 @@ export default function AdminPartnersPage() {
             setStats(data.stats);
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Could not load partners';
-            toastError('Failed to Load', msg);
+            showError('Failed to Load', msg);
             setError(msg);
         } finally {
             setLoading(false);
@@ -72,10 +72,10 @@ export default function AdminPartnersPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
-            toastSuccess('Success', data.message);
+            showSuccess('Success', data.message);
             fetchPartners();
         } catch (err: unknown) {
-            toastError('Error', err instanceof Error ? err.message : 'Something went wrong');
+            showError('Error', err instanceof Error ? err.message : 'Something went wrong');
         }
     };
 

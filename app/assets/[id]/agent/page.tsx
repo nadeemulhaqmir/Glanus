@@ -64,7 +64,7 @@ export default function AssetAgentPage() {
     const params = useParams();
     const assetId = params?.id as string;
 
-    const { error: toastError, success: toastSuccess } = useToast();
+    const { error: showError, success: showSuccess } = useToast();
     const [agent, setAgent] = useState<Agent | null>(null);
     const [executions, setExecutions] = useState<ScriptExecution[]>([]);
     const [metrics, setMetrics] = useState<MetricDataPoint[]>([]);
@@ -99,7 +99,7 @@ export default function AssetAgentPage() {
             const res = await csrfFetch(`/api/assets/${assetId}/agent`);
             if (res.ok) setAgent(await res.json());
         } catch (err: unknown) {
-            toastError('Failed to load agent', err instanceof Error ? err.message : 'Unknown error');
+            showError('Failed to load agent', err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setLoading(false);
         }
@@ -113,7 +113,7 @@ export default function AssetAgentPage() {
                 setExecutions(data.executions);
             }
         } catch (err: unknown) {
-            toastError('Failed to load executions', err instanceof Error ? err.message : 'Unknown error');
+            showError('Failed to load executions', err instanceof Error ? err.message : 'Unknown error');
         }
     };
 
@@ -123,7 +123,7 @@ export default function AssetAgentPage() {
             const res = await csrfFetch(`/api/assets/${assetId}/metrics?timeRange=${timeRange}`);
             if (res.ok) setMetrics((await res.json()).metrics);
         } catch (err: unknown) {
-            toastError('Failed to load metrics', err instanceof Error ? err.message : 'Unknown error');
+            showError('Failed to load metrics', err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setLoadingMetrics(false);
         }
@@ -140,15 +140,15 @@ export default function AssetAgentPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                toastSuccess('Script Queued', `Execution ID: ${data.executionId}`);
+                showSuccess('Script Queued', `Execution ID: ${data.executionId}`);
                 setScriptName('');
                 setScriptBody('');
                 fetchExecutions();
             } else {
-                toastError('Error', data.error);
+                showError('Error', data.error);
             }
         } catch (err: unknown) {
-            toastError('Script Failed', err instanceof Error ? err.message : 'Unknown error');
+            showError('Script Failed', err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setExecuting(false);
         }

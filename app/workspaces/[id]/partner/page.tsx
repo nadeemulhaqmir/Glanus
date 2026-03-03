@@ -31,7 +31,7 @@ interface Assignment {
 
 export default function WorkspacePartnerPage() {
     const params = useParams();
-    const { error: toastError, success: toastSuccess } = useToast();
+    const { error: showError, success: showSuccess } = useToast();
     const router = useRouter();
     const workspaceId = params?.id as string;
 
@@ -58,7 +58,7 @@ export default function WorkspacePartnerPage() {
                 setAssignment(data);
             }
         } catch (err: unknown) {
-            toastError('Failed to Load', err instanceof Error ? err.message : 'Could not load partner assignment');
+            showError('Failed to Load', err instanceof Error ? err.message : 'Could not load partner assignment');
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setLoading(false);
@@ -75,10 +75,10 @@ export default function WorkspacePartnerPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
-            toastSuccess('Partner Assigned', `Match score: ${data.matchScore}/100`);
+            showSuccess('Partner Assigned', `Match score: ${data.matchScore}/100`);
             fetchAssignment();
         } catch (err: unknown) {
-            toastError('Error', err instanceof Error ? err.message : 'Something went wrong');
+            showError('Error', err instanceof Error ? err.message : 'Something went wrong');
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setLoading(false);
@@ -95,10 +95,10 @@ export default function WorkspacePartnerPage() {
 
             if (!res.ok) throw new Error('Failed to remove partner');
 
-            toastSuccess('Partner Removed', 'Partner has been removed from this workspace.');
+            showSuccess('Partner Removed', 'Partner has been removed from this workspace.');
             setAssignment(null);
         } catch (err: unknown) {
-            toastError('Error', err instanceof Error ? err.message : 'Something went wrong');
+            showError('Error', err instanceof Error ? err.message : 'Something went wrong');
             setError(err instanceof Error ? err.message : 'Something went wrong');
         }
     };
@@ -117,11 +117,11 @@ export default function WorkspacePartnerPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
-            toastSuccess('Review Submitted', 'Your review has been recorded.');
+            showSuccess('Review Submitted', 'Your review has been recorded.');
             setShowReviewForm(false);
             fetchAssignment();
         } catch (err: unknown) {
-            toastError('Error', err instanceof Error ? err.message : 'Something went wrong');
+            showError('Error', err instanceof Error ? err.message : 'Something went wrong');
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setSubmitting(false);
