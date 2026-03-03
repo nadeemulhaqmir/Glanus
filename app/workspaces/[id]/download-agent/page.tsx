@@ -52,7 +52,7 @@ export default function DownloadAgentPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900/30 py-8 px-4 sm:px-6 lg:px-8">
+        <>
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="mb-8 text-center">
@@ -331,6 +331,6 @@ export default function DownloadAgentPage() {
                     </Link>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

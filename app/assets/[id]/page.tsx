@@ -183,8 +183,10 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
         switch (fieldType) {
             case 'BOOLEAN':
                 return value === 'true' ? '✓ Yes' : '✗ No';
-            case 'DATE':
-                return new Date(value).toLocaleDateString();
+            case 'DATE': {
+                const d = new Date(value);
+                return isNaN(d.getTime()) ? value : d.toLocaleDateString();
+            }
             case 'JSON':
                 try {
                     return JSON.stringify(JSON.parse(value), null, 2);
@@ -320,13 +322,13 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                             <div>
                                 <span className="text-slate-500">Created:</span>
                                 <span className="ml-2 text-white">
-                                    {new Date(asset.createdAt).toLocaleString()}
+                                    {asset.createdAt && !isNaN(new Date(asset.createdAt).getTime()) ? new Date(asset.createdAt).toLocaleString() : '—'}
                                 </span>
                             </div>
                             <div>
                                 <span className="text-slate-500">Updated:</span>
                                 <span className="ml-2 text-white">
-                                    {new Date(asset.updatedAt).toLocaleString()}
+                                    {asset.updatedAt && !isNaN(new Date(asset.updatedAt).getTime()) ? new Date(asset.updatedAt).toLocaleString() : '—'}
                                 </span>
                             </div>
                         </div>

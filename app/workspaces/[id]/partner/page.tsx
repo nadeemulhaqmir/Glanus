@@ -122,14 +122,14 @@ export default function WorkspacePartnerPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-midnight">
+            <div className="flex items-center justify-center py-32">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nerve"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-900/30 py-8 px-4 sm:px-6 lg:px-8">
+        <>
             <ConfirmDialog
                 open={showRemoveConfirm}
                 title="Remove Partner"
@@ -345,6 +345,6 @@ export default function WorkspacePartnerPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </>
     );
 }

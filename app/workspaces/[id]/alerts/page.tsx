@@ -152,7 +152,7 @@ export default function WorkspaceAlertsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-900/30 py-8 px-4 sm:px-6 lg:px-8">
+            <>
                 <div className="max-w-5xl mx-auto space-y-6">
                     <div className="h-8 w-64 animate-pulse rounded-lg bg-surface-2" />
                     <div className="h-4 w-96 animate-pulse rounded bg-surface-2" />
@@ -162,13 +162,13 @@ export default function WorkspaceAlertsPage() {
                         ))}
                     </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     if (error) {
         return (
-            <div className="min-h-screen bg-slate-900/30 py-8 px-4 sm:px-6 lg:px-8">
+            <>
                 <div className="max-w-5xl mx-auto">
                     <div className="card flex flex-col items-center justify-center min-h-[300px]">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
@@ -183,12 +183,12 @@ export default function WorkspaceAlertsPage() {
                         </button>
                     </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-900/30 py-8 px-4 sm:px-6 lg:px-8">
+        <>
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
@@ -441,6 +441,6 @@ export default function WorkspaceAlertsPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

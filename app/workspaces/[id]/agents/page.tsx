@@ -97,15 +97,14 @@ export default function WorkspaceAgentsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-midnight">
+            <div className="flex items-center justify-center py-32">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nerve"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-900/30 py-8 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
+        <>
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-white mb-2">Agent Monitoring</h1>
@@ -251,6 +250,6 @@ export default function WorkspaceAgentsPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </>
     );
 }
