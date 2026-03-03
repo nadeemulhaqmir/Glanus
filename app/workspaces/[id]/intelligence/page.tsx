@@ -19,6 +19,7 @@ export default function IntelligencePage() {
 
     const [activeTab, setActiveTab] = useState<Tab>('cortex');
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // CORTEX state
     const [analysis, setAnalysis] = useState<CausalAnalysis | null>(null);
@@ -54,7 +55,7 @@ export default function IntelligencePage() {
                 }
             } catch (err: unknown) {
                 showError('Failed to load intelligence data:', err instanceof Error ? err.message : 'An unexpected error occurred');
-            setError(err instanceof Error ? err.message : 'Something went wrong');
+                setError(err instanceof Error ? err.message : 'Something went wrong');
             } finally {
                 setIsLoading(false);
             }
@@ -104,8 +105,10 @@ export default function IntelligencePage() {
                 const data = await res.json();
                 setRules(prev => [...prev, data.data?.rule || data.rule]);
             }
-        } catch (err: unknown) { showError('Failed to create rule:', err instanceof Error ? err.message : 'An unexpected error occurred');
-            setError(err instanceof Error ? err.message : 'Something went wrong'); }
+        } catch (err: unknown) {
+            showError('Failed to create rule:', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
+        }
     }, [workspaceId]);
 
     const handleToggleRule = useCallback(async (ruleId: string, enabled: boolean) => {
@@ -119,8 +122,10 @@ export default function IntelligencePage() {
                 method: 'DELETE',
             });
             setRules(prev => prev.filter(r => r.id !== ruleId));
-        } catch (err: unknown) { showError('Failed to delete rule:', err instanceof Error ? err.message : 'An unexpected error occurred');
-            setError(err instanceof Error ? err.message : 'Something went wrong'); }
+        } catch (err: unknown) {
+            showError('Failed to delete rule:', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
+        }
     }, [workspaceId]);
 
     const handleApproveAction = useCallback(async (actionId: string) => {
@@ -135,8 +140,10 @@ export default function IntelligencePage() {
                 setQueue(prev => prev.map(q => q.id === actionId ? data.data?.item || data.item : q));
                 showSuccess('Action approved', 'Execution has started.');
             } else { throw new Error(await res.text()); }
-        } catch (err: unknown) { showError('Failed to approve action:', err instanceof Error ? err.message : 'An unexpected error occurred');
-            setError(err instanceof Error ? err.message : 'Something went wrong'); }
+        } catch (err: unknown) {
+            showError('Failed to approve action:', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
+        }
     }, [workspaceId]);
 
     const handleRejectAction = useCallback(async (actionId: string) => {
@@ -151,8 +158,10 @@ export default function IntelligencePage() {
                 setQueue(prev => prev.map(q => q.id === actionId ? data.data?.item || data.item : q));
                 showSuccess('Action rejected', 'Action has been dismissed.');
             } else { throw new Error(await res.text()); }
-        } catch (err: unknown) { showError('Failed to reject action:', err instanceof Error ? err.message : 'An unexpected error occurred');
-            setError(err instanceof Error ? err.message : 'Something went wrong'); }
+        } catch (err: unknown) {
+            showError('Failed to reject action:', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
+        }
     }, [workspaceId]);
 
     if (isLoading) {

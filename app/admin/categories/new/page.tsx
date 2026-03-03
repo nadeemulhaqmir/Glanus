@@ -28,6 +28,7 @@ type CategoryFormData = z.input<typeof categorySchema>;
 export default function NewCategoryPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { success, error: showError } = useToast();
 
     const {

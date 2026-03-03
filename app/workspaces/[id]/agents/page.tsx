@@ -256,7 +256,6 @@ export default function WorkspaceAgentsPage() {
                     </ul>
                 </div>
             )}
-        </div >
         </>
     );
 }

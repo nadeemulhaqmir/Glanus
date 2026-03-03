@@ -93,6 +93,7 @@ export default function BillingPage() {
     const { currentWorkspace } = useWorkspaceStore();
 
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     // Check for status from Stripe redirect
