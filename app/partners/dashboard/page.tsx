@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
@@ -110,6 +111,7 @@ function PartnerDashboardContent() {
             fetchDashboardData();
         } catch (err: unknown) {
             showError('Error', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         }
     };
 

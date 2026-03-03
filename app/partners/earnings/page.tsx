@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useToast } from '@/lib/toast';
 import { csrfFetch } from '@/lib/api/csrfFetch';
@@ -50,6 +51,7 @@ export default function PartnerEarningsPage() {
     const [payoutStats, setPayoutStats] = useState<{ totalPaid: number; pending: number; failed: number; total: number } | null>(null);
     const [stripeConnected, setStripeConnected] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchEarnings();
@@ -66,6 +68,7 @@ export default function PartnerEarningsPage() {
             setStripeConnected(data.stripeConnected);
         } catch (err: unknown) {
             showError('Failed to load earnings:', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -80,6 +83,7 @@ export default function PartnerEarningsPage() {
             setPayoutStats(data.stats);
         } catch (err: unknown) {
             showError('Failed to load payouts:', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         }
     };
 
@@ -114,6 +118,9 @@ export default function PartnerEarningsPage() {
             </div>
         );
     }
+
+
+    if (error) return <ErrorState title="Something went wrong" description={error} onRetry={() => window.location.reload()} />;
 
     return (
         <div className="min-h-screen bg-slate-900/30 py-8 px-4 sm:px-6 lg:px-8">

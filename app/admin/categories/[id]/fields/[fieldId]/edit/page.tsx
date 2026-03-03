@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useState, useEffect } from 'react';
@@ -98,6 +99,9 @@ export default function EditFieldPage({ params }: { params: Promise<{ id: string
             </div>
         );
     }
+
+
+    if (error) return <ErrorState title="Something went wrong" description={error} onRetry={() => window.location.reload()} />;
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-3xl">

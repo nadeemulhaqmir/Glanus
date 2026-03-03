@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useEffect, useState } from 'react';
@@ -96,6 +97,7 @@ export default function CertificationCenterPage() {
             setView('exam');
         } catch (err: unknown) {
             showError('Error', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         }
     };
 
@@ -121,6 +123,7 @@ export default function CertificationCenterPage() {
             setView('results');
         } catch (err: unknown) {
             showError('Error', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setSubmitting(false);
         }

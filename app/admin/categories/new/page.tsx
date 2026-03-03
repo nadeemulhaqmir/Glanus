@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useState } from 'react';
@@ -61,10 +62,14 @@ export default function NewCategoryPage() {
             router.push('/admin/categories');
         } catch (err: unknown) {
             showError('Failed to create category', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
             setLoading(false);
         }
     };
+
+
+    if (error) return <ErrorState title="Something went wrong" description={error} onRetry={() => window.location.reload()} />;
 
     return (
         <>

@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 import { useEffect, useState } from 'react';

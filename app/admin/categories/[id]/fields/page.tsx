@@ -1,4 +1,5 @@
 'use client';
+import { ErrorState } from '@/components/ui/EmptyState';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 import { useToast } from '@/lib/toast';
 
@@ -36,6 +37,7 @@ export default function FieldsPage({ params }: { params: Promise<{ id: string }>
             setCategoryName(data.name);
         } catch (err: unknown) {
             showError('Error fetching category:', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         }
     };
 
@@ -74,6 +76,7 @@ export default function FieldsPage({ params }: { params: Promise<{ id: string }>
             if (categoryId) fetchFields(categoryId);
         } catch (err: unknown) {
             showError('Action failed', err instanceof Error ? err.message : 'An unexpected error occurred');
+            setError(err instanceof Error ? err.message : 'Something went wrong');
         }
     };
 
