@@ -39,6 +39,7 @@ export default function GlobalError({
 
                     <div className="flex gap-3 justify-center">
                         <button
+                    aria-label="Try again"
                             onClick={() => reset()}
                             className="px-6 py-2.5 bg-nerve text-white font-medium rounded-lg transition-all hover:brightness-110 hover:shadow-lg hover:shadow-nerve/20"
                         >

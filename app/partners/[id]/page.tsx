@@ -1,5 +1,6 @@
 'use client';
 import { ErrorState } from '@/components/ui/EmptyState';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 import { useEffect, useState } from 'react';
@@ -69,25 +70,11 @@ export default function PublicPartnerProfilePage() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-midnight">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nerve"></div>
-            </div>
-        );
+        return <PageSpinner text="Loading partner profile…" />;
     }
 
     if (error || !partner) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-midnight">
-                <div className="text-center">
-                    <p className="text-xl text-white mb-2">Partner Not Found</p>
-                    <p className="text-slate-400 mb-4">{error}</p>
-                    <Link href="/partners" className="text-nerve hover:underline">
-                        Browse All Partners
-                    </Link>
-                </div>
-            </div>
-        );
+        return <ErrorState title="Partner Not Found" description={error || 'This partner profile could not be found.'} onRetry={() => window.location.reload()} />;
     }
 
     return (
