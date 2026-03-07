@@ -93,7 +93,14 @@ export const PUT = withErrorHandler(async (
                 members: { some: { userId: user.id } },
             },
         },
+        include: {
+            category: {
+                include: { fieldDefinitions: true }
+            },
+            fieldValues: true
+        }
     });
+
     if (!existingAsset) {
         return apiError(404, 'Asset not found');
     }
@@ -112,11 +119,77 @@ export const PUT = withErrorHandler(async (
         }
     }
 
+    // Process Custom Fields
+    if (data.customFields && existingAsset.category) {
+
+        // Polymorphic Helper
+        const mapValToRecord = (fieldType: string, val: any) => {
+            const recordParams: Record<string, any> = {};
+            switch (fieldType) {
+                case 'NUMBER': case 'DECIMAL': case 'CURRENCY':
+                    recordParams.valueNumber = Number(val);
+                    break;
+                case 'BOOLEAN':
+                    recordParams.valueBoolean = val === true || val === 'true';
+                    break;
+                case 'DATE': case 'DATETIME': case 'TIME':
+                    recordParams.valueDate = new Date(val);
+                    break;
+                case 'JSON': case 'ARRAY':
+                    try {
+                        recordParams.valueJson = typeof val === 'string' ? JSON.parse(val) : val;
+                    } catch {
+                        recordParams.valueString = String(val); // fallback
+                    }
+                    break;
+                default:
+                    recordParams.valueString = String(val);
+            }
+            return recordParams;
+        }
+
+        for (const def of existingAsset.category.fieldDefinitions) {
+            const incomingValue = data.customFields[def.name];
+            const existingValueRecord = existingAsset.fieldValues.find((fv: any) => fv.fieldDefinitionId === def.id);
+
+            if (incomingValue !== undefined) {
+                if (incomingValue === '' || incomingValue === null) {
+                    if (def.isRequired) {
+                        return apiError(400, `Missing required custom field: ${def.label}`);
+                    }
+                    if (existingValueRecord) {
+                        // Delete cleared optional field
+                        await prisma.assetFieldValue.delete({ where: { id: existingValueRecord.id } });
+                    }
+                } else {
+                    const mappedData = mapValToRecord(def.fieldType, incomingValue);
+                    if (existingValueRecord) {
+                        // Simply push the overwrite explicitly mapped
+                        await prisma.assetFieldValue.update({
+                            where: { id: existingValueRecord.id },
+                            data: mappedData
+                        });
+
+                    } else {
+                        // Insert new
+                        await prisma.assetFieldValue.create({
+                            data: {
+                                assetId: id, // Using existing asset id from closure
+                                fieldDefinitionId: def.id,
+                                ...mappedData
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     const asset = await prisma.asset.update({
         where: { id },
         data: {
             ...(data.name !== undefined && { name: data.name }),
-            ...(data.category !== undefined && { category: data.category as any }),
+            ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
             ...(data.manufacturer !== undefined && { manufacturer: data.manufacturer }),
             ...(data.model !== undefined && { model: data.model }),
             ...(data.serialNumber !== undefined && { serialNumber: data.serialNumber }),
@@ -130,6 +203,9 @@ export const PUT = withErrorHandler(async (
         },
         include: {
             assignedTo: { select: { id: true, name: true, email: true } },
+            fieldValues: {
+                include: { fieldDefinition: true }
+            }
         },
     });
 
@@ -139,7 +215,6 @@ export const PUT = withErrorHandler(async (
             resourceType: 'Asset',
             resourceId: asset.id,
             userId: user.id,
-            assetId: asset.id,
             metadata: { assetName: asset.name, changes: data },
         },
     });

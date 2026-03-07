@@ -31,7 +31,8 @@ export function RemoteDesktopViewer({
         // Initialize WebRTC client
         const webrtcClient = new WebRTCClient({
             sessionId,
-            isInitiator: isHost,
+            // The Admin Viewer is ALWAYS the initiator generating the offer
+            isInitiator: true,
         });
 
         // Polling state
@@ -45,11 +46,11 @@ export function RemoteDesktopViewer({
                 const payload: Record<string, unknown> = {};
                 if (signal.type === 'offer') payload.offer = signal;
                 else if (signal.type === 'answer') payload.answer = signal;
-                else if ('candidate' in signal) payload.iceCandidates = [signal];
+                else if ('candidate' in signal) payload.iceCandidate = signal;
 
                 if (Object.keys(payload).length > 0) {
-                    await csrfFetch(`/api/remote/sessions/${sessionId}`, {
-                        method: 'PUT',
+                    await csrfFetch(`/api/remote/sessions/${sessionId}/signaling`, {
+                        method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload),
                     });
@@ -74,6 +75,26 @@ export function RemoteDesktopViewer({
                 videoRef.current.srcObject = stream;
             }
         };
+
+        if (isHost) {
+            import('@tauri-apps/api/core').then(({ invoke }) => {
+                webrtcClient.onData = (data: any) => {
+                    if (data && data.type) {
+                        try {
+                            invoke('simulate_input', {
+                                eventType: data.type,
+                                key: data.key,
+                                x: data.x,
+                                y: data.y,
+                                button: data.button
+                            });
+                        } catch (err) {
+                            console.error('[WebRTC Host] Invoke Error:', err);
+                        }
+                    }
+                };
+            }).catch(e => console.error('[Host] Failed to import Tauri core', e));
+        }
 
         webrtcClient.onError = (err) => {
             console.error('[Viewer] Error:', err);
@@ -102,31 +123,28 @@ export function RemoteDesktopViewer({
             if (webrtcClient.isConnected()) return; // Stop polling once connected
 
             try {
-                const res = await csrfFetch(`/api/remote/sessions/${sessionId}`);
+                const res = await csrfFetch(`/api/remote/sessions/${sessionId}/signaling`);
                 if (!res.ok) return;
-                const session = await res.json();
+                const sessionResponse = await res.json();
+                const sessionData = sessionResponse.data || sessionResponse;
 
-                // Non-host (viewer) receives offer
-                if (!isHost && session.data?.offer && !hasProcessedOffer) {
-                    console.debug('[Viewer] Received offer from host');
-                    webrtcClient.signal(session.data.offer);
-                    hasProcessedOffer = true;
-                }
-
-                // Host receives answer
-                if (isHost && session.data?.answer && !hasProcessedAnswer) {
-                    console.debug('[Viewer] Received answer from client');
-                    webrtcClient.signal(session.data.answer);
+                // Admin receives answer from Agent
+                if (sessionData.answer && !hasProcessedAnswer) {
+                    console.debug('[Viewer] Received answer from agent');
+                    webrtcClient.signal(sessionData.answer);
                     hasProcessedAnswer = true;
                 }
 
-                // Both sides process new ICE candidates
-                const remoteCandidates = session.data?.iceCandidates || [];
+                // Process new ICE candidates
+                const remoteCandidates = sessionData.iceCandidates || [];
                 if (remoteCandidates.length > lastSeenIceCandidates) {
                     const newCandidates = remoteCandidates.slice(lastSeenIceCandidates);
-                    newCandidates.forEach((candidate: SimplePeer.SignalData) => {
-                        console.debug('[Viewer] Applying remote ICE candidate');
-                        webrtcClient.signal(candidate);
+                    newCandidates.forEach((candidate: any) => {
+                        // Admin only applies agent candidates
+                        if (candidate.source === 'agent') {
+                            console.debug('[Viewer] Applying remote ICE candidate');
+                            webrtcClient.signal(candidate);
+                        }
                     });
                     lastSeenIceCandidates = remoteCandidates.length;
                 }
@@ -143,14 +161,60 @@ export function RemoteDesktopViewer({
         };
     }, [sessionId, isHost]);
 
+    // Input handlers for the CLIENT
+    const handleMouseEvent = (e: React.MouseEvent, type: string) => {
+        if (!client || !connected || isHost || !videoRef.current) return;
+
+        const rect = videoRef.current.getBoundingClientRect();
+        // Calculate relative coordinate based on native video resolution vs CSS bounded box
+        const scaleX = videoRef.current.videoWidth / rect.width;
+        const scaleY = videoRef.current.videoHeight / rect.height;
+
+        let button = 'left';
+        if (e.button === 1) button = 'middle';
+        if (e.button === 2) button = 'right';
+
+        const payload = {
+            type,
+            x: Math.round((e.clientX - rect.left) * scaleX),
+            y: Math.round((e.clientY - rect.top) * scaleY),
+            button
+        };
+        client.sendData(payload);
+    };
+
+    const handleKeyEvent = (e: React.KeyboardEvent, type: string) => {
+        if (!client || !connected || isHost) return;
+
+        e.preventDefault(); // Stop scrolling when hitting spacebar, etc
+        client.sendData({
+            type,
+            key: e.key
+        });
+    };
+
     return (
-        <div className="relative w-full h-full bg-slate-950 rounded-lg overflow-hidden">
+        <div
+            className="relative w-full h-full bg-slate-950 rounded-lg overflow-hidden focus:outline-none"
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyEvent(e, 'keydown')}
+            onKeyUp={(e) => handleKeyEvent(e, 'keyup')}
+        >
             {/* Video element for remote stream */}
             <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 className={`w-full h-full object-contain ${connected && !isHost ? 'block' : 'hidden'}`}
+                onMouseMove={(e) => handleMouseEvent(e, 'mousemove')}
+                onMouseDown={(e) => handleMouseEvent(e, 'mousedown')}
+                onMouseUp={(e) => handleMouseEvent(e, 'mouseup')}
+                onClick={(e) => handleMouseEvent(e, 'click')}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    handleMouseEvent(e, 'mousedown');
+                    setTimeout(() => handleMouseEvent(e, 'mouseup'), 50);
+                }}
             />
 
             {/* Canvas for drawing (future feature) */}

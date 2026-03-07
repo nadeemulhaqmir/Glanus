@@ -1,80 +1,16 @@
+version: '3.8'
 services:
-  # Web Application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: glanus-app
-    ports:
-      - "3000:3000"
+  db:
+    image: postgres:15
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/glanus
-      - REDIS_URL=redis://redis:6379
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - CSRF_SECRET=${CSRF_SECRET}
-      - CRON_SECRET=${CRON_SECRET}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - STRIPE_PRICE_PERSONAL=${STRIPE_PRICE_PERSONAL}
-      - STRIPE_PRICE_TEAM=${STRIPE_PRICE_TEAM}
-      - STRIPE_PRICE_ENTERPRISE=${STRIPE_PRICE_ENTERPRISE}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - NODE_ENV=production
-    depends_on:
-      - postgres
-      - redis
-    restart: unless-stopped
-    networks:
-      - glanus-network
-
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: glanus-postgres
-    environment:
-      - POSTGRES_DB=glanus
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+      POSTGRES_USER: glanus
+      POSTGRES_PASSWORD: glanus
+      POSTGRES_DB: glanus
     ports:
       - "5432:5432"
-    restart: unless-stopped
-    networks:
-      - glanus-network
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: glanus-redis
-    command: redis-server --appendonly yes
     volumes:
-      - redis-data:/data
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    networks:
-      - glanus-network
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - pgdata:/var/lib/postgresql/data
+    restart: always
 
 volumes:
-  postgres-data:
-    driver: local
-  redis-data:
-    driver: local
-
-networks:
-  glanus-network:
-    driver: bridge
+  pgdata:

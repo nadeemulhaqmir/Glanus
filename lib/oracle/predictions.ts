@@ -223,7 +223,7 @@ export async function getSLOStatus(workspaceId: string): Promise<SLOStatus[]> {
     });
 
     if (agentStats.length > 0) {
-        const onlineCount = agentStats.filter(a => a.status === 'ONLINE').length;
+        const onlineCount = agentStats.filter((a: { status: string }) => a.status === 'ONLINE').length;
         const uptimePercent = (onlineCount / agentStats.length) * 100;
 
         const target = 99.9;
@@ -274,10 +274,12 @@ export function linearExtrapolation(
     if (slope <= 0) return null; // Trending down — no threshold breach predicted
 
     const intercept = yMean - slope * xMean;
-    const currentValue = values[values.length - 1];
 
-    // How many steps until we hit threshold?
-    const stepsToThreshold = (threshold - currentValue) / slope;
+    // Find x where y = threshold: x = (threshold - intercept) / slope
+    const targetStep = (threshold - intercept) / slope;
+
+    // How many steps from the current step (n - 1) until target step?
+    const stepsToThreshold = targetStep - (n - 1);
     if (stepsToThreshold <= 0) return null;
 
     // Assume ~1 hour per step (based on metric collection interval)

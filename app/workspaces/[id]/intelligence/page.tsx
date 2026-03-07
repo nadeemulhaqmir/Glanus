@@ -7,17 +7,19 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { ExplanationCard } from '@/components/cortex/ExplanationCard';
 import { AutomationCenter } from '@/components/reflex/AutomationCenter';
+import { OracleDashboard } from '@/components/oracle/OracleDashboard';
+import { AnomalyStream } from '@/components/nerve/AnomalyStream';
 import type { CausalAnalysis } from '@/lib/cortex/reasoning';
 import type { AutomationRule, ActionQueueItem } from '@/lib/reflex/automation';
 
-type Tab = 'cortex' | 'reflex';
+type Tab = 'nerve' | 'cortex' | 'reflex' | 'oracle';
 
 export default function IntelligencePage() {
     const { error: showError, success: showSuccess } = useToast();
     const params = useParams();
     const workspaceId = params.id as string;
 
-    const [activeTab, setActiveTab] = useState<Tab>('cortex');
+    const [activeTab, setActiveTab] = useState<Tab>('nerve');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -193,6 +195,18 @@ export default function IntelligencePage() {
             {/* Tab bar */}
             <div className="flex gap-1 rounded-lg bg-surface-1 p-1">
                 <button type="button"
+                    onClick={() => setActiveTab('nerve')}
+                    className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all ${activeTab === 'nerve'
+                        ? 'bg-nerve/10 text-nerve shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2.625L9.375 5.5l5.25 13L18.375 13H21" />
+                    </svg>
+                    NERVE
+                </button>
+                <button type="button"
                     onClick={() => setActiveTab('cortex')}
                     className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all ${activeTab === 'cortex'
                         ? 'bg-cortex/10 text-cortex shadow-sm'
@@ -216,7 +230,24 @@ export default function IntelligencePage() {
                     </svg>
                     REFLEX
                 </button>
+                <button type="button"
+                    onClick={() => setActiveTab('oracle')}
+                    className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all ${activeTab === 'oracle'
+                        ? 'bg-oracle/10 text-oracle shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+                    </svg>
+                    ORACLE
+                </button>
             </div>
+
+            {/* NERVE Tab */}
+            {activeTab === 'nerve' && (
+                <AnomalyStream workspaceId={workspaceId} />
+            )}
 
             {/* CORTEX Tab */}
             {activeTab === 'cortex' && (
@@ -322,6 +353,10 @@ export default function IntelligencePage() {
                     onApproveAction={handleApproveAction}
                     onRejectAction={handleRejectAction}
                 />
+            )}
+            {/* ORACLE Tab */}
+            {activeTab === 'oracle' && (
+                <OracleDashboard workspaceId={workspaceId} />
             )}
         </div>
     );

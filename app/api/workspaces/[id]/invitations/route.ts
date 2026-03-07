@@ -19,7 +19,7 @@ export const GET = withErrorHandler(async (
 ) => {
     const { id: workspaceId } = await context.params;
     const user = await requireAuth();
-    await requireWorkspaceAccess(workspaceId, user.id);
+    await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
     const invitations = await prisma.workspaceInvitation.findMany({
         where: { workspaceId, status: 'PENDING' },

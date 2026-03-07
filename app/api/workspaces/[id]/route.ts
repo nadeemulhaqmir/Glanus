@@ -17,13 +17,13 @@ export const GET = withErrorHandler(async (
     request: Request,
     context: { params: Promise<{ id: string }> }
 ) => {
-    const params = await context.params;
+    const { id } = await context.params;
     const user = await requireAuth();
-    const { workspace } = await requireWorkspaceAccess(params.id, user.id);
+    const { workspace } = await requireWorkspaceRole(id, user.id, 'OWNER');
 
     // Fetch full workspace details
     const fullWorkspace = await prisma.workspace.findUnique({
-        where: { id: params.id },
+        where: { id: id },
         include: {
             subscription: true,
             owner: {

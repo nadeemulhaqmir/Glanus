@@ -6,13 +6,14 @@ import Loading from '@/app/workspaces/[id]/loading'
 import ErrorBoundary from '@/app/workspaces/[id]/error'
 import { writeFileSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
 
 // Mocking some extra things that might be needed
 jest.mock('next/link', () => {
     return ({ children, href }: any) => <a href={href}>{children}</a>
 })
 
-const ARTIFACTS_DIR = '/home/h_khalid/.gemini/antigravity/brain/9f442ff0-c2b8-4cff-a362-4036d2dec708/visual-qa'
+const ARTIFACTS_DIR = join(tmpdir(), 'glanus-visual-qa')
 if (!existsSync(ARTIFACTS_DIR)) {
     mkdirSync(ARTIFACTS_DIR, { recursive: true })
 }

@@ -2,6 +2,7 @@ import { apiSuccess, apiError } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { notificationOrchestrator } from '@/lib/notification-orchestrator';
 import { logInfo, logError } from '@/lib/logger';
+import crypto from 'crypto';
 
 /**
  * Background job endpoint to process alerts
@@ -20,8 +21,11 @@ export async function POST(request: NextRequest) {
         // Security check: verify cron secret (ALWAYS required)
         const cronSecret = request.headers.get('Authorization');
         const expectedSecret = process.env.CRON_SECRET;
+        const expectedValue = `Bearer ${expectedSecret}`;
 
-        if (!expectedSecret || cronSecret !== `Bearer ${expectedSecret}`) {
+        if (!expectedSecret || !cronSecret ||
+            cronSecret.length !== expectedValue.length ||
+            !crypto.timingSafeEqual(Buffer.from(cronSecret), Buffer.from(expectedValue))) {
             return apiError(401, 'Unauthorized');
         }
 

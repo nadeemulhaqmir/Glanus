@@ -15,6 +15,7 @@ interface Agent {
     platform: string;
     hostname: string;
     agentVersion: string;
+    isOutdated: boolean;
     ipAddress: string | null;
     lastSeen: string;
     cpuUsage: number | null;
@@ -197,7 +198,14 @@ export default function WorkspaceAgentsPage() {
                                                 <span className="text-2xl">{getPlatformIcon(agent.platform)}</span>
                                                 <div>
                                                     <p className="text-sm font-medium text-white">{agent.platform}</p>
-                                                    <p className="text-xs text-slate-500">v{agent.agentVersion}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs text-slate-500">v{agent.agentVersion}</p>
+                                                        {agent.isOutdated && (
+                                                            <span className="text-[10px] font-semibold tracking-wide bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                                                UPDATE AVAIL
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>

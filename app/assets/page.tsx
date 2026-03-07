@@ -6,17 +6,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCategoryOptions, getStatusOptions, ASSET_CATEGORIES, ASSET_STATUSES } from '@/lib/constants/assetConstants';
+import { getStatusOptions, ASSET_STATUSES } from '@/lib/constants/assetConstants';
 import { ConfirmDialog } from '@/components/ui';
 import { useWorkspace } from '@/lib/workspace/context';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/EmptyState';
 
+interface AssetCategory {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string;
+}
+
 interface Asset {
     id: string;
     assetType: string;
     name: string;
-    category: string;
+    categoryId: string;
+    category?: AssetCategory;
     manufacturer?: string;
     model?: string;
     serialNumber?: string;
@@ -41,6 +49,7 @@ export default function AssetsPage() {
     const { error: showError } = useToast();
     const router = useRouter();
     const [assets, setAssets] = useState<Asset[]>([]);
+    const [categories, setCategories] = useState<AssetCategory[]>([]);
     const [pagination, setPagination] = useState<PaginationData>({
         page: 1,
         limit: 20,
@@ -52,8 +61,8 @@ export default function AssetsPage() {
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 300);
-    const [assetType, setAssetType] = useState(''); // NEW
-    const [category, setCategory] = useState('');
+    const [assetType, setAssetType] = useState('');
+    const [categoryId, setCategoryId] = useState('');
     const [status, setStatus] = useState('');
     const [assignmentFilter, setAssignmentFilter] = useState('');
 
@@ -62,19 +71,20 @@ export default function AssetsPage() {
     const [showBulkActions, setShowBulkActions] = useState(false);
     const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
-    const categories = [
-        '💻 Laptop',
-        '🖥️ Desktop',
-        '📱 Mobile Device',
-        '🖨️ Printer',
-        '📡 Network Equipment',
-        '🖥️ Monitor',
-        '⚙️ Server',
-        '🔌 Peripheral',
-        '📦 Other',
-    ];
-
     const statuses = ['AVAILABLE', 'ASSIGNED', 'MAINTENANCE', 'RETIRED', 'LOST'];
+
+    const fetchCategories = useCallback(async () => {
+        if (!workspace?.id) return;
+        try {
+            const response = await csrfFetch(`/api/assets/categories?workspaceId=${workspace.id}`);
+            if (response.ok) {
+                const data = await response.json();
+                setCategories(data.data || []);
+            }
+        } catch (err) {
+            console.error('Failed to load categories', err);
+        }
+    }, [workspace?.id]);
 
     const fetchAssets = useCallback(async (page: number = 1) => {
         if (!workspace?.id) return;
@@ -88,8 +98,8 @@ export default function AssetsPage() {
             });
 
             if (debouncedSearch) params.set('search', debouncedSearch);
-            if (assetType) params.set('assetType', assetType); // NEW
-            if (category) params.set('category', category);
+            if (assetType) params.set('assetType', assetType);
+            if (categoryId) params.set('categoryId', categoryId);
             if (status) params.set('status', status);
             if (assignmentFilter) params.set('assignedTo', assignmentFilter);
 
@@ -109,7 +119,11 @@ export default function AssetsPage() {
         } finally {
             setLoading(false);
         }
-    }, [workspace?.id, debouncedSearch, assetType, category, status, assignmentFilter, pagination.limit]); // debounced search
+    }, [workspace?.id, debouncedSearch, assetType, categoryId, status, assignmentFilter, pagination.limit]);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
 
     useEffect(() => {
         fetchAssets();
@@ -134,11 +148,6 @@ export default function AssetsPage() {
             default:
                 return 'bg-slate-800/50 text-slate-200';
         }
-    };
-
-    const getCategoryLabel = (category: string) => {
-        const cat = Object.values(ASSET_CATEGORIES).find(c => c.value === category);
-        return cat?.label || category;
     };
 
     const getStatusLabel = (status: string) => {
@@ -198,7 +207,7 @@ export default function AssetsPage() {
         window.open(`/api/assets/export?workspaceId=${workspace.id}`, '_blank');
     };
 
-    if (loading && assets.length === 0) return <PageSpinner text="Loading assets…" />;
+    if (loading && assets.length === 0 && categories.length === 0) return <PageSpinner text="Loading assets…" />;
     if (error && assets.length === 0) return <ErrorState title="Failed to load assets" description={error} onRetry={() => fetchAssets()} />;
 
     return (
@@ -256,7 +265,7 @@ export default function AssetsPage() {
                         />
                     </div>
 
-                    {/* Asset Type Filter - NEW */}
+                    {/* Asset Type Filter */}
                     <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
                             Type
@@ -267,8 +276,9 @@ export default function AssetsPage() {
                             className="input w-full"
                         >
                             <option value="">All Types</option>
-                            <option value="PHYSICAL">💻 Physical</option>
-                            <option value="DIGITAL">☁️ Digital</option>
+                            <option value="DYNAMIC">✨ Dynamic</option>
+                            <option value="PHYSICAL">💻 Physical (Legacy)</option>
+                            <option value="DIGITAL">☁️ Digital (Legacy)</option>
                         </select>
                     </div>
 
@@ -278,14 +288,14 @@ export default function AssetsPage() {
                             Category
                         </label>
                         <select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
+                            value={categoryId}
+                            onChange={(e) => setCategoryId(e.target.value)}
                             className="input w-full"
                         >
                             <option value="">All Categories</option>
                             {categories.map((cat) => (
-                                <option key={cat} value={cat}>
-                                    {cat}
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.icon} {cat.name}
                                 </option>
                             ))}
                         </select>
@@ -312,7 +322,7 @@ export default function AssetsPage() {
                 </div>
 
                 {/* Filter Pills */}
-                {(search || category || status || assignmentFilter) && (
+                {(search || categoryId || status || assignmentFilter) && (
                     <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
                         {search && (
                             <span className="badge-primary flex items-center gap-1">
@@ -325,11 +335,11 @@ export default function AssetsPage() {
                                 </button>
                             </span>
                         )}
-                        {category && (
+                        {categoryId && (
                             <span className="badge-primary flex items-center gap-1">
-                                Category: {category}
+                                Category: {categories.find(c => c.id === categoryId)?.name || categoryId}
                                 <button type="button"
-                                    onClick={() => setCategory('')}
+                                    onClick={() => setCategoryId('')}
                                     className="ml-1 hover:text-white"
                                 >
                                     ×
@@ -379,7 +389,7 @@ export default function AssetsPage() {
             )}
 
             {/* Assets Table/List */}
-            {loading ? (
+            {loading && assets.length === 0 ? (
                 <div className="card">
                     <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-nerve"></div>
@@ -402,11 +412,11 @@ export default function AssetsPage() {
                     </svg>
                     <h3 className="mt-2 text-lg font-medium text-foreground">No assets found</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        {search || category || status
+                        {search || categoryId || status
                             ? 'Try adjusting your filters'
                             : 'Get started by creating a new asset'}
                     </p>
-                    {!search && !category && !status && (
+                    {!search && !categoryId && !status && (
                         <div className="mt-6">
                             <Link href="/assets/new" className="btn-primary">
                                 Add Your First Asset
@@ -466,12 +476,6 @@ export default function AssetsPage() {
                                                         <div className="text-sm font-medium text-foreground">
                                                             {asset.name}
                                                         </div>
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${asset.assetType === 'PHYSICAL'
-                                                            ? 'bg-nerve/10 text-nerve'
-                                                            : 'bg-purple-500/10 text-purple-500'
-                                                            }`}>
-                                                            {asset.assetType === 'PHYSICAL' ? '💻' : '☁️'}
-                                                        </span>
                                                     </div>
                                                     {asset.manufacturer && asset.model && (
                                                         <div className="text-sm text-muted-foreground">
@@ -482,7 +486,13 @@ export default function AssetsPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-foreground">{getCategoryLabel(asset.category)}</div>
+                                            <div className="text-sm text-foreground flex items-center gap-2">
+                                                {asset.category ? (
+                                                    <span>{asset.category.icon} {asset.category.name}</span>
+                                                ) : (
+                                                    <span className="text-slate-500">Uncategorized</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`badge ${getStatusColor(asset.status)}`}>

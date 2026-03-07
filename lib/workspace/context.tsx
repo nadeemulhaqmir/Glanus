@@ -45,6 +45,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
     // Fetch all workspaces for the current user
     const fetchWorkspaces = useCallback(async () => {
+        // Maintain loading state while NextAuth initializes
+        if (status === 'loading') return;
+
         if (status !== 'authenticated') {
             setIsLoading(false);
             return;

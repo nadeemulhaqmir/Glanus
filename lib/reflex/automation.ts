@@ -223,7 +223,7 @@ export async function getActionQueue(workspaceId: string): Promise<ActionQueueIt
         take: 50,
     });
 
-    return items.map(item => ({
+    return items.map((item: any) => ({
         id: item.id,
         rule: item.ruleSnapshot as unknown as AutomationRule,
         consequence: item.consequence as unknown as ConsequenceAssessment,
@@ -319,12 +319,34 @@ export async function executeAction(
             data: { status: 'executing' }
         });
 
-        // -------------------------------------------------------------
-        // IMPLEMENTATION: This is where we would trigger actual webhooks
-        // or send commands to the WebRTC signaling layer for agents.
-        // For now, we simulate success with a delay to prove durability.
-        // -------------------------------------------------------------
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (item.rule.action.type === 'run_script') {
+            const agent = await prisma.agentConnection.findFirst({
+                where: {
+                    workspaceId,
+                    status: 'ONLINE',
+                    ...(item.rule.action.targetAssetId ? { assetId: item.rule.action.targetAssetId } : {})
+                }
+            });
+
+            if (agent) {
+                await prisma.scriptExecution.create({
+                    data: {
+                        agentId: agent.id,
+                        assetId: agent.assetId,
+                        workspaceId,
+                        scriptName: item.rule.name,
+                        scriptBody: item.rule.action.message || 'echo "Reflex Auto-Execution Triggered"',
+                        language: 'bash',
+                        status: 'PENDING',
+                        createdBy: 'REFLEX_ENGINE',
+                    }
+                });
+            } else {
+                throw new Error('No online agents available to execute this action.');
+            }
+        } else {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
         // Log to audit trail
         await prisma.auditLog.create({

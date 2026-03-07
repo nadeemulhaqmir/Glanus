@@ -38,12 +38,12 @@ export const ASSET_CATEGORIES = {
     LAPTOP: { label: '💻 Laptop', value: 'LAPTOP' },
     DESKTOP: { label: '🖥️ Desktop', value: 'DESKTOP' },
     SERVER: { label: '🗄️ Server', value: 'SERVER' },
-    PHONE: { label: '📱 Phone', value: 'PHONE' },
+    MOBILE_DEVICE: { label: '📱 Mobile Device', value: 'MOBILE_DEVICE' },
     TABLET: { label: '📱 Tablet', value: 'TABLET' },
     MONITOR: { label: '🖥️ Monitor', value: 'MONITOR' },
     PRINTER: { label: '🖨️ Printer', value: 'PRINTER' },
     NETWORK: { label: '🌐 Network Device', value: 'NETWORK' },
-    ACCESSORY: { label: '🔌 Accessory', value: 'ACCESSORY' },
+    PERIPHERAL: { label: '🔌 Peripheral', value: 'PERIPHERAL' },
     OTHER: { label: '📦 Other', value: 'OTHER' },
 } as const;
 

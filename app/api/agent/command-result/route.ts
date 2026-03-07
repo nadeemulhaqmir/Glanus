@@ -4,6 +4,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 
+import { hashAgentToken } from '@/lib/security/agent-auth';
+
 // Validation schema
 const commandResultSchema = z.object({
     authToken: z.string(),
@@ -21,8 +23,9 @@ export async function POST(request: NextRequest) {
         const data = commandResultSchema.parse(body);
 
         // Verify agent auth
+        const hashedToken = hashAgentToken(data.authToken);
         const agent = await prisma.agentConnection.findUnique({
-            where: { authToken: data.authToken },
+            where: { authToken: hashedToken },
         });
 
         if (!agent) {

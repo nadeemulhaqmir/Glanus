@@ -57,11 +57,30 @@ export function MissionControl({ data, workspaceName, plan }: MissionControlProp
                     </p>
                 </div>
 
-                {/* Cmd+K hint */}
-                <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-surface-1 px-3 py-1.5 text-xs text-muted-foreground">
-                    <kbd className="command-kbd">⌘</kbd>
-                    <kbd className="command-kbd">K</kbd>
-                    <span>Quick Actions</span>
+                <div className="flex items-center gap-3">
+                    {/* Export Report Action */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const workspaceId = window.location.pathname.split('/workspaces/')[1]?.split('/')[0];
+                            if (workspaceId) {
+                                window.location.href = `/api/workspaces/${workspaceId}/reports?format=csv&include=inventory`;
+                            }
+                        }}
+                        className="hidden sm:flex items-center gap-2 rounded-lg bg-nerve/10 hover:bg-nerve/20 transition-colors border border-nerve/20 px-3 py-1.5 text-xs font-semibold text-nerve"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        Export Report (CSV)
+                    </button>
+
+                    {/* Cmd+K hint */}
+                    <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-surface-1 px-3 py-1.5 text-xs text-muted-foreground">
+                        <kbd className="command-kbd">⌘</kbd>
+                        <kbd className="command-kbd">K</kbd>
+                        <span>Quick Actions</span>
+                    </div>
                 </div>
             </div>
 

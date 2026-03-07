@@ -27,7 +27,7 @@ export class WebhookService {
     ): Promise<{ success: boolean; error?: string }> {
         let lastError: string | undefined;
 
-        for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+        for (let attempt = 0; attempt < this.maxRetries; attempt++) {
             try {
                 const result = await this.sendAttempt(url, payload, secret);
                 return { success: true };

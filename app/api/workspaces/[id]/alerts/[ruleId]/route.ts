@@ -22,7 +22,7 @@ export const GET = withErrorHandler(async (
 ) => {
     const { id: workspaceId, ruleId } = await context.params;
     const user = await requireAuth();
-    await requireWorkspaceAccess(workspaceId, user.id);
+    await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
     const alertRule = await prisma.alertRule.findFirst({
         where: { id: ruleId, workspaceId },

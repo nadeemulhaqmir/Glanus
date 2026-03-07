@@ -35,8 +35,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
     switch (operation) {
         case 'DELETE':
-            result = await prisma.asset.deleteMany({
+            result = await prisma.asset.updateMany({
                 where: { id: { in: assetIds } },
+                data: { deletedAt: new Date(), status: 'RETIRED' },
             });
             return apiSuccess({
                 message: `${result.count} asset(s) deleted successfully`,

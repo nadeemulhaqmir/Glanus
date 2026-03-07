@@ -111,7 +111,9 @@ export async function findBestPartner(
         }
 
         // 4. Availability (10 points max)
-        const utilizationRate = 1 - partner.availableSlots / partner.maxWorkspaces;
+        const utilizationRate = partner.maxWorkspaces > 0
+            ? 1 - partner.availableSlots / partner.maxWorkspaces
+            : 1; // fully utilized if no slots configured
         // Prefer partners with more available capacity
         breakdown.availability = (1 - utilizationRate) * 10;
 

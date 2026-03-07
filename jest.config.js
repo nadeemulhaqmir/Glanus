@@ -5,6 +5,13 @@ const createJestConfig = nextJest({
     dir: './',
 })
 
+// Integration test paths that require a running PostgreSQL database
+const DB_TEST_PATHS = [
+    '<rootDir>/__tests__/api/workspaces/',
+    '<rootDir>/__tests__/api/assets/',
+    '<rootDir>/__tests__/api/admin/',
+]
+
 // Add any custom config to be passed to Jest
 const customJestConfig = {
     setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
@@ -25,6 +32,8 @@ const customJestConfig = {
         '<rootDir>/.next/',
         '<rootDir>/e2e/',
         '<rootDir>/__tests__/setup/',
+        // Skip DB-dependent integration tests when no DATABASE_URL is configured
+        ...(process.env.DATABASE_URL ? [] : DB_TEST_PATHS),
     ],
     coverageThreshold: {
         global: {

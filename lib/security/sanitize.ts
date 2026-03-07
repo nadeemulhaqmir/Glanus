@@ -50,13 +50,13 @@ export function sanitizeURL(url: string): string | null {
  * Prevent path traversal attacks
  */
 export function sanitizePath(path: string): string | null {
-    // Remove any .. or leading /
-    const cleaned = path.replace(/\.\./g, '').replace(/^\/+/, '');
-
-    // Check for suspicious patterns
-    if (cleaned.includes('../') || cleaned.includes('..\\')) {
+    // Check for suspicious patterns BEFORE removing
+    if (path.includes('../') || path.includes('..\\')) {
         return null;
     }
+
+    // Remove leading slashes
+    const cleaned = path.replace(/^\/+/, '');
 
     return cleaned;
 }

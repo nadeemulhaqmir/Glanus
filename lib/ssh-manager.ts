@@ -203,7 +203,7 @@ export function validateHost(
 
         // Support wildcards like *.example.com
         if (allowedHost.startsWith('*.')) {
-            const domain = allowedHost.substring(2);
+            const domain = allowedHost.substring(1); // ".example.com" — keeps leading dot
             return host.endsWith(domain);
         }
 

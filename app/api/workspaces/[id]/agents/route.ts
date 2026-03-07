@@ -21,18 +21,49 @@ export const GET = withErrorHandler(async (
                     name: true,
                     model: true,
                     serialNumber: true,
-                },
-            },
+                }
+            }
         },
-        orderBy: { lastSeen: 'desc' },
+        orderBy: { lastSeen: 'desc' }
     });
 
-    const stats = {
-        total: agents.length,
-        online: agents.filter((a) => a.status === 'ONLINE').length,
-        offline: agents.filter((a) => a.status === 'OFFLINE').length,
-        error: agents.filter((a) => a.status === 'ERROR').length,
-    };
+    const activeVersions = await prisma.agentVersion.findMany({
+        where: { status: 'ACTIVE' }
+    });
 
-    return apiSuccess({ agents, stats });
+    const data = agents.map((agent: any) => {
+        const activeRelease = activeVersions.find((v: any) => v.platform === agent.platform);
+        const isOutdated = activeRelease ? agent.agentVersion !== activeRelease.version : false;
+
+        return {
+            id: agent.id,
+            status: agent.status,
+            platform: agent.platform,
+            hostname: agent.hostname,
+            agentVersion: agent.agentVersion,
+            isOutdated,
+            ipAddress: agent.ipAddress || null,
+            lastSeen: agent.lastSeen,
+            cpuUsage: agent.cpuUsage || null,
+            ramUsage: agent.ramUsage || null,
+            diskUsage: agent.diskUsage || null,
+            asset: agent.asset
+        };
+    });
+
+    // Calculate actual active stats (Online in last 10 minutes)
+    const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const onlineAgents = agents.filter((a: any) => a.status === 'ONLINE' && a.lastSeen > tenMinsAgo);
+    const offlineAgents = agents.filter((a: any) => a.status === 'OFFLINE' || a.lastSeen <= tenMinsAgo);
+    const errorAgents = agents.filter((a: any) => a.status === 'ERROR');
+
+    return apiSuccess({
+        agents: data,
+        stats: {
+            total: agents.length,
+            online: onlineAgents.length,
+            offline: offlineAgents.length,
+            error: errorAgents.length
+        }
+    });
 });

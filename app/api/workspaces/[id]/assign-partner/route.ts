@@ -59,27 +59,33 @@ export const POST = withErrorHandler(async (
         return apiError(404, 'No suitable partner found for your workspace.');
     }
 
-    const assignment = await prisma.partnerAssignment.create({
-        data: {
-            partnerId: bestMatch.partner.id,
-            workspaceId: workspace.id,
-            status: 'PENDING',
-            revenueSplit: 0.5,
-        },
-        include: {
-            partner: {
-                select: {
-                    id: true,
-                    companyName: true,
-                    bio: true,
-                    logo: true,
-                    certificationLevel: true,
-                    averageRating: true,
-                    totalReviews: true,
+    const [assignment] = await prisma.$transaction([
+        prisma.partnerAssignment.create({
+            data: {
+                partnerId: (bestMatch.partner as unknown as { id: string }).id,
+                workspaceId: workspace.id,
+                status: 'PENDING',
+                revenueSplit: 0.5,
+            },
+            include: {
+                partner: {
+                    select: {
+                        id: true,
+                        companyName: true,
+                        bio: true,
+                        logo: true,
+                        certificationLevel: true,
+                        averageRating: true,
+                        totalReviews: true,
+                    },
                 },
             },
-        },
-    });
+        }),
+        prisma.partner.update({
+            where: { id: (bestMatch.partner as unknown as { id: string }).id },
+            data: { availableSlots: { decrement: 1 } },
+        }),
+    ]);
 
     return apiSuccess({
         assignment,

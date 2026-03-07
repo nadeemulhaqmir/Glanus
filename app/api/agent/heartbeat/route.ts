@@ -3,6 +3,7 @@ import { logError } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { hashAgentToken } from '@/lib/security/agent-auth';
 
 // Validation schema
 const heartbeatSchema = z.object({
@@ -33,9 +34,10 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const data = heartbeatSchema.parse(body);
 
-        // Find agent by auth token
+        // Find agent by hashed auth token
+        const hashedToken = hashAgentToken(data.authToken);
         const agent = await prisma.agentConnection.findUnique({
-            where: { authToken: data.authToken },
+            where: { authToken: hashedToken },
             include: {
                 scripts: {
                     where: { status: 'PENDING' },

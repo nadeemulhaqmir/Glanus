@@ -40,14 +40,15 @@ impl CommandQueue {
 
         log::info!("Processing {} commands", commands.len());
 
-        // Process commands concurrently (up to 3 at a time)
-        let futures: Vec<_> = commands
-            .into_iter()
-            .map(|cmd| self.execute_and_report(cmd))
-            .collect();
+        use futures::StreamExt;
 
-        // Execute all with limited concurrency
-        let results = futures::future::join_all(futures).await;
+        // Process commands concurrently (up to 3 at a time)
+        let stream = futures::stream::iter(commands.into_iter())
+            .map(|cmd| self.execute_and_report(cmd))
+            .buffer_unordered(3);
+
+        // Execute all with strict concurrency limit
+        let results: Vec<_> = stream.collect().await;
 
         let success_count = results.iter().filter(|r| r.is_ok()).count();
         let error_count = results.len() - success_count;

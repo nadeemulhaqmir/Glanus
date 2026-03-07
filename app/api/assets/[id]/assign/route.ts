@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
 import { assignAssetSchema } from '@/lib/schemas/asset.schemas';
+import { validateRequest } from '@/lib/validation';
 
 // POST /api/assets/[id]/assign - Assign asset to user
 export const POST = withErrorHandler(async (
@@ -12,12 +13,7 @@ export const POST = withErrorHandler(async (
     const { id } = await context.params;
     const user = await requireAuth();
 
-    const body = await request.json();
-    const parsed = assignAssetSchema.safeParse(body);
-    if (!parsed.success) {
-        return apiError(400, parsed.error.errors[0].message);
-    }
-    const { userId, notes } = parsed.data;
+    const { userId, notes } = await validateRequest(request, assignAssetSchema);
 
     const asset = await prisma.asset.findFirst({
         where: {

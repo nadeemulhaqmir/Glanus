@@ -1,36 +1,48 @@
 'use client';
-import { csrfFetch } from '@/lib/api/csrfFetch';
 
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PageSpinner } from '@/components/ui/Spinner';
 import Link from 'next/link';
-import { getCategoryOptions, getStatusOptions } from '@/lib/constants/assetConstants';
+import { csrfFetch } from '@/lib/api/csrfFetch';
+import { PageSpinner } from '@/components/ui/Spinner';
+import { useToast } from '@/lib/toast';
 
-const categoryOptions = getCategoryOptions();
-const statusOptions = getStatusOptions();
+interface FieldDefinition {
+    id: string;
+    name: string;
+    label: string;
+    fieldType: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'JSON';
+    required: boolean;
+    defaultValue?: string;
+}
+
+interface AssetCategory {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string;
+    fieldDefinitions: FieldDefinition[];
+}
 
 export default function EditAssetPage({ params }: { params: Promise<{ id: string }> }) {
-    const [id, setId] = useState<string>('');
     const router = useRouter();
+    const { success, error: toastError } = useToast();
+
+    const [id, setId] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState('');
+
+    // Engine State
+    const [category, setCategory] = useState<AssetCategory | null>(null);
+    const [categoriesList, setCategoriesList] = useState<AssetCategory[]>([]); // needed if they want to change classes? (Usually prohibited but supported in backend)
 
     const [formData, setFormData] = useState({
         name: '',
-        category: categoryOptions[0].value,
-        manufacturer: '',
-        model: '',
-        serialNumber: '',
+        categoryId: '',
         status: 'AVAILABLE',
-        purchaseDate: '',
-        purchaseCost: '',
-        warrantyUntil: '',
-        location: '',
-        description: '',
-        tags: '',
     });
+
+    const [customFields, setCustomFields] = useState<Record<string, any>>({});
 
     // Unwrap params and fetch asset data
     useEffect(() => {
@@ -42,46 +54,87 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
 
     const fetchAsset = async (assetId: string) => {
         try {
-            const response = await csrfFetch(`/api/assets/${assetId}`);
-            if (!response.ok) {
-                throw new Error('Failed to load asset');
+            // 1. Fetch Engine Schemas just in case they change the Class type
+            const catRes = await csrfFetch(`/api/assets/categories`);
+            if (catRes.ok) {
+                const catData = await catRes.json();
+                setCategoriesList(catData.data || []);
             }
 
-            const asset = await response.json();
+            // 2. Fetch the specific Node
+            const response = await csrfFetch(`/api/assets/${assetId}`);
+            if (!response.ok) throw new Error('Failed to load asset');
 
-            // Pre-fill form with existing data
+            const result = await response.json();
+            const asset = result.data || result; // Backend inconsistency guard
+
+            setCategory(asset.category || null);
+
+            // 3. Pre-fill core form
             setFormData({
                 name: asset.name || '',
-                category: asset.category || categoryOptions[0].value,
-                manufacturer: asset.manufacturer || '',
-                model: asset.model || '',
-                serialNumber: asset.serialNumber || '',
+                categoryId: asset.categoryId || '',
                 status: asset.status || 'AVAILABLE',
-                purchaseDate: asset.purchaseDate ? asset.purchaseDate.split('T')[0] : '',
-                purchaseCost: asset.purchaseCost ? asset.purchaseCost.toString() : '',
-                warrantyUntil: asset.warrantyUntil ? asset.warrantyUntil.split('T')[0] : '',
-                location: asset.location || '',
-                description: asset.description || '',
-                tags: Array.isArray(asset.tags) ? asset.tags.join(', ') : '',
             });
 
+            // 4. Pre-fill Custom Mapping Data
+            const existingCustomState: Record<string, any> = {};
+
+            // Map the arrays (AssetFieldValue[]) out into dictionary mappings aligned against field definition 'names'.
+            if (asset.category?.fieldDefinitions && asset.fieldValues) {
+                asset.category.fieldDefinitions.forEach((def: FieldDefinition) => {
+                    // Find existing value in database array
+                    const record = asset.fieldValues.find((fv: any) => fv.fieldDefinitionId === def.id);
+                    if (record) {
+                        // Hydrate cast
+                        if (def.fieldType === 'BOOLEAN') existingCustomState[def.name] = record.value === 'true';
+                        else existingCustomState[def.name] = record.value;
+                    } else {
+                        // Fallbacks
+                        existingCustomState[def.name] = def.fieldType === 'BOOLEAN' ? false : '';
+                    }
+                });
+            }
+            setCustomFields(existingCustomState);
             setLoading(false);
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+
+        } catch (err: any) {
+            toastError('Failed to load Editor', err.message);
             setLoading(false);
         }
+    };
+
+    const handleCategoryChange = (newCategoryId: string) => {
+        const newCat = categoriesList.find(c => c.id === newCategoryId);
+        if (!newCat) return;
+
+        setCategory(newCat);
+        setFormData(prev => ({ ...prev, categoryId: newCategoryId }));
+
+        // Reset and map variables for the new class schema
+        const initialCustom: Record<string, any> = {};
+        newCat.fieldDefinitions.forEach(def => {
+            initialCustom[def.name] = def.defaultValue || '';
+            if (def.fieldType === 'BOOLEAN') initialCustom[def.name] = def.defaultValue === 'true';
+        });
+        setCustomFields(initialCustom);
+    }
+
+    const handleCustomFieldChange = (fieldName: string, value: any) => {
+        setCustomFields(prev => ({
+            ...prev,
+            [fieldName]: value
+        }));
     };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
-        setError('');
 
         try {
             const payload = {
                 ...formData,
-                purchaseCost: formData.purchaseCost ? parseFloat(formData.purchaseCost) : null,
-                tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+                customFields: customFields
             };
 
             const response = await csrfFetch(`/api/assets/${id}`, {
@@ -92,13 +145,15 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
 
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.error || 'Failed to update asset');
+                throw new Error(data.error || 'Failed to update asset node');
             }
 
-            const asset = await response.json();
-            router.push(`/assets/${asset.id}`);
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+            success('Changes Saved', 'Asset parameters updated successfully.');
+            router.push(`/assets/${id}`);
+            router.refresh(); // Forcing a server cache reload downstream
+
+        } catch (err: any) {
+            toastError('Update Failed', err.message);
             setSubmitting(false);
         }
     };
@@ -107,268 +162,146 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    if (loading) {
-        return <PageSpinner text="Loading asset..." />;
-    }
+    if (loading) return <PageSpinner text="Booting Dynamic Editor..." />;
 
     return (
-        <>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex items-center gap-4 mb-8">
+                <Link href={`/assets/${id}`} className="text-slate-400 hover:text-white transition-colors">
+                    <svg className="w-6 h-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M15 19l-7-7 7-7" />
+                    </svg>
+                </Link>
+                <div>
+                    <h1 className="text-3xl font-bold text-white">Edit Parameters</h1>
+                    <p className="text-slate-400 mt-1">Configure asset node details and custom tracking variables.</p>
+                </div>
+            </div>
 
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <Link
-                        href={`/assets/${id}`}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </Link>
-                    <div>
-                        <h1 className="text-3xl font-bold text-foreground">Edit Asset</h1>
-                        <p className="text-muted-foreground mt-1">
-                            Update asset information
-                        </p>
+            <form onSubmit={handleSubmit} className="space-y-6">
+
+                {/* 1. Core Platform Configuration */}
+                <div className="card">
+                    <h2 className="text-xl font-bold text-white mb-6 border-b border-border pb-4">1. Core Configuration</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Asset Name *</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.name}
+                                onChange={(e) => updateField('name', e.target.value)}
+                                className="input w-full"
+                                placeholder="Device name..."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Node Status</label>
+                            <select
+                                value={formData.status}
+                                onChange={(e) => updateField('status', e.target.value)}
+                                className="input w-full"
+                            >
+                                <option value="AVAILABLE">✅ Available</option>
+                                <option value="ASSIGNED">👤 Assigned</option>
+                                <option value="MAINTENANCE">🔧 In Maintenance</option>
+                                <option value="RETIRED">🛑 Retired</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-nerve mb-2">Engine Class</label>
+                            <select
+                                value={formData.categoryId}
+                                onChange={(e) => handleCategoryChange(e.target.value)}
+                                className="input w-full border-nerve/30 focus:border-nerve"
+                            >
+                                {categoriesList.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">Warning: Changing the Class will erase existing custom variables on Save.</p>
+                        </div>
                     </div>
                 </div>
 
-                {error && (
-                    <div className="card bg-health-critical/10 border-health-critical/20 mb-6">
-                        <div className="flex items-center gap-2 text-health-critical">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-sm font-medium">{error}</span>
-                        </div>
+                {/* 2. Dynamic Schema UI */}
+                {category && (
+                    <div className="card border-nerve/30">
+                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3 border-b border-border pb-4">
+                            <span>2. Custom Matrix Data</span>
+                            <span className="text-sm px-3 py-1 bg-nerve/20 text-nerve rounded-full">{category.icon} {category.name}</span>
+                        </h2>
+
+                        {category.fieldDefinitions.length === 0 ? (
+                            <p className="text-slate-500 italic">No custom tracking fields required for this Class.</p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {category.fieldDefinitions.map((def) => (
+                                    <div key={def.id} className={def.fieldType === 'JSON' ? 'md:col-span-2' : ''}>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            {def.label} {def.required && <span className="text-red-400">*</span>}
+                                        </label>
+
+                                        {def.fieldType === 'BOOLEAN' ? (
+                                            <div className="flex items-center gap-3 mt-3">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-5 h-5 rounded border-slate-700 text-nerve focus:ring-nerve"
+                                                    checked={customFields[def.name] === true || customFields[def.name] === 'true'}
+                                                    onChange={e => handleCustomFieldChange(def.name, e.target.checked)}
+                                                />
+                                                <span className="text-sm text-slate-400">Enable</span>
+                                            </div>
+                                        ) : def.fieldType === 'DATE' ? (
+                                            <input
+                                                type="date"
+                                                required={def.required}
+                                                className="input w-full"
+                                                value={customFields[def.name] || ''}
+                                                onChange={e => handleCustomFieldChange(def.name, e.target.value)}
+                                            />
+                                        ) : def.fieldType === 'JSON' ? (
+                                            <textarea
+                                                required={def.required}
+                                                className="input w-full h-32 font-mono text-xs"
+                                                placeholder='{"key": "value"}'
+                                                value={customFields[def.name] || ''}
+                                                onChange={e => handleCustomFieldChange(def.name, e.target.value)}
+                                            />
+                                        ) : (
+                                            <input
+                                                type={def.fieldType === 'NUMBER' ? 'number' : 'text'}
+                                                required={def.required}
+                                                className="input w-full"
+                                                placeholder={`Enter ${def.label}...`}
+                                                value={customFields[def.name] || ''}
+                                                onChange={e => handleCustomFieldChange(def.name, e.target.value)}
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Basic Information */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold text-foreground mb-6">Basic Information</h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-                                    Asset Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => updateField('name', e.target.value)}
-                                    className="input w-full"
-                                    placeholder="e.g., MacBook Pro 16-inch"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="category" className="block text-sm font-medium text-foreground mb-2">
-                                    Category <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="category"
-                                    required
-                                    value={formData.category}
-                                    onChange={(e) => updateField('category', e.target.value)}
-                                    className="input w-full"
-                                >
-                                    {categoryOptions.map(cat => (
-                                        <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label htmlFor="status" className="block text-sm font-medium text-foreground mb-2">
-                                    Status
-                                </label>
-                                <select
-                                    id="status"
-                                    value={formData.status}
-                                    onChange={(e) => updateField('status', e.target.value)}
-                                    className="input w-full"
-                                >
-                                    {statusOptions.map(status => (
-                                        <option key={status.value} value={status.value}>{status.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label htmlFor="manufacturer" className="block text-sm font-medium text-foreground mb-2">
-                                    Manufacturer
-                                </label>
-                                <input
-                                    type="text"
-                                    id="manufacturer"
-                                    value={formData.manufacturer}
-                                    onChange={(e) => updateField('manufacturer', e.target.value)}
-                                    className="input w-full"
-                                    placeholder="e.g., Apple, Dell, HP"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="model" className="block text-sm font-medium text-foreground mb-2">
-                                    Model
-                                </label>
-                                <input
-                                    type="text"
-                                    id="model"
-                                    value={formData.model}
-                                    onChange={(e) => updateField('model', e.target.value)}
-                                    className="input w-full"
-                                    placeholder="e.g., XPS 15, ThinkPad X1"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="serialNumber" className="block text-sm font-medium text-foreground mb-2">
-                                    Serial Number
-                                </label>
-                                <input
-                                    type="text"
-                                    id="serialNumber"
-                                    value={formData.serialNumber}
-                                    onChange={(e) => updateField('serialNumber', e.target.value)}
-                                    className="input w-full font-mono"
-                                    placeholder="e.g., C02XK1GYHJKL"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="location" className="block text-sm font-medium text-foreground mb-2">
-                                    Location
-                                </label>
-                                <input
-                                    type="text"
-                                    id="location"
-                                    value={formData.location}
-                                    onChange={(e) => updateField('location', e.target.value)}
-                                    className="input w-full"
-                                    placeholder="e.g., Office 3rd Floor"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
-                                    Description
-                                </label>
-                                <textarea
-                                    id="description"
-                                    value={formData.description}
-                                    onChange={(e) => updateField('description', e.target.value)}
-                                    rows={3}
-                                    className="input w-full"
-                                    placeholder="Additional details about this asset..."
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Purchase Information */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold text-foreground mb-6">Purchase Information</h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <label htmlFor="purchaseDate" className="block text-sm font-medium text-foreground mb-2">
-                                    Purchase Date
-                                </label>
-                                <input
-                                    type="date"
-                                    id="purchaseDate"
-                                    value={formData.purchaseDate}
-                                    onChange={(e) => updateField('purchaseDate', e.target.value)}
-                                    className="input w-full"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="purchaseCost" className="block text-sm font-medium text-foreground mb-2">
-                                    Purchase Cost
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                        $
-                                    </span>
-                                    <input
-                                        type="number"
-                                        id="purchaseCost"
-                                        value={formData.purchaseCost}
-                                        onChange={(e) => updateField('purchaseCost', e.target.value)}
-                                        className="input w-full pl-7"
-                                        placeholder="0.00"
-                                        step="0.01"
-                                        min="0"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="warrantyUntil" className="block text-sm font-medium text-foreground mb-2">
-                                    Warranty Until
-                                </label>
-                                <input
-                                    type="date"
-                                    id="warrantyUntil"
-                                    value={formData.warrantyUntil}
-                                    onChange={(e) => updateField('warrantyUntil', e.target.value)}
-                                    className="input w-full"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold text-foreground mb-6">Tags</h2>
-
-                        <div>
-                            <label htmlFor="tags" className="block text-sm font-medium text-foreground mb-2">
-                                Tags (comma-separated)
-                            </label>
-                            <input
-                                type="text"
-                                id="tags"
-                                value={formData.tags}
-                                onChange={(e) => updateField('tags', e.target.value)}
-                                className="input w-full"
-                                placeholder="e.g., executive, high-priority, remote-work"
-                            />
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Separate tags with commas. These help organize and filter assets.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-3">
-                        <Link href={`/assets/${id}`} className="btn-secondary">
-                            Cancel
-                        </Link>
-                        <button
-                            type="submit"
-                            disabled={submitting}
-                            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {submitting ? 'Saving...' : 'Save Changes'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </>
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 pt-4">
+                    <Link href={`/assets/${id}`} className="btn-secondary">
+                        Discard
+                    </Link>
+                    <button
+                        type="submit"
+                        disabled={submitting}
+                        className="btn-primary flex items-center gap-2"
+                    >
+                        {submitting ? <PageSpinner /> : 'Save Parameters'}
+                    </button>
+                </div>
+            </form>
+        </div>
     );
 }

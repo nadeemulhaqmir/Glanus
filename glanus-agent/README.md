@@ -1,143 +1,73 @@
-# Glanus Agent
+# React + TypeScript + Vite
 
-Cross-platform remote monitoring and management (RMM) agent built with Tauri and Rust.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Features
+Currently, two official plugins are available:
 
-- **System Monitoring**: CPU, RAM, Disk, Network, Processes
-- **Remote Execution**: PowerShell, Bash, Python scripts
-- **Auto-Updates**: SHA-256 verified updates with maintenance windows
-- **Secure Communication**: Auth tokens in OS keychain, HTTPS only
-- **Cross-Platform**: Windows, macOS, Linux
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Architecture
+## React Compiler
 
-```
-Frontend (Tauri Webview)
-  └── System Tray UI
-Backend (Rust)
-  ├── System Monitor (sysinfo)
-  ├── HTTP Client (reqwest)
-  ├── Script Executor
-  ├── Auto-Updater
-  └── Heartbeat Loop (60s)
-```
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Installation
+## Expanding the ESLint configuration
 
-Download installers from [Releases](https://github.com/your-org/glanus-agent/releases):
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-- **Windows**: `glanus-agent-{version}.msi`
-- **macOS**: `glanus-agent-{version}.pkg`
-- **Linux**: `glanus-agent_{version}_amd64.deb`
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-See [installers/](./installers/) for platform-specific documentation.
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-## Development
-
-### Prerequisites
-
-- Rust 1.70+
-- Node.js 18+ (for Tauri CLI)
-- Platform-specific:
-  - Windows: Visual Studio Build Tools
-  - macOS: Xcode Command Line Tools
-  - Linux: build-essential, libgtk-3-dev, libwebkit2gtk-4.0-dev
-
-### Setup
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.sh | sh
-
-# Install Tauri CLI
-cargo install tauri-cli --version "^2.0.0"
-
-# Clone repository
-git clone https://github.com/your-org/glanus-agent
-cd glanus-agent
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-### Build
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```bash
-cd src-tauri
-cargo build
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-### Run
-
-```bash
-cargo tauri dev
-```
-
-## Configuration
-
-Config location:
-- **Windows**: `%APPDATA%\Glanus\config.toml`
-- **macOS**: `~/Library/Application Support/Glanus/config.toml`
-- **Linux**: `~/.config/glanus/config.toml`
-
-Example:
-```toml
-[agent]
-version = "0.1.0"
-workspace_id = "workspace_123"
-registered = true
-
-[server]
-api_url = "https://api.glanus.com"
-heartbeat_interval = 60
-
-[monitoring]
-enabled = true
-interval = 10
-
-[updates]
-enabled = true
-check_interval = 86400
-auto_install = false
-```
-
-## Building Installers
-
-See [installers/](./installers/) directory for platform-specific build scripts.
-
-**Quick start**:
-```bash
-# Windows
-cd installers/windows && .\build.ps1 0.1.0
-
-# macOS
-cd installers/macos && ./build.sh 0.1.0
-
-# Linux
-cd installers/linux && ./build.sh 0.1.0
-```
-
-## API Endpoints
-
-The agent communicates with Glanus backend via:
-
-- `POST /api/agent/register` - Register with workspace
-- `POST /api/agent/heartbeat` - Send metrics, receive commands
-- `POST /api/agent/command-result` - Report script results
-- `POST /api/agent/check-update` - Check for updates
-
-## Security
-
-- Auth tokens stored in OS keychain (Windows Credential Manager, macOS Keychain, Linux Secret Service)
-- SHA-256 checksum verification for updates
-- HTTPS-only communication
-- Optional code signing (Windows, macOS)
-
-## License
-
-MIT
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [github.com/your-org/glanus-agent/issues](https://github.com/your-org/glanus-agent/issues)
-- Documentation: [docs.glanus.com](https://docs.glanus.com)
-- Email: support@glanus.com

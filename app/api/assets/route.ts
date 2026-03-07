@@ -93,26 +93,90 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
     const data = await validateRequest(request, createAssetSchema);
 
-    // Check for duplicate serial number
-    if (data.serialNumber) {
-        const existing = await prisma.asset.findUnique({
-            where: { serialNumber: data.serialNumber },
+    const workspaceId = (data as Record<string, unknown>).workspaceId as string | undefined;
+
+    // Check for duplicate serial number (workspace-scoped)
+    if (data.serialNumber && workspaceId) {
+        const existing = await prisma.asset.findFirst({
+            where: { serialNumber: data.serialNumber, workspaceId },
         });
         if (existing) {
-            return apiError(409, 'An asset with this serial number already exists');
+            return apiError(409, 'An asset with this serial number already exists in this workspace');
         }
     }
 
-    const workspaceId = (data as Record<string, unknown>).workspaceId as string | undefined;
     if (workspaceId) {
         await enforceQuota(workspaceId, 'assets');
+    }
+
+    // Verify Category Exists
+    const selectedCategory = await prisma.assetCategory.findUnique({
+        where: { id: data.categoryId },
+        include: { fieldDefinitions: true }
+    });
+
+    if (!selectedCategory) {
+        return apiError(404, 'The specified Asset Category does not exist.');
+    }
+
+    // Process Custom Fields Against Definitions
+    const fieldValuesPayload = [];
+    if (data.customFields && Object.keys(data.customFields).length > 0) {
+
+        // Polymorphic Helper
+        const mapValToRecord = (fieldType: string, val: any) => {
+            const recordParams: Record<string, any> = {};
+            switch (fieldType) {
+                case 'NUMBER': case 'DECIMAL': case 'CURRENCY':
+                    recordParams.valueNumber = Number(val);
+                    break;
+                case 'BOOLEAN':
+                    recordParams.valueBoolean = val === true || val === 'true';
+                    break;
+                case 'DATE': case 'DATETIME': case 'TIME':
+                    recordParams.valueDate = new Date(val);
+                    break;
+                case 'JSON': case 'ARRAY':
+                    try {
+                        recordParams.valueJson = typeof val === 'string' ? JSON.parse(val) : val;
+                    } catch {
+                        recordParams.valueString = String(val); // fallback
+                    }
+                    break;
+                default:
+                    recordParams.valueString = String(val);
+            }
+            return recordParams;
+        }
+
+        for (const def of selectedCategory.fieldDefinitions) {
+            const incomingValue = data.customFields[def.name];
+
+            if (def.isRequired && (!incomingValue || incomingValue.toString().trim() === '')) {
+                return apiError(400, `Missing required custom field: ${def.label}`);
+            }
+
+            if (incomingValue !== undefined && incomingValue !== null && incomingValue !== '') {
+                fieldValuesPayload.push({
+                    fieldDefinitionId: def.id,
+                    ...mapValToRecord(def.fieldType, incomingValue)
+                });
+            }
+        }
+    } else {
+        // Enforce required fields even if empty payload
+        const missingRequired = selectedCategory.fieldDefinitions.filter((def: any) => def.isRequired);
+        if (missingRequired.length > 0) {
+            return apiError(400, `Missing required custom field: ${missingRequired[0].label}`);
+        }
     }
 
     const asset = await prisma.asset.create({
         data: {
             workspaceId: workspaceId || '',
-            assetType: data.assetType || 'PHYSICAL',
+            assetType: data.assetType || 'DYNAMIC',
             name: data.name,
+            categoryId: data.categoryId,
             manufacturer: data.manufacturer || null,
             model: data.model || null,
             serialNumber: data.serialNumber || null,
@@ -125,56 +189,20 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
             assignedToId: data.assignedToId || null,
             tags: data.tags || [],
             qrCode: null,
+            fieldValues: {
+                create: fieldValuesPayload
+            }
         },
         include: {
-            physicalAsset: true,
-            digitalAsset: true,
+            category: true,
+            fieldValues: {
+                include: {
+                    fieldDefinition: true
+                }
+            },
             assignedTo: { select: { id: true, name: true, email: true } },
         },
     });
-
-    // Create type-specific record (legacy support)
-    if (data.assetType === 'PHYSICAL') {
-        await prisma.physicalAsset.create({
-            data: {
-                assetId: asset.id,
-                category: data.category as any, // Prisma enum
-                manufacturer: data.manufacturer || null,
-                model: data.model || null,
-                serialNumber: data.serialNumber || null,
-                processor: data.processor || null,
-                ram: data.ram ? parseInt(String(data.ram)) : null,
-                storage: data.storage ? parseInt(String(data.storage)) : null,
-                osVersion: data.osVersion || null,
-                macAddress: data.macAddress || null,
-                ipAddress: data.ipAddress || null,
-            },
-        });
-    } else if (data.assetType === 'DIGITAL') {
-        await prisma.digitalAsset.create({
-            data: {
-                assetId: asset.id,
-                category: data.category as any, // Prisma enum
-                version: data.version || null,
-                vendor: data.vendor || null,
-                licenseKey: data.licenseKey || null,
-                licenseType: data.licenseType as any || null, // Prisma enum
-                seatCount: data.seatCount ? parseInt(String(data.seatCount)) : null,
-                seatsUsed: data.seatsUsed ? parseInt(String(data.seatsUsed)) : 0,
-                subscriptionTier: data.subscriptionTier || null,
-                monthlyRecurringCost: data.monthlyRecurringCost ? parseFloat(String(data.monthlyRecurringCost)) : null,
-                renewalDate: data.renewalDate ? new Date(data.renewalDate) : null,
-                autoRenew: data.autoRenew || false,
-                host: data.host || null,
-                hostType: data.hostType as any || null, // Prisma enum
-                url: data.url || null,
-                sslExpiry: data.sslExpiry ? new Date(data.sslExpiry) : null,
-                connectionString: data.connectionString || null,
-                databaseSize: data.databaseSize ? parseInt(String(data.databaseSize)) : null,
-                installedOn: data.installedOn || [],
-            },
-        });
-    }
 
     // Generate QR code
     try {
@@ -188,25 +216,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         logError('QR code generation failed', qrError, { assetId: asset.id });
     }
 
-    await prisma.auditLog.create({
-        data: {
-            action: 'ASSET_CREATED',
-            resourceType: 'Asset',
-            resourceId: asset.id,
-            userId: user.id,
-            assetId: asset.id,
-            metadata: { assetType: asset.assetType, assetName: asset.name },
-        },
-    });
-
-    const completeAsset = await prisma.asset.findUnique({
-        where: { id: asset.id },
-        include: {
-            physicalAsset: true,
-            digitalAsset: true,
-            assignedTo: { select: { id: true, name: true, email: true } },
-        },
-    });
+    // Audit log handled by auditLog() service below
 
     if (workspaceId) {
         await auditLog({
@@ -215,9 +225,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
             action: 'asset.created',
             resourceType: 'Asset',
             resourceId: asset.id,
-            details: { assetType: asset.assetType, name: asset.name },
+            details: { assetType: asset.assetType, name: asset.name, category: selectedCategory.name },
         });
     }
 
-    return apiSuccess(completeAsset, undefined, 201);
+    return apiSuccess(asset, undefined, 201);
 });

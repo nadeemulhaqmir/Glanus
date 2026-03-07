@@ -81,6 +81,49 @@ jest.mock('@/lib/workspace/auditLog', () => ({
     auditLog: jest.fn(() => Promise.resolve()),
 }))
 
+// Mock workspace context (used by DashboardNav, WorkspaceSwitcher, etc.)
+jest.mock('@/lib/workspace/context', () => ({
+    useWorkspace: jest.fn(() => ({
+        workspace: {
+            id: 'test-workspace-id',
+            name: 'Test Workspace',
+            slug: 'test-workspace',
+            primaryColor: '#2563eb',
+            accentColor: '#00E5C8',
+            userRole: 'OWNER',
+            subscription: { plan: 'TEAM', status: 'ACTIVE', maxAssets: 100, aiCreditsUsed: 0, maxAICreditsPerMonth: 1000 },
+            _count: { assets: 5, members: 3 },
+        },
+        workspaces: [],
+        isLoading: false,
+        error: null,
+        switchWorkspace: jest.fn(),
+        refetchWorkspaces: jest.fn(),
+    })),
+    useWorkspacePermission: jest.fn(() => true),
+    WorkspaceProvider: ({ children }) => children,
+}))
+
+// Mock toast context (used by ForgotPasswordPage, etc.)
+jest.mock('@/lib/toast', () => ({
+    useToast: jest.fn(() => ({
+        toasts: [],
+        addToast: jest.fn(),
+        removeToast: jest.fn(),
+        success: jest.fn(),
+        error: jest.fn(),
+        warning: jest.fn(),
+        info: jest.fn(),
+    })),
+    ToastProvider: ({ children }) => children,
+    toast: {
+        success: jest.fn(),
+        error: jest.fn(),
+        warning: jest.fn(),
+        info: jest.fn(),
+    },
+}))
+
 // Mock global fetch/Request/Response for jsdom component tests ONLY.
 // In @jest-environment node, these globals exist natively and must not be
 // overridden — NextRequest/NextResponse depend on the real implementations.

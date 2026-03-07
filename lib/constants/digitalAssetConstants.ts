@@ -5,7 +5,7 @@ export const DIGITAL_ASSET_CATEGORIES = {
     SAAS_SUBSCRIPTION: 'SAAS_SUBSCRIPTION',
     DATABASE: 'DATABASE',
     DEVELOPMENT_TOOL: 'DEVELOPMENT_TOOL',
-    SECURITY_SOFTWARE: 'SECURITY_SOFTWARE',
+    SECURITY_DIGITAL: 'SECURITY_DIGITAL',
     LICENSE: 'LICENSE',
     API_SERVICE: 'API_SERVICE',
     CLOUD_STORAGE: 'CLOUD_STORAGE',
@@ -20,6 +20,7 @@ export const LICENSE_TYPES = {
     TRIAL: 'TRIAL',
     OPEN_SOURCE: 'OPEN_SOURCE',
     FREEMIUM: 'FREEMIUM',
+    ENTERPRISE: 'ENTERPRISE',
 } as const;
 
 export const HOST_TYPES = {
@@ -38,7 +39,7 @@ export const getDigitalAssetCategoryLabel = (category: string): string => {
         SAAS_SUBSCRIPTION: '☁️ SaaS Subscription',
         DATABASE: '🗄️ Database',
         DEVELOPMENT_TOOL: '🛠️ Development Tool',
-        SECURITY_SOFTWARE: '🔒 Security Software',
+        SECURITY_DIGITAL: '🔒 Security Software',
         LICENSE: '🔑 License',
         API_SERVICE: '🔌 API Service',
         CLOUD_STORAGE: '📦 Cloud Storage',
@@ -63,6 +64,7 @@ export const getLicenseTypeLabel = (type: string): string => {
         TRIAL: '⏱️ Trial',
         OPEN_SOURCE: '🆓 Open Source',
         FREEMIUM: '🎁 Freemium',
+        ENTERPRISE: '🏢 Enterprise',
     };
     return labels[type] || type;
 };
@@ -107,7 +109,7 @@ export const isInstalledOnRelevant = (category: string): boolean => {
     const relevant = [
         'DESKTOP_APP',
         'MOBILE_APP',
-        'SECURITY_SOFTWARE',
+        'SECURITY_DIGITAL',
     ];
     return relevant.includes(category);
 };

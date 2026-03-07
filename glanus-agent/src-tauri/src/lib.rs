@@ -8,6 +8,7 @@ mod heartbeat;
 mod executor;
 mod commands;
 mod updater;
+mod input;
 
 use std::sync::Mutex;
 use monitor::{SystemMonitor, SystemMetrics};
@@ -74,6 +75,13 @@ async fn register_agent(asset_id: String, state: State<'_, AppState>) -> Result<
 fn is_registered(state: State<AppState>) -> Result<bool, String> {
     let config = state.config.lock().map_err(|e| e.to_string())?;
     Ok(RegistrationManager::is_registered(&config))
+}
+
+#[tauri::command]
+fn get_auth_token() -> Result<String, String> {
+    storage::SecureStorage::get_token()
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Agent not registered".to_string())
 }
 
 #[tauri::command]
@@ -234,13 +242,16 @@ pub fn run() {
             monitor: Mutex::new(monitor),
             config: Mutex::new(config),
         })
+        .manage(input::InputState::new())
         .invoke_handler(tauri::generate_handler![
             get_metrics,
             get_config,
             update_config,
             register_agent,
             is_registered,
-            show_metrics_window
+            get_auth_token,
+            show_metrics_window,
+            input::simulate_input
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

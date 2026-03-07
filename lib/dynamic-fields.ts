@@ -1,5 +1,5 @@
 // FieldType enum values matching Prisma schema
-type FieldType = 'STRING' | 'TEXT' | 'NUMBER' | 'DECIMAL' | 'BOOLEAN' | 'DATE' | 'DATETIME' | 'TIME' | 'EMAIL' | 'URL' | 'IP_ADDRESS' | 'MAC_ADDRESS' | 'SELECT' | 'MULTI_SELECT' | 'ASSET_REF' | 'USER_REF' | 'JSON' | 'ARRAY' | 'COLOR' | 'PHONE' | 'FILE' | 'IMAGE' | 'VIDEO' | 'CURRENCY' | 'PERCENTAGE' | 'DURATION' | 'UUID' | 'REGEX' | 'CODE';
+type FieldType = 'STRING' | 'TEXT' | 'NUMBER' | 'DECIMAL' | 'BOOLEAN' | 'DATE' | 'DATETIME' | 'TIME' | 'EMAIL' | 'URL' | 'IP_ADDRESS' | 'MAC_ADDRESS' | 'SELECT' | 'MULTI_SELECT' | 'ASSET_REF' | 'USER_REF' | 'JSON' | 'ARRAY' | 'COLOR' | 'PHONE' | 'FILE' | 'IMAGE' | 'VIDEO' | 'CURRENCY';
 import { prisma } from './db';
 
 /**

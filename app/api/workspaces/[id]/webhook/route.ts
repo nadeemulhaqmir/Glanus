@@ -17,7 +17,7 @@ export const GET = withErrorHandler(async (
 ) => {
     const { id: workspaceId } = await context.params;
     const user = await requireAuth();
-    await requireWorkspaceAccess(workspaceId, user.id);
+    await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
     const webhook = await prisma.notificationWebhook.findFirst({
         where: { workspaceId },

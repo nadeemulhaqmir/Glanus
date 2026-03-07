@@ -166,12 +166,13 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
     const performDeleteAsset = async () => {
 
         try {
-            const response = await csrfFetch(`/api/dynamic-assets/${assetId}`, {
+            const response = await csrfFetch(`/api/assets/${assetId}`, {
                 method: 'DELETE',
             });
 
             if (!response.ok) throw new Error('Failed to delete asset');
 
+            toastSuccess('Asset Deleted', 'Asset successfully moved to recycle bin.');
             router.push('/assets');
         } catch (err: unknown) {
             toastError('Error', err instanceof Error ? err.message : 'An unexpected error occurred');

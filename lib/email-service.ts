@@ -211,23 +211,35 @@ export class EmailService {
   async getWorkspaceAdminEmails(workspaceId: string): Promise<string[]> {
     const { prisma } = await import('@/lib/db');
 
-    const members = await prisma.workspaceMember.findMany({
-      where: {
-        workspaceId,
-        role: {
-          in: ['OWNER', 'ADMIN'],
-        },
-      },
-      include: {
-        user: {
-          select: {
-            email: true,
+    const [members, workspace] = await Promise.all([
+      prisma.workspaceMember.findMany({
+        where: {
+          workspaceId,
+          role: {
+            in: ['OWNER', 'ADMIN'],
           },
         },
-      },
-    });
+        include: {
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        include: {
+          owner: { select: { email: true } },
+        },
+      }),
+    ]);
 
-    return members.map((m) => m.user.email).filter(Boolean);
+    const emails = members.map((m) => m.user.email).filter(Boolean);
+    if (workspace?.owner?.email && !emails.includes(workspace.owner.email)) {
+      emails.unshift(workspace.owner.email);
+    }
+    return emails;
   }
 }
 

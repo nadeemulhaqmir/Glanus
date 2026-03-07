@@ -152,14 +152,22 @@ export class NotificationOrchestrator {
             },
         });
 
-        const results: NotificationResult[] = [];
+        // Process workspaces concurrently (bounded by Promise.allSettled)
+        const settled = await Promise.allSettled(
+            workspaces.map(w => this.processWorkspace(w.id))
+        );
 
-        for (const workspace of workspaces) {
-            const result = await this.processWorkspace(workspace.id);
-            results.push(result);
-        }
-
-        return results;
+        return settled.map((result, i) =>
+            result.status === 'fulfilled'
+                ? result.value
+                : {
+                    workspaceId: workspaces[i].id,
+                    alertsTriggered: 0,
+                    emailsSent: 0,
+                    webhooksSent: 0,
+                    errors: [result.reason?.message || 'Unknown error'],
+                }
+        );
     }
 }
 

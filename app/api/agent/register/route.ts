@@ -3,7 +3,7 @@ import { logError } from '@/lib/logger';
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
-import crypto from 'crypto';
+import { generateAgentToken } from '@/lib/security/agent-auth';
 
 // Validation schema
 const registerSchema = z.object({
@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
         });
 
         if (existingAgent) {
-            // Update existing agent
+            // Re-registration: generate new token
+            const { plaintext, hash } = generateAgentToken();
             const updatedAgent = await prisma.agentConnection.update({
                 where: { id: existingAgent.id },
                 data: {
@@ -56,12 +57,13 @@ export async function POST(request: NextRequest) {
                     platform: data.platform,
                     lastSeen: new Date(),
                     status: 'ONLINE',
+                    authToken: hash,
                 },
             });
 
             return apiSuccess({
                 agentId: updatedAgent.id,
-                authToken: updatedAgent.authToken,
+                authToken: plaintext, // return new plaintext only once
                 config: {
                     metricsInterval: 300, // 5 minutes
                     heartbeatInterval: 60, // 1 minute
@@ -69,8 +71,8 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Generate secure auth token
-        const authToken = crypto.randomBytes(32).toString('hex');
+        // Generate secure auth token (store hash, return plaintext once)
+        const { plaintext, hash } = generateAgentToken();
 
         // Create new agent connection
         const agent = await prisma.agentConnection.create({
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
                 hostname: data.hostname,
                 ipAddress: data.ipAddress,
                 macAddress: data.macAddress,
-                authToken,
+                authToken: hash,
                 status: 'ONLINE',
             },
         });
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
 
         return apiSuccess({
             agentId: agent.id,
-            authToken: agent.authToken,
+            authToken: plaintext, // return plaintext only on initial registration
             config: {
                 metricsInterval: 300, // 5 minutes
                 heartbeatInterval: 60, // 1 minute

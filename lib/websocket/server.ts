@@ -93,7 +93,13 @@ export class WebSocketServer {
                 logInfo(`[WebSocket] Socket ${socket.id} leaving session ${sessionId}`);
 
                 socket.leave(sessionId);
-                this.sessions.get(sessionId)?.delete(socket.id);
+                const participants = this.sessions.get(sessionId);
+                if (participants) {
+                    participants.delete(socket.id);
+                    if (participants.size === 0) {
+                        this.sessions.delete(sessionId);
+                    }
+                }
 
                 socket.to(sessionId).emit('session:participant:left', {
                     socketId: socket.id,
@@ -161,6 +167,9 @@ export class WebSocketServer {
                 this.sessions.forEach((participants, sessionId) => {
                     if (participants.has(socket.id)) {
                         participants.delete(socket.id);
+                        if (participants.size === 0) {
+                            this.sessions.delete(sessionId);
+                        }
                         socket.to(sessionId).emit('session:participant:left', {
                             socketId: socket.id,
                             timestamp: new Date().toISOString(),

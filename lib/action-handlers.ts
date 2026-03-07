@@ -241,22 +241,27 @@ async function handleScriptAction(
             const child = spawn(command, cmdArgs, {
                 cwd: workingDirectory || process.cwd(),
                 env: sanitizedEnv as NodeJS.ProcessEnv,
-                timeout: timeout * 1000, // Convert to milliseconds
             });
 
             let stdout = '';
             let stderr = '';
             let killed = false;
+            let fallbackKillTimeout: NodeJS.Timeout | null = null;
 
-            // Set up timeout
-            const timeoutId = setTimeout(() => {
+            const executeKillSequence = () => {
+                if (killed) return;
                 killed = true;
                 child.kill('SIGTERM');
-                setTimeout(() => {
+                fallbackKillTimeout = setTimeout(() => {
                     if (!child.killed) {
                         child.kill('SIGKILL'); // Force kill if SIGTERM didn't work
                     }
                 }, 5000);
+            };
+
+            // Set up timeout
+            const timeoutId = setTimeout(() => {
+                executeKillSequence();
             }, timeout * 1000);
 
             // Capture stdout
@@ -265,9 +270,8 @@ async function handleScriptAction(
                 if (!isOutputSizeExceeded(stdout.length + chunk.length)) {
                     stdout += chunk;
                 } else if (!killed) {
-                    killed = true;
-                    child.kill('SIGTERM');
                     clearTimeout(timeoutId);
+                    executeKillSequence();
                 }
             });
 
@@ -282,6 +286,7 @@ async function handleScriptAction(
             // Handle process exit
             child.on('close', (code, signal) => {
                 clearTimeout(timeoutId);
+                if (fallbackKillTimeout) clearTimeout(fallbackKillTimeout);
 
                 if (killed) {
                     resolve({
@@ -365,8 +370,13 @@ async function handleWebhookAction(
         };
 
         if (secret) {
-            // Add signature for webhook verification
-            headers['X-Webhook-Signature'] = secret;
+            // Add HMAC signature for webhook verification
+            const crypto = await import('crypto');
+            const signature = crypto
+                .createHmac('sha256', secret)
+                .update(JSON.stringify(payload))
+                .digest('hex');
+            headers['X-Webhook-Signature'] = signature;
         }
 
         const response = await fetch(webhookUrl, {

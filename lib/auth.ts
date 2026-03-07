@@ -198,7 +198,7 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 // Successful login - reset attempts
-                resetLoginAttempts(email);
+                await resetLoginAttempts(email);
 
                 // Log successful login
                 await logSuccessfulLogin(user.id, email, ipAddress, userAgent);
@@ -210,9 +210,9 @@ export const authOptions: NextAuthOptions = {
                         resourceType: 'User',
                         resourceId: user.id,
                         userId: user.id,
+                        ipAddress,
                         metadata: {
                             loginTime: new Date().toISOString(),
-                            ipAddress,
                             userAgent,
                         },
                     },

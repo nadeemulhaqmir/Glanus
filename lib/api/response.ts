@@ -14,7 +14,7 @@ import { NextResponse } from 'next/server';
 export function apiSuccess<T>(
     data: T,
     meta?: Record<string, unknown>,
-    status: number = 200
+    status = 200
 ) {
     return NextResponse.json(
         {
