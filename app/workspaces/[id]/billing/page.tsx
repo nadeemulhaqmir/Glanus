@@ -196,8 +196,8 @@ export default function BillingPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Billing</h1>
-                    <p className="text-slate-400">Manage your subscription and payment methods</p>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Billing</h1>
+                    <p className="text-muted-foreground">Manage your subscription and payment methods</p>
                 </div>
                 {currentPlan !== 'FREE' && (
                     <Button onClick={handleManageBilling} variant="secondary" disabled={isLoading}>
@@ -234,7 +234,7 @@ export default function BillingPage() {
                             <CreditCard className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-semibold text-white">
+                            <h2 className="text-xl font-semibold text-foreground">
                                 {PLANS.find(p => p.id === currentPlan)?.name || 'Free'} Plan
                             </h2>
                             <p className="text-sm text-slate-500">
@@ -297,9 +297,9 @@ export default function BillingPage() {
                                     </div>
                                 )}
 
-                                <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                                <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
                                 <div className="mt-2 mb-4">
-                                    <span className="text-3xl font-bold text-white">{plan.price}</span>
+                                    <span className="text-3xl font-bold text-foreground">{plan.price}</span>
                                     <span className="text-slate-500 text-sm">{plan.priceLabel}</span>
                                 </div>
 
@@ -363,13 +363,13 @@ function UsageMeter({
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Icon className="w-4 h-4" />
                     {label}
                 </div>
                 <span className={clsx(
                     'text-sm font-medium',
-                    isOverLimit ? 'text-health-critical' : isNearLimit ? 'text-health-warn' : 'text-slate-400'
+                    isOverLimit ? 'text-health-critical' : isNearLimit ? 'text-health-warn' : 'text-muted-foreground'
                 )}>
                     {current.toLocaleString()}{unit ? ` ${unit}` : ''} / {limit.toLocaleString()}{unit ? ` ${unit}` : ''}
                 </span>

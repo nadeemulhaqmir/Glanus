@@ -20,7 +20,7 @@ export default function PartnersError({
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-health-critical/10">
                     <AlertTriangle className="h-7 w-7 text-health-critical" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
+                <h2 className="text-xl font-bold text-foreground mb-2">Something went wrong</h2>
                 <p className="text-sm text-slate-400 mb-6">
                     {error.message || 'An unexpected error occurred in the partner portal.'}
                 </p>

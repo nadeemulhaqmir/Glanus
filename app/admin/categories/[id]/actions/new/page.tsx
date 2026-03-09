@@ -135,7 +135,7 @@ export default function NewActionPage({ params }: { params: Promise<{ id: string
                     </div>
 
                     <div className="pb-6 border-b border-slate-800">
-                        <h3 className="text-lg font-semibold text-white mb-4">Configuration</h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Configuration</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Handler Type</label>

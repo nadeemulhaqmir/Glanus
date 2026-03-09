@@ -83,7 +83,7 @@ export default function NewCategoryPage() {
                         <ArrowLeft size={20} />
                         Back to Categories
                     </Link>
-                    <h1 className="text-3xl font-bold text-white ">Create New Category</h1>
+                    <h1 className="text-3xl font-bold text-foreground ">Create New Category</h1>
                 </div>
 
 

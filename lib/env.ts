@@ -16,7 +16,6 @@ const productionRequiredEnvVars = [
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
     'CSRF_SECRET',
-    'SENTRY_DSN',
 ] as const;
 
 interface EnvValidationResult {

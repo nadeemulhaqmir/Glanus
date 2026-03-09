@@ -109,7 +109,7 @@ export default function EditFieldPage({ params }: { params: Promise<{ id: string
                     <ArrowLeft size={20} />
                     Back to Fields
                 </Link>
-                <h1 className="text-3xl font-bold text-white">Edit Field</h1>
+                <h1 className="text-3xl font-bold text-foreground">Edit Field</h1>
             </div>
 
             {error && (

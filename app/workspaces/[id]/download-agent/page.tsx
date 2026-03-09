@@ -97,8 +97,8 @@ export default function DownloadAgentPage() {
                 {/* Header */}
                 <div className="mb-8 text-center">
                     <div className="text-6xl mb-4">📡</div>
-                    <h1 className="text-4xl font-bold text-white mb-2">Deploy Glanus Agent</h1>
-                    <p className="text-lg text-slate-400">
+                    <h1 className="text-4xl font-bold text-foreground mb-2">Deploy Glanus Agent</h1>
+                    <p className="text-lg text-muted-foreground">
                         Generate 1-click deployment scripts to onboard new agents.
                     </p>
                 </div>
@@ -156,8 +156,8 @@ export default function DownloadAgentPage() {
                     </div>
                 ) : (
                     <div className="rounded-xl border border-nerve/30 bg-nerve/5 backdrop-blur-sm p-8 mb-8 animate-in fade-in zoom-in duration-300">
-                        <h2 className="text-2xl font-semibold text-white mb-2">Deployment Script Generated</h2>
-                        <p className="text-slate-400 mb-6">Paste this command into your target machine's {platform === 'windows' ? 'Administrator PowerShell' : 'Terminal'}. It will silently download the agent and authenticate it to this Workspace.</p>
+                        <h2 className="text-2xl font-semibold text-foreground mb-2">Deployment Script Generated</h2>
+                        <p className="text-muted-foreground mb-6">Paste this command into your target machine's {platform === 'windows' ? 'Administrator PowerShell' : 'Terminal'}. It will silently download the agent and authenticate it to this Workspace.</p>
 
                         <div className="relative group">
                             <pre className="bg-[#0D1117] text-slate-300 p-4 rounded-xl font-mono text-sm overflow-x-auto whitespace-pre-wrap break-all border border-slate-800">
@@ -175,15 +175,27 @@ export default function DownloadAgentPage() {
                             </button>
                         </div>
 
-                        <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 py-4 px-6 bg-slate-900/50 rounded-lg border border-slate-800">
+                        <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 py-4 px-6 bg-surface-1 rounded-lg border border-border">
                             <div className="text-sm">
-                                <p className="text-slate-400"><span className="text-white font-medium">Auth Token:</span> {downloadInfo.preAuthToken}</p>
-                                <p className="text-slate-500 text-xs mt-1">Expires in 7 days</p>
+                                <p className="text-muted-foreground">
+                                    <span className="text-foreground font-medium">Auth Token:</span>{' '}
+                                    <span className="font-mono">
+                                        {copied ? downloadInfo.preAuthToken : '•'.repeat(Math.min(downloadInfo.preAuthToken.length, 32))}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCopied(prev => !prev)}
+                                        className="ml-2 text-nerve hover:underline text-xs"
+                                    >
+                                        {copied ? 'Hide' : 'Reveal'}
+                                    </button>
+                                </p>
+                                <p className="text-muted-foreground/70 text-xs mt-1">Expires in 7 days</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={triggerManualDownload}
-                                className="px-4 py-2 text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-lg whitespace-nowrap"
+                                className="px-4 py-2 text-sm font-semibold bg-surface-2 hover:bg-surface-3 text-foreground rounded-lg whitespace-nowrap"
                             >
                                 Download Binary Manually
                             </button>

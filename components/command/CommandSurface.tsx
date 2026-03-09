@@ -25,14 +25,52 @@ interface AICommandResult {
     requiresConfirmation?: boolean;
 }
 
+interface SearchAsset {
+    id: string;
+    name: string;
+    assetType: string;
+    status: string;
+    serialNumber: string | null;
+    category: { name: string } | null;
+}
+
+interface SearchAgent {
+    id: string;
+    hostname: string;
+    platform: string;
+    status: string;
+    ipAddress: string | null;
+    asset: { id: string; name: string };
+}
+
+interface SearchInsight {
+    id: string;
+    title: string;
+    type: string;
+    severity: string | null;
+    confidence: number | null;
+    acknowledged: boolean;
+    createdAt: string;
+    asset: { id: string; name: string } | null;
+}
+
+interface SearchResults {
+    assets: SearchAsset[];
+    agents: SearchAgent[];
+    insights: SearchInsight[];
+}
+
 export function CommandSurface() {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const [aiResult, setAiResult] = useState<AICommandResult | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
     const pathname = usePathname();
     const { workspace } = useWorkspace();
@@ -135,14 +173,47 @@ export function CommandSurface() {
         );
     }, [commands, query]);
 
+    // Debounced live entity search
+    useEffect(() => {
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+        const trimmed = query.trim();
+        if (trimmed.length < 2 || !workspaceId) {
+            setSearchResults(null);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        searchTimerRef.current = setTimeout(async () => {
+            try {
+                const res = await csrfFetch(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent(trimmed)}&limit=5`);
+                if (res.ok) {
+                    const json = await res.json();
+                    setSearchResults(json.data || null);
+                }
+            } catch {
+                setSearchResults(null);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+
+        return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+    }, [query, workspaceId]);
+
+    // Count total entity results for keyboard nav
+    const entityResultCount = (searchResults?.assets?.length || 0) + (searchResults?.agents?.length || 0) + (searchResults?.insights?.length || 0);
+    const totalSelectableCount = filteredCommands.length + entityResultCount;
+
     // Determine if input looks like a natural language query (not a simple keyword match)
-    const isNaturalLanguage = query.trim().split(' ').length >= 3 && filteredCommands.length === 0;
+    const isNaturalLanguage = query.trim().split(' ').length >= 3 && filteredCommands.length === 0 && entityResultCount === 0;
 
     // Reset active index when filter changes
     useEffect(() => {
         setActiveIndex(0);
         setAiResult(null);
-    }, [filteredCommands.length]);
+    }, [filteredCommands.length, entityResultCount]);
 
     // Keyboard shortcut to open
     useEffect(() => {
@@ -212,10 +283,31 @@ export function CommandSurface() {
     }, [query, workspaceId, pathname, router, isProcessing]);
 
     // Handle keyboard navigation within the list
+    // Build a flat handler array for keyboard navigation across both commands and entity results
+    const entityHandlers = React.useMemo(() => {
+        const handlers: (() => void)[] = [];
+        if (searchResults?.assets) {
+            for (const a of searchResults.assets) {
+                handlers.push(() => { router.push(`/assets/${a.id}`); setOpen(false); });
+            }
+        }
+        if (searchResults?.agents) {
+            for (const ag of searchResults.agents) {
+                handlers.push(() => { router.push(`/workspaces/${workspaceId}/agents`); setOpen(false); });
+            }
+        }
+        if (searchResults?.insights) {
+            for (const ins of searchResults.insights) {
+                handlers.push(() => { router.push(`/workspaces/${workspaceId}/notifications`); setOpen(false); });
+            }
+        }
+        return handlers;
+    }, [searchResults, workspaceId, router]);
+
     const handleInputKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setActiveIndex(prev => Math.min(prev + 1, filteredCommands.length - 1));
+            setActiveIndex(prev => Math.min(prev + 1, totalSelectableCount - 1));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setActiveIndex(prev => Math.max(prev - 1, 0));
@@ -223,18 +315,21 @@ export function CommandSurface() {
             e.preventDefault();
 
             // If it looks like natural language, send to AI
-            if (isNaturalLanguage || filteredCommands.length === 0) {
+            if (isNaturalLanguage || totalSelectableCount === 0) {
                 processAICommand();
                 return;
             }
 
-            const item = filteredCommands[activeIndex];
-            if (item) {
-                item.handler();
-                setOpen(false);
+            // Check if selecting a command or an entity result
+            if (activeIndex < filteredCommands.length) {
+                const item = filteredCommands[activeIndex];
+                if (item) { item.handler(); setOpen(false); }
+            } else {
+                const entityIndex = activeIndex - filteredCommands.length;
+                if (entityHandlers[entityIndex]) entityHandlers[entityIndex]();
             }
         }
-    }, [filteredCommands, activeIndex, isNaturalLanguage, processAICommand]);
+    }, [filteredCommands, activeIndex, isNaturalLanguage, processAICommand, totalSelectableCount, entityHandlers]);
 
     // Scroll active item into view
     useEffect(() => {
@@ -308,10 +403,10 @@ export function CommandSurface() {
 
                 {/* Results */}
                 <div className="command-list scrollbar-thin" ref={listRef}>
-                    {filteredCommands.length === 0 && !aiResult ? (
+                    {filteredCommands.length === 0 && entityResultCount === 0 && !aiResult ? (
                         <div className="px-6 py-8 text-center">
-                            {isProcessing ? (
-                                <p className="text-sm text-muted-foreground">Processing your request...</p>
+                            {isProcessing || isSearching ? (
+                                <p className="text-sm text-muted-foreground">Searching...</p>
                             ) : (
                                 <>
                                     <p className="text-sm text-muted-foreground">
@@ -325,7 +420,7 @@ export function CommandSurface() {
                         </div>
                     ) : (
                         <>
-                            {/* Group by category */}
+                            {/* Static commands grouped by category */}
                             {(['navigation', 'action', 'query'] as const).map(category => {
                                 const items = filteredCommands.filter(c => c.category === category);
                                 if (items.length === 0) return null;
@@ -369,6 +464,120 @@ export function CommandSurface() {
                                     </div>
                                 );
                             })}
+
+                            {/* ── Live Entity Search Results ── */}
+                            {(() => {
+                                let entityIdx = filteredCommands.length;
+                                return (
+                                    <>
+                                        {/* Assets */}
+                                        {searchResults?.assets && searchResults.assets.length > 0 && (
+                                            <div>
+                                                <div className="px-6 py-2 text-xs font-medium text-nerve uppercase tracking-wider flex items-center gap-1.5">
+                                                    <ServerIcon /> Assets
+                                                    {isSearching && <span className="h-2 w-2 animate-pulse rounded-full bg-nerve" />}
+                                                </div>
+                                                {searchResults.assets.map((asset) => {
+                                                    const idx = entityIdx++;
+                                                    return (
+                                                        <div
+                                                            key={`asset-${asset.id}`}
+                                                            data-index={idx}
+                                                            data-active={idx === activeIndex}
+                                                            className="command-item"
+                                                            onClick={() => { router.push(`/assets/${asset.id}`); setOpen(false); }}
+                                                            onMouseEnter={() => setActiveIndex(idx)}
+                                                        >
+                                                            <span className="text-muted-foreground shrink-0"><ServerIcon /></span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-sm font-medium">{asset.name}</div>
+                                                                <div className="text-xs text-muted-foreground truncate">
+                                                                    {asset.category?.name || asset.assetType} · {asset.status}
+                                                                    {asset.serialNumber ? ` · S/N ${asset.serialNumber}` : ''}
+                                                                </div>
+                                                            </div>
+                                                            <span className={`text-2xs px-1.5 py-0.5 rounded font-medium ${asset.status === 'AVAILABLE' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                                asset.status === 'ASSIGNED' ? 'bg-blue-500/10 text-blue-400' :
+                                                                    'bg-slate-500/10 text-slate-400'
+                                                                }`}>{asset.status}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Agents */}
+                                        {searchResults?.agents && searchResults.agents.length > 0 && (
+                                            <div>
+                                                <div className="px-6 py-2 text-xs font-medium text-cortex uppercase tracking-wider flex items-center gap-1.5">
+                                                    <CpuIcon /> Agents
+                                                </div>
+                                                {searchResults.agents.map((agent) => {
+                                                    const idx = entityIdx++;
+                                                    return (
+                                                        <div
+                                                            key={`agent-${agent.id}`}
+                                                            data-index={idx}
+                                                            data-active={idx === activeIndex}
+                                                            className="command-item"
+                                                            onClick={() => { router.push(`/workspaces/${workspaceId}/agents`); setOpen(false); }}
+                                                            onMouseEnter={() => setActiveIndex(idx)}
+                                                        >
+                                                            <span className="text-muted-foreground shrink-0"><CpuIcon /></span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-sm font-medium">{agent.hostname}</div>
+                                                                <div className="text-xs text-muted-foreground truncate">
+                                                                    {agent.platform} · {agent.asset?.name || 'Unlinked'}
+                                                                    {agent.ipAddress ? ` · ${agent.ipAddress}` : ''}
+                                                                </div>
+                                                            </div>
+                                                            <span className={`text-2xs px-1.5 py-0.5 rounded font-medium ${agent.status === 'ONLINE' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                                agent.status === 'OFFLINE' ? 'bg-red-500/10 text-red-400' :
+                                                                    'bg-amber-500/10 text-amber-400'
+                                                                }`}>{agent.status}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* AI Insights */}
+                                        {searchResults?.insights && searchResults.insights.length > 0 && (
+                                            <div>
+                                                <div className="px-6 py-2 text-xs font-medium text-oracle uppercase tracking-wider flex items-center gap-1.5">
+                                                    <SparkleIcon /> Oracle Insights
+                                                </div>
+                                                {searchResults.insights.map((insight) => {
+                                                    const idx = entityIdx++;
+                                                    return (
+                                                        <div
+                                                            key={`insight-${insight.id}`}
+                                                            data-index={idx}
+                                                            data-active={idx === activeIndex}
+                                                            className="command-item"
+                                                            onClick={() => { router.push(`/workspaces/${workspaceId}/notifications`); setOpen(false); }}
+                                                            onMouseEnter={() => setActiveIndex(idx)}
+                                                        >
+                                                            <span className="text-oracle shrink-0"><SparkleIcon /></span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-sm font-medium">{insight.title}</div>
+                                                                <div className="text-xs text-muted-foreground truncate">
+                                                                    {insight.type} · {insight.asset?.name || 'Workspace'}
+                                                                    {insight.confidence ? ` · ${(insight.confidence * 100).toFixed(0)}% conf.` : ''}
+                                                                </div>
+                                                            </div>
+                                                            <span className={`text-2xs px-1.5 py-0.5 rounded font-medium ${insight.severity === 'CRITICAL' ? 'bg-red-500/10 text-red-400' :
+                                                                insight.severity === 'WARNING' ? 'bg-amber-500/10 text-amber-400' :
+                                                                    'bg-blue-500/10 text-blue-400'
+                                                                }`}>{insight.severity || 'INFO'}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </>
                     )}
                 </div>
@@ -461,3 +670,12 @@ function CreditCardIcon() {
         </svg>
     );
 }
+
+function SparkleIcon() {
+    return (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+        </svg>
+    );
+}
+

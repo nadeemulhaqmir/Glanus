@@ -11,7 +11,7 @@ export default function DashboardError({
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 p-8">
             <div className="rounded-xl border border-health-critical/20 bg-health-critical/5 p-8 text-center max-w-lg">
                 <div className="mb-4 text-4xl">⚠️</div>
-                <h2 className="mb-2 text-xl font-semibold text-white">
+                <h2 className="mb-2 text-xl font-semibold text-foreground">
                     Something went wrong
                 </h2>
                 <p className="mb-6 text-sm text-zinc-400">

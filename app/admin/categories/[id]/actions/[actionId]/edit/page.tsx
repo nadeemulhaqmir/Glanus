@@ -109,7 +109,7 @@ export default function EditActionPage({ params }: { params: Promise<{ id: strin
                     <ArrowLeft size={20} />
                     Back to Actions
                 </Link>
-                <h1 className="text-3xl font-bold text-white">Edit Action</h1>
+                <h1 className="text-3xl font-bold text-foreground">Edit Action</h1>
             </div>
 
             {error && (
@@ -121,7 +121,7 @@ export default function EditActionPage({ params }: { params: Promise<{ id: strin
             <form onSubmit={handleSubmit} className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
                 <div className="space-y-6">
                     <div className="pb-6 border-b border-slate-800">
-                        <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Basic Information</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Name *</label>
@@ -165,7 +165,7 @@ export default function EditActionPage({ params }: { params: Promise<{ id: strin
                     </div>
 
                     <div className="pb-6 border-b border-slate-800">
-                        <h3 className="text-lg font-semibold text-white mb-4">Configuration</h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-4">Configuration</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Handler Type</label>

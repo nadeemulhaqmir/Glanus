@@ -96,7 +96,7 @@ export default function AdminPartnersPage() {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">Partner Management</h1>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Partner Management</h1>
                     <p className="text-slate-400">Manage partner applications, verifications, and status</p>
                 </div>
 

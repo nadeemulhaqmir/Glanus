@@ -11,6 +11,10 @@ export const GET = withErrorHandler(async (
     const user = await requireAuth();
     await requireWorkspaceAccess(workspaceId, user.id);
 
+    // Parse limit from query params (default 100, max 200)
+    const url = new URL(request.url);
+    const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '100')));
+
     // Fetch unified event streams concurrently
     const [auditLogs, aiInsights] = await Promise.all([
         prisma.auditLog.findMany({
@@ -20,7 +24,7 @@ export const GET = withErrorHandler(async (
                 asset: { select: { name: true } }
             },
             orderBy: { createdAt: 'desc' },
-            take: 50
+            take: limit
         }),
         prisma.aIInsight.findMany({
             where: { workspaceId },
@@ -28,40 +32,50 @@ export const GET = withErrorHandler(async (
                 asset: { select: { name: true } }
             },
             orderBy: { createdAt: 'desc' },
-            take: 20
+            take: limit
         }),
     ]);
 
-    // Normalize and unify streams into a single Notification array
+    // Normalize into unified BaseNotification shape matching frontend interface
     const notifications = [
         ...auditLogs.map((log: any) => ({
             id: log.id,
-            type: 'audit',
-            action: log.action,
-            resourceType: log.resourceType,
-            resourceId: log.resourceId,
-            actor: log.user?.name || log.user?.email || 'System',
-            assetName: log.asset?.name || null,
-            metadata: log.metadata,
-            createdAt: log.createdAt.toISOString()
+            type: 'AUDIT_LOG' as const,
+            title: log.action,
+            description: log.resourceType
+                ? `${log.resourceType} ${log.resourceId ? `(${log.resourceId.slice(0, 8)}...)` : ''}`
+                : 'System event',
+            severity: 'INFO' as const,
+            createdAt: log.createdAt.toISOString(),
+            metadata: {
+                actor: log.user?.name || log.user?.email || 'System',
+                assetName: log.asset?.name || null,
+                resourceType: log.resourceType,
+                resourceId: log.resourceId,
+                ...(typeof log.metadata === 'object' && log.metadata ? log.metadata : {})
+            },
         })),
         ...aiInsights.map((insight: any) => ({
             id: insight.id,
-            type: 'insight',
-            action: `AI Insight: ${insight.title}`,
-            resourceType: insight.type,
-            resourceId: insight.assetId,
-            actor: 'ORACLE / NERVE',
-            assetName: insight.asset?.name || null,
-            metadata: { severity: insight.severity, confidence: insight.confidence },
-            createdAt: insight.createdAt.toISOString()
+            type: 'AI_INSIGHT' as const,
+            title: insight.title,
+            description: insight.description,
+            severity: (insight.severity || 'INFO') as 'INFO' | 'WARNING' | 'CRITICAL',
+            confidence: insight.confidence,
+            createdAt: insight.createdAt.toISOString(),
+            metadata: {
+                insightType: insight.type,
+                assetName: insight.asset?.name || null,
+                assetId: insight.assetId,
+                ...(typeof insight.metadata === 'object' && insight.metadata ? insight.metadata : {})
+            },
         }))
     ];
 
-    // Sort chronologically descending
+    // Sort chronologically descending and apply limit
     notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return apiSuccess({
-        notifications: notifications.slice(0, 100) // Keep the UI feed snappy 
+        notifications: notifications.slice(0, limit)
     });
 });

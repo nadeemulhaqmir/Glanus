@@ -128,7 +128,7 @@ export default function RemoteSessionsPage() {
             {showNewSession && (
                 <div className="mb-6 rounded-xl border border-nerve/30 bg-nerve/5 p-4 animate-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-semibold text-white">Select an asset to connect to</h3>
+                        <h3 className="text-sm font-semibold text-foreground">Select an asset to connect to</h3>
                         <button type="button" onClick={() => setShowNewSession(false)} className="text-slate-400 hover:text-white">
                             <X size={16} />
                         </button>

@@ -126,7 +126,7 @@ export default function EditCategoryPage({ params }: { params: Promise<{ id: str
                     <ArrowLeft size={20} />
                     Back to Categories
                 </Link>
-                <h1 className="text-3xl font-bold text-white">Edit Category</h1>
+                <h1 className="text-3xl font-bold text-foreground">Edit Category</h1>
             </div>
 
             {error && (

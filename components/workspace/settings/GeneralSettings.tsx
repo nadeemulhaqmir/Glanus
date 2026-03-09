@@ -51,8 +51,8 @@ export default function GeneralSettings({ workspace }: { workspace: Workspace })
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-medium text-white">General Settings</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-lg font-medium text-foreground">General Settings</h2>
+                <p className="text-sm text-muted-foreground">
                     Update your workspace's basic information.
                 </p>
             </div>
@@ -116,8 +116,8 @@ export default function GeneralSettings({ workspace }: { workspace: Workspace })
 
             <div className="mt-12 space-y-4 max-w-xl border-t border-slate-800 pt-8">
                 <div>
-                    <h3 className="text-lg font-medium text-white">Storage & Files</h3>
-                    <p className="text-sm text-slate-500">
+                    <h3 className="text-lg font-medium text-foreground">Storage & Files</h3>
+                    <p className="text-sm text-muted-foreground">
                         Upload files to your workspace cache. This consumes your storage quota.
                     </p>
                 </div>

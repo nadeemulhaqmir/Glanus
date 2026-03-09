@@ -154,7 +154,7 @@ export default function WorkspacePartnerPage() {
                     >
                         ← Back to Workspace
                     </button>
-                    <h1 className="text-3xl font-bold text-white">Partner Management</h1>
+                    <h1 className="text-3xl font-bold text-foreground">Partner Management</h1>
                 </div>
 
                 {!assignment ? (
@@ -162,7 +162,7 @@ export default function WorkspacePartnerPage() {
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-8 text-center">
                         <div className="mb-6">
                             <div className="text-6xl mb-4">🤝</div>
-                            <h2 className="text-2xl font-semibold text-white mb-2">No Partner Assigned</h2>
+                            <h2 className="text-2xl font-semibold text-foreground mb-2">No Partner Assigned</h2>
                             <p className="text-slate-400">
                                 Get matched with a certified partner to help manage this workspace
                             </p>
@@ -202,9 +202,9 @@ export default function WorkspacePartnerPage() {
                                         />
                                     )}
                                     <div>
-                                        <h2 className="text-2xl font-semibold text-white">{assignment.partner.companyName}</h2>
+                                        <h2 className="text-2xl font-semibold text-foreground">{assignment.partner.companyName}</h2>
                                         <div className="flex items-center space-x-3 mt-1">
-                                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm font-semibold">
+                                            <span className="px-2 py-1 bg-purple-500/15 text-purple-400 rounded text-sm font-semibold">
                                                 {assignment.partner.certificationLevel}
                                             </span>
                                             {assignment.partner.averageRating && (

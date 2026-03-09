@@ -116,18 +116,18 @@ enum SubscriptionStatus {
 // ============================================
 
 enum PartnerCertificationLevel {
-  BRONZE    // Entry level, up to 10 workspaces
-  SILVER    // Advanced, up to 50 workspaces
-  GOLD      // Expert, up to 200 workspaces
-  PLATINUM  // Top tier, unlimited
+  BRONZE // Entry level, up to 10 workspaces
+  SILVER // Advanced, up to 50 workspaces
+  GOLD // Expert, up to 200 workspaces
+  PLATINUM // Top tier, unlimited
 }
 
 enum PartnerStatus {
-  PENDING    // Application submitted
-  VERIFIED   // Background check + certs verified
-  ACTIVE     // Can accept assignments
-  SUSPENDED  // Temporarily inactive
-  BANNED     // Permanently removed
+  PENDING // Application submitted
+  VERIFIED // Background check + certs verified
+  ACTIVE // Can accept assignments
+  SUSPENDED // Temporarily inactive
+  BANNED // Permanently removed
 }
 
 enum ExamLevel {
@@ -144,12 +144,12 @@ enum ExamStatus {
 }
 
 enum AssignmentStatus {
-  PENDING    // Assigned, workspace notified
-  ACCEPTED   // Partner accepted
-  ACTIVE     // Currently servicing
-  COMPLETED  // Assignment ended
-  REJECTED   // Partner declined
-  CANCELLED  // Workspace cancelled
+  PENDING // Assigned, workspace notified
+  ACCEPTED // Partner accepted
+  ACTIVE // Currently servicing
+  COMPLETED // Assignment ended
+  REJECTED // Partner declined
+  CANCELLED // Workspace cancelled
 }
 
 enum PayoutStatus {
@@ -203,47 +203,48 @@ enum AlertSeverity {
 // ============================================
 
 model Workspace {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  slug        String   @unique
-  description String?  @db.Text
+  slug        String  @unique
+  description String? @db.Text
   logo        String?
-  
+
   // Branding
   primaryColor String? @default("#3B82F6")
   accentColor  String? @default("#10B981")
-  
+
   // Settings
   settings Json? // Flexible settings object
-  
+
   // Stripe billing is managed via the Subscription relation
-  
+
   // Owner
   ownerId String
   owner   User   @relation("WorkspaceOwner", fields: [ownerId], references: [id])
-  
+
   // Relations
   members      WorkspaceMember[]
   invitations  WorkspaceInvitation[]
   assets       Asset[]
   locations    Location[]
   subscription Subscription?
-  
+
   // Partner Assignment (Glanus 2.0 Phase 2)
   partnerAssignment PartnerAssignment? @relation("WorkspacePartnerAssignment")
- 
+
   // Agent RMM (Glanus 2.0 Phase 3)
-  agentConnections  AgentConnection[]  @relation("WorkspaceAgents")
-  scriptExecutions  ScriptExecution[]  @relation("WorkspaceScripts")
-  alertRules        AlertRule[]        @relation("WorkspaceAlertRules")
-  webhooks          NotificationWebhook[] @relation("WorkspaceWebhooks")
-  auditLogs         AuditLog[]
-  actionQueueItems  ActionQueueItem[]
-  aiInsights        AIInsight[]
-  
+  agentConnections AgentConnection[]     @relation("WorkspaceAgents")
+  scriptExecutions ScriptExecution[]     @relation("WorkspaceScripts")
+  alertRules       AlertRule[]           @relation("WorkspaceAlertRules")
+  webhooks         NotificationWebhook[] @relation("WorkspaceWebhooks")
+  auditLogs        AuditLog[]
+  actionQueueItems ActionQueueItem[]
+  aiInsights       AIInsight[]
+  mdmProfiles      MdmProfile[]          @relation("WorkspaceMdmProfiles")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([slug])
   @@index([ownerId])
 }
@@ -255,9 +256,9 @@ model WorkspaceMember {
   userId      String
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   role        WorkspaceRole @default(MEMBER)
-  
+
   joinedAt DateTime @default(now())
-  
+
   @@unique([workspaceId, userId])
   @@index([workspaceId])
   @@index([userId])
@@ -273,76 +274,76 @@ model WorkspaceInvitation {
   status      InvitationStatus @default(PENDING)
   invitedBy   String
   inviter     User             @relation("SentInvitations", fields: [invitedBy], references: [id])
-  
+
   expiresAt  DateTime
   acceptedAt DateTime?
   createdAt  DateTime  @default(now())
-  
+
   @@index([workspaceId])
   @@index([email])
   @@index([token])
 }
 
 model Subscription {
-  id          String   @id @default(cuid())
-  workspaceId String   @unique
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  
+
   // Plan
   plan   SubscriptionPlan   @default(FREE)
   status SubscriptionStatus @default(ACTIVE)
-  
+
   // Billing
   stripeCustomerId     String? @unique
   stripeSubscriptionId String? @unique
-  
+
   // Usage Tracking
   aiCreditsUsed Int @default(0)
   storageUsedMB Int @default(0)
-  
+
   // Limits (based on plan)
   maxAssets            Int @default(5)
   maxAICreditsPerMonth Int @default(100)
   maxStorageMB         Int @default(1024)
-  
+
   // Billing Cycle
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
-  
+
   // Partner (Phase 2 - placeholder for now)
   assignedPartnerId String?
   // assignedPartner   Partner? @relation(fields: [assignedPartnerId], references: [id])
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([workspaceId])
 }
 
 // Location model (Phase 4 - placeholder for workspace relation)
 model Location {
-  id          String  @id @default(cuid())
+  id          String     @id @default(cuid())
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  
-  name     String
-  type     String? // OFFICE, DATA_CENTER, REMOTE, WAREHOUSE
-  address  String? @db.Text
-  city     String?
-  region   String?
-  country  String?
-  
+
+  name    String
+  type    String? // OFFICE, DATA_CENTER, REMOTE, WAREHOUSE
+  address String? @db.Text
+  city    String?
+  region  String?
+  country String?
+
   // Network (Phase 4)
-  networkCIDR  String?
-  vpnEndpoint  String?
-  
+  networkCIDR String?
+  vpnEndpoint String?
+
   // Coordinates
   latitude  Float?
   longitude Float?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([workspaceId])
 }
 
@@ -356,7 +357,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Onboarding tracking (Week 2)
-  onboardingCompleted Boolean  @default(false)
+  onboardingCompleted Boolean @default(false)
 
   // Workspace relations (Glanus 2.0)
   ownedWorkspaces      Workspace[]           @relation("WorkspaceOwner")
@@ -380,22 +381,22 @@ model User {
 }
 
 model Asset {
-  id             String      @id @default(cuid())
-  assetType      AssetType   @default(PHYSICAL)
-  name           String
-  manufacturer   String?
-  model          String?
-  serialNumber   String?     @unique
-  status         AssetStatus @default(AVAILABLE)
-  location       String?
-  description    String?     @db.Text
-  purchaseDate   DateTime?
-  purchaseCost   Float?
-  warrantyUntil  DateTime?
-  tags           String[]
-  qrCode         String?     @db.Text
-  assignedToId   String?
-  assignedTo     User?       @relation(fields: [assignedToId], references: [id])
+  id            String      @id @default(cuid())
+  assetType     AssetType   @default(PHYSICAL)
+  name          String
+  manufacturer  String?
+  model         String?
+  serialNumber  String?     @unique
+  status        AssetStatus @default(AVAILABLE)
+  location      String?
+  description   String?     @db.Text
+  purchaseDate  DateTime?
+  purchaseCost  Float?
+  warrantyUntil DateTime?
+  tags          String[]
+  qrCode        String?     @db.Text
+  assignedToId  String?
+  assignedTo    User?       @relation(fields: [assignedToId], references: [id])
 
   // Workspace (Glanus 2.0) — required for multi-tenant isolation
   workspaceId String
@@ -419,15 +420,18 @@ model Asset {
   remoteSessions    RemoteSession[]
   auditLogs         AuditLog[]
   aiInsights        AIInsight[]
-  
+
   // Phase 3: Agent RMM
-  agentConnection AgentConnection? @relation("AssetAgent")
-  agentMetrics    AgentMetric[]    @relation("AssetMetrics")
+  agentConnection  AgentConnection?  @relation("AssetAgent")
+  agentMetrics     AgentMetric[]     @relation("AssetMetrics")
   scriptExecutions ScriptExecution[] @relation("AssetScripts")
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  deletedAt         DateTime?
+
+  // Phase 12: MDM
+  mdmAssignments MdmAssignment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([status])
   @@index([assignedToId])
@@ -539,12 +543,12 @@ model RemoteSession {
   notes String?
 
   // WebRTC Signaling fields
-  offer          Json?
-  answer         Json?
-  iceCandidates  Json?     // Array of ICE candidates
-  
+  offer         Json?
+  answer        Json?
+  iceCandidates Json? // Array of ICE candidates
+
   // Connection Quality
-  quality        String?   @default("high")
+  quality        String? @default("high")
   averageLatency Float?
   averageFPS     Float?
   metadata       Json?
@@ -563,26 +567,26 @@ model RemoteSession {
 // ============================================
 
 model ActionQueueItem {
-  id           String   @id @default(cuid())
-  workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  
-  ruleId       String
-  ruleName     String
-  
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  ruleId   String
+  ruleName String
+
   // Persisted JSON objects of the runtime state
   ruleSnapshot Json
   consequence  Json
-  
-  status       String   // pending, approved, executing, completed, rejected, failed
-  
-  triggeredAt  DateTime @default(now())
-  executedAt   DateTime?
-  result       String?  @db.Text
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+
+  status String // pending, approved, executing, completed, rejected, failed
+
+  triggeredAt DateTime  @default(now())
+  executedAt  DateTime?
+  result      String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workspaceId])
   @@index([status])
 }
@@ -593,8 +597,8 @@ model AuditLog {
   workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId       String?
   user         User?      @relation(fields: [userId], references: [id])
-  action       String     // e.g., "workspace.updated", "member.invited"
-  resourceType String?    // e.g., "asset", "member"
+  action       String // e.g., "workspace.updated", "member.invited"
+  resourceType String? // e.g., "asset", "member"
   resourceId   String?
   assetId      String?
   asset        Asset?     @relation(fields: [assetId], references: [id])
@@ -743,6 +747,7 @@ model AssetCategory {
   fieldDefinitions  AssetFieldDefinition[]
   actionDefinitions AssetActionDefinition[]
   assets            Asset[]                 @relation("AssetCategory")
+  mdmAssignments    MdmAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -938,32 +943,32 @@ model AssetRelationship {
 
 model Partner {
   id String @id @default(cuid())
-  
+
   // Linked to User Account
   userId String @unique
   user   User   @relation("PartnerProfile", fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Company Info
   companyName    String
   businessNumber String? // Tax ID / EIN
   website        String?
   phone          String?
-  
+
   // Profile
   bio        String? @db.Text
   logo       String? // Logo URL
   coverImage String?
-  
+
   // Certification
   certificationLevel PartnerCertificationLevel @default(BRONZE)
   certifiedAt        DateTime?
   examsCompleted     PartnerExam[]
-  
+
   // Status
   status     PartnerStatus @default(PENDING)
   verifiedAt DateTime?
   verifiedBy String? // Admin who verified
-  
+
   // Location & Service Area
   address       String?
   city          String?
@@ -972,34 +977,34 @@ model Partner {
   timezone      String?
   serviceRadius Int? // Miles they'll travel
   remoteOnly    Boolean @default(false)
-  
+
   // Specializations (JSON arrays)
   industries     Json? // ["Healthcare", "Finance", ...]
   certifications Json? // External certs: CompTIA, Cisco, etc.
   languages      String[] @default(["en"])
-  
+
   // Capacity & Availability
   maxWorkspaces  Int     @default(10) // Based on cert level
   availableSlots Int     @default(10) // Remaining capacity
   acceptingNew   Boolean @default(true)
-  
+
   // Assignments
   assignments PartnerAssignment[]
-  
+
   // Earnings
-  stripeAccountId String?  @unique // Stripe Connect account
-  stripeOnboarded Boolean  @default(false)
-  totalEarnings   Decimal  @default(0) @db.Decimal(10, 2)
+  stripeAccountId String?         @unique // Stripe Connect account
+  stripeOnboarded Boolean         @default(false)
+  totalEarnings   Decimal         @default(0) @db.Decimal(10, 2)
   payouts         PartnerPayout[]
-  
+
   // Ratings (denormalized for performance)
   averageRating Decimal? @db.Decimal(3, 2) // 0.00 - 5.00
   totalReviews  Int      @default(0)
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([status])
   @@index([certificationLevel])
   @@index([city, region, country])
@@ -1008,80 +1013,80 @@ model Partner {
 }
 
 model PartnerExam {
-  id        String     @id @default(cuid())
+  id        String  @id @default(cuid())
   partnerId String
-  partner   Partner    @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
   level  ExamLevel
   status ExamStatus
-  
+
   // Exam Data
   questions    Json // Array of question IDs
   answers      Json // User's answers
   score        Int // Percentage (0-100)
   passingScore Int  @default(80)
-  
+
   // Timing
   startedAt   DateTime  @default(now())
   completedAt DateTime?
   timeLimit   Int       @default(60) // Minutes
-  
+
   createdAt DateTime @default(now())
-  
+
   @@index([partnerId, level])
   @@index([status])
 }
 
 model ExamQuestion {
   id String @id @default(cuid())
-  
+
   level    ExamLevel
   category String // "Networking", "Security", "Hardware", ...
-  
+
   question      String  @db.Text
   options       Json // ["Option A", "Option B", ...]
   correctAnswer Int // Index of correct option
   explanation   String? @db.Text
-  
+
   difficulty Int     @default(1) // 1-5
   isActive   Boolean @default(true)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([level, isActive])
   @@index([category])
 }
 
 model PartnerAssignment {
   id String @id @default(cuid())
-  
+
   // Partner
   partnerId String
   partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  
+
   // Workspace (one-to-one)
   workspaceId String    @unique // One workspace can only have one partner at a time
   workspace   Workspace @relation("WorkspacePartnerAssignment", fields: [workspaceId], references: [id], onDelete: Cascade)
-  
+
   // Status
   status      AssignmentStatus @default(PENDING)
   assignedAt  DateTime         @default(now())
   acceptedAt  DateTime?
   completedAt DateTime?
-  
+
   // Revenue Share
   revenueSplit  Decimal @default(0.50) @db.Decimal(3, 2) // 50%
   totalEarnings Decimal @default(0) @db.Decimal(10, 2)
-  
+
   // Rating (workspace rates partner)
-  rating  Int?     // 1-5 stars
-  review  String?  @db.Text
+  rating  Int? // 1-5 stars
+  review  String?   @db.Text
   ratedAt DateTime?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@unique([partnerId, workspaceId])
   @@index([partnerId, status])
   @@index([workspaceId])
@@ -1092,28 +1097,28 @@ model PartnerPayout {
   id        String  @id @default(cuid())
   partnerId String
   partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  
+
   // Payout Details
   amount      Decimal  @db.Decimal(10, 2)
   currency    String   @default("USD")
   periodStart DateTime
   periodEnd   DateTime
-  
+
   // Stripe
-  stripePayoutId String?       @unique
-  status         PayoutStatus  @default(PENDING)
-  
+  stripePayoutId String?      @unique
+  status         PayoutStatus @default(PENDING)
+
   // Failure Info
   failureReason String?
   retryCount    Int     @default(0)
-  
+
   // Metadata
   workspaceCount      Int // How many workspaces contributed
   subscriptionDetails Json // Breakdown by workspace
-  
+
   createdAt DateTime  @default(now())
   paidAt    DateTime?
-  
+
   @@index([partnerId, status])
   @@index([periodStart, periodEnd])
   @@index([status])
@@ -1125,47 +1130,47 @@ model PartnerPayout {
 
 model AgentConnection {
   id String @id @default(cuid())
-  
+
   // Linked Asset (one agent per asset)
   assetId String @unique
   asset   Asset  @relation("AssetAgent", fields: [assetId], references: [id], onDelete: Cascade)
-  
+
   // Workspace
   workspaceId String
   workspace   Workspace @relation("WorkspaceAgents", fields: [workspaceId], references: [id], onDelete: Cascade)
-  
+
   // Agent Info
   agentVersion String
   platform     AgentPlatform
   hostname     String
   ipAddress    String?
   macAddress   String?
-  
+
   // Authentication
-  authToken  String  @unique // Secure token for agent-backend auth
-  lastSeen   DateTime @default(now())
-  status     AgentStatus @default(INSTALLING)
-  
+  authToken String      @unique // Secure token for agent-backend auth
+  lastSeen  DateTime    @default(now())
+  status    AgentStatus @default(INSTALLING)
+
   // Capabilities
   canMonitor       Boolean @default(true)
   canRemoteAccess  Boolean @default(false) // For future VNC/RDP
   canExecuteScript Boolean @default(true)
   canPatchManage   Boolean @default(false) // For future patch mgmt
-  
+
   // Latest Metrics (denormalized for quick access)
   cpuUsage    Float?
   ramUsage    Float?
   diskUsage   Float?
   networkUp   Float?
   networkDown Float?
-  
+
   // Relations
-  metrics    AgentMetric[]
-  scripts    ScriptExecution[]
-  
+  metrics AgentMetric[]
+  scripts ScriptExecution[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([workspaceId, status])
   @@index([lastSeen])
   @@index([status])
@@ -1173,122 +1178,123 @@ model AgentConnection {
 
 model AgentMetric {
   id String @id @default(cuid())
-  
+
   agentId String
   agent   AgentConnection @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
+
   assetId String
   asset   Asset  @relation("AssetMetrics", fields: [assetId], references: [id], onDelete: Cascade)
-  
+
   // Timestamp
   timestamp DateTime @default(now())
-  
+
   // CPU Metrics
-  cpuUsage    Float // Percentage (0-100)
-  cpuTemp     Float? // Celsius  
-  
+  cpuUsage Float // Percentage (0-100)
+  cpuTemp  Float? // Celsius  
+
   // RAM Metrics
-  ramUsage    Float // Percentage (0-100)
-  ramUsed     Float // GB
-  ramTotal    Float // GB
-  
+  ramUsage Float // Percentage (0-100)
+  ramUsed  Float // GB
+  ramTotal Float // GB
+
   // Disk Metrics
-  diskUsage   Float // Percentage (0-100)
-  diskUsed    Float // GB
-  diskTotal   Float // GB
-  
+  diskUsage Float // Percentage (0-100)
+  diskUsed  Float // GB
+  diskTotal Float // GB
+
   // Network Metrics
   networkUp   Float // KB/s
   networkDown Float // KB/s
-  
+
   // Process Info (top 5 CPU consumers)
   topProcesses Json? // [{ name, cpu, ram, pid }, ...]
-  
+
   @@index([agentId, timestamp])
   @@index([assetId, timestamp])
 }
 
 model ScriptExecution {
   id String @id @default(cuid())
-  
+
   agentId String
   agent   AgentConnection @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
+
   assetId String
   asset   Asset  @relation("AssetScripts", fields: [assetId], references: [id])
-  
+
   workspaceId String
   workspace   Workspace @relation("WorkspaceScripts", fields: [workspaceId], references: [id])
-  
+
   // Script
   scriptName String
   scriptBody String @db.Text
   language   String // "powershell", "bash", "python"
-  
+
   // Execution
-  status     ScriptStatus @default(PENDING)
-  exitCode   Int?
-  output     String? @db.Text
-  error      String? @db.Text
-  
+  status   ScriptStatus @default(PENDING)
+  exitCode Int?
+  output   String?      @db.Text
+  error    String?      @db.Text
+
   // Timing
   startedAt   DateTime?
   completedAt DateTime?
-  
+
   // Creator
   createdAt DateTime @default(now())
   createdBy String // User ID
-  
+
   @@index([agentId, status])
   @@index([assetId, createdAt])
   @@index([workspaceId, createdAt])
   @@index([status])
 }
+
 model AlertRule {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation("WorkspaceAlertRules", fields: [workspaceId], references: [id], onDelete: Cascade)
-  
+
   // Rule Configuration
-  name        String
-  enabled     Boolean  @default(true)
-  metric      AlertMetric
-  threshold   Float    // Percentage for CPU/RAM/DISK, minutes for OFFLINE
-  duration    Int      @default(0) // Minutes metric must exceed threshold
-  severity    AlertSeverity @default(WARNING)
-  
+  name      String
+  enabled   Boolean       @default(true)
+  metric    AlertMetric
+  threshold Float // Percentage for CPU/RAM/DISK, minutes for OFFLINE
+  duration  Int           @default(0) // Minutes metric must exceed threshold
+  severity  AlertSeverity @default(WARNING)
+
   // Notification Settings
   notifyEmail   Boolean @default(true)
   notifyWebhook Boolean @default(false)
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   createdBy String?
-  
+
   @@index([workspaceId, enabled])
   @@index([metric])
 }
 
 model NotificationWebhook {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation("WorkspaceWebhooks", fields: [workspaceId], references: [id], onDelete: Cascade)
-  
+
   // Webhook Configuration
-  url         String
-  enabled     Boolean  @default(true)
-  secret      String?  // Optional HMAC secret for signature
-  
+  url     String
+  enabled Boolean @default(true)
+  secret  String? // Optional HMAC secret for signature
+
   // Stats
-  lastSuccess DateTime?
-  lastFailure DateTime?
-  failureCount Int     @default(0)
-  
+  lastSuccess  DateTime?
+  lastFailure  DateTime?
+  failureCount Int       @default(0)
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([workspaceId, enabled])
 }
 
@@ -1297,17 +1303,17 @@ model NotificationWebhook {
 // ============================================
 
 model AgentVersion {
-  id            String   @id @default(cuid())
-  version       String   // e.g., "0.1.0"
-  platform      String   // WINDOWS, MACOS, LINUX
-  downloadUrl   String   // URL to installer file
-  checksum      String   // SHA-256 checksum for verification
-  releaseNotes  String?  @db.Text
-  required      Boolean  @default(false) // If true, update is mandatory
-  status        String   @default("ACTIVE") // ACTIVE, DEPRECATED, BETA
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String  @id @default(cuid())
+  version      String // e.g., "0.1.0"
+  platform     String // WINDOWS, MACOS, LINUX
+  downloadUrl  String // URL to installer file
+  checksum     String // SHA-256 checksum for verification
+  releaseNotes String? @db.Text
+  required     Boolean @default(false) // If true, update is mandatory
+  status       String  @default("ACTIVE") // ACTIVE, DEPRECATED, BETA
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([version, platform])
   @@index([platform, status])
@@ -1318,15 +1324,60 @@ model AgentVersion {
 // ============================================
 
 model StripeEvent {
-  id        String   @id @default(cuid())
-  eventId   String   @unique // Stripe event ID (evt_xxx)
-  type      String   // Event type (checkout.session.completed, etc.)
-  processed Boolean  @default(true)
-  
+  id        String  @id @default(cuid())
+  eventId   String  @unique // Stripe event ID (evt_xxx)
+  type      String // Event type (checkout.session.completed, etc.)
+  processed Boolean @default(true)
+
   createdAt DateTime @default(now())
-  
+
   @@index([eventId])
   @@index([createdAt])
 }
 
+// ============================================
+// GLANUS 2.0 PHASE 12: MDM INFRASTRUCTURE PROFILES
+// ============================================
 
+model MdmProfile {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceMdmProfiles", fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name          String
+  description   String? @db.Text
+  platform      String // WINDOWS, MACOS, LINUX
+  profileType   String // RESTRICTION, WIFI, VPN, APPLICATION, SECURITY
+  configPayload Json // The actual declarative configuration data
+
+  assignments MdmAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, platform])
+}
+
+model MdmAssignment {
+  id        String     @id @default(cuid())
+  profileId String
+  profile   MdmProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  assetId String?
+  asset   Asset?  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  categoryId String?
+  category   AssetCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  status    String    @default("PENDING") // PENDING, APPLIED, FAILED
+  appliedAt DateTime?
+  errorLog  String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([profileId, assetId])
+  @@index([profileId])
+  @@index([assetId])
+  @@index([categoryId])
+}

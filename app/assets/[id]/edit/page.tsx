@@ -173,7 +173,7 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
                     </svg>
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-bold text-white">Edit Parameters</h1>
+                    <h1 className="text-3xl font-bold text-foreground">Edit Parameters</h1>
                     <p className="text-slate-400 mt-1">Configure asset node details and custom tracking variables.</p>
                 </div>
             </div>
@@ -182,7 +182,7 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
 
                 {/* 1. Core Platform Configuration */}
                 <div className="card">
-                    <h2 className="text-xl font-bold text-white mb-6 border-b border-border pb-4">1. Core Configuration</h2>
+                    <h2 className="text-xl font-bold text-foreground mb-6 border-b border-border pb-4">1. Core Configuration</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
@@ -230,7 +230,7 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
                 {/* 2. Dynamic Schema UI */}
                 {category && (
                     <div className="card border-nerve/30">
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3 border-b border-border pb-4">
+                        <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-3 border-b border-border pb-4">
                             <span>2. Custom Matrix Data</span>
                             <span className="text-sm px-3 py-1 bg-nerve/20 text-nerve rounded-full">{category.icon} {category.name}</span>
                         </h2>

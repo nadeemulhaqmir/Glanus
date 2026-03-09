@@ -130,7 +130,7 @@ export default function DynamicAssetCreatePage() {
                         <ArrowLeft size={20} />
                         Back to Assets
                     </Link>
-                    <h1 className="text-3xl font-bold text-white">Create Asset</h1>
+                    <h1 className="text-3xl font-bold text-foreground">Create Asset</h1>
                     <p className="text-slate-400 mt-2">Provision a new tracked resource in this Workspace.</p>
                 </div>
                 <Link href="/settings/classes" className="btn-secondary text-sm flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function DynamicAssetCreatePage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Step 1: Core Configuration */}
                     <div className="card">
-                        <h2 className="text-xl font-bold text-white mb-6 border-b border-border pb-4">1. Core Configuration</h2>
+                        <h2 className="text-xl font-bold text-foreground mb-6 border-b border-border pb-4">1. Core Configuration</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -194,7 +194,7 @@ export default function DynamicAssetCreatePage() {
                     {/* Step 2: Dynamic Fields UI */}
                     {selectedCategory && (
                         <div className="card border-nerve/30">
-                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3 border-b border-border pb-4">
+                            <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-3 border-b border-border pb-4">
                                 <span>2. Custom Matrix Data</span>
                                 <span className="text-sm px-3 py-1 bg-nerve/20 text-nerve rounded-full">{selectedCategory.icon} {selectedCategory.name}</span>
                             </h2>

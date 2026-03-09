@@ -114,7 +114,7 @@ export default function WorkspaceSettingsPage() {
         return (
             <div className="text-center py-12">
                 <ShieldAlert className="w-12 h-12 text-destructive mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Access Denied</h3>
+                <h3 className="text-xl font-bold text-foreground mb-2">Access Denied</h3>
                 <p className="text-slate-400">You must be the Workspace Owner to view this page.</p>
             </div>
         );
@@ -135,7 +135,7 @@ export default function WorkspaceSettingsPage() {
                         <Settings className="w-5 h-5 text-nerve" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold text-white">Workspace Settings</h1>
+                        <h1 className="text-3xl font-bold text-foreground">Workspace Settings</h1>
                         <p className="text-slate-400">Manage organization details and destructive actions</p>
                     </div>
                 </div>
@@ -146,7 +146,7 @@ export default function WorkspaceSettingsPage() {
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
                     <div className="flex items-center gap-2 mb-6">
                         <Building2 className="w-5 h-5 text-slate-400" />
-                        <h2 className="text-xl font-semibold text-white">General Information</h2>
+                        <h2 className="text-xl font-semibold text-foreground">General Information</h2>
                     </div>
 
                     <div className="space-y-5">
@@ -178,7 +178,7 @@ export default function WorkspaceSettingsPage() {
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm">
                     <div className="flex items-center gap-2 mb-6">
                         <Paintbrush className="w-5 h-5 text-slate-400" />
-                        <h2 className="text-xl font-semibold text-white">Brand Accent Colors</h2>
+                        <h2 className="text-xl font-semibold text-foreground">Brand Accent Colors</h2>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">

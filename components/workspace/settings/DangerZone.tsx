@@ -43,7 +43,7 @@ export default function DangerZone({ workspace }: { workspace: Workspace }) {
         <div className="space-y-6">
             <div>
                 <h2 className="text-lg font-medium text-health-critical">Danger Zone</h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                     Destructive actions that cannot be undone.
                 </p>
             </div>

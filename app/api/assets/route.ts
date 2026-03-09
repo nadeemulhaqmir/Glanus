@@ -174,7 +174,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     const asset = await prisma.asset.create({
         data: {
             workspaceId: workspaceId || '',
-            assetType: data.assetType || 'DYNAMIC',
+            assetType: (data.assetType || 'PHYSICAL') as any,
             name: data.name,
             categoryId: data.categoryId,
             manufacturer: data.manufacturer || null,

@@ -133,10 +133,10 @@ export default function DashboardPage() {
         <>
             {/* Header */}
             <div className="mb-8 animate-fade-in">
-                <h1 className="mb-2 text-3xl font-bold text-white">
+                <h1 className="mb-2 text-3xl font-bold text-foreground">
                     Operations <span className="text-gradient">Dashboard</span>
                 </h1>
-                <p className="text-slate-400">Welcome to your IT operations center</p>
+                <p className="text-muted-foreground">Welcome to your IT operations center</p>
             </div>
 
             {/* Stats Grid */}
@@ -169,8 +169,8 @@ export default function DashboardPage() {
                 {/* Recent Assets */}
                 <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
                     <div className="border-b border-slate-800 px-5 py-4">
-                        <h2 className="text-sm font-semibold text-white">Recent Assets</h2>
-                        <p className="text-xs text-slate-500">Latest assets added to the system</p>
+                        <h2 className="text-sm font-semibold text-foreground">Recent Assets</h2>
+                        <p className="text-xs text-muted-foreground">Latest assets added to the system</p>
                     </div>
                     <div className="p-5">
                         {data && data.recentAssets?.length > 0 ? (
@@ -202,8 +202,8 @@ export default function DashboardPage() {
                 <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
                     <div className="border-b border-slate-800 px-5 py-4 flex items-center justify-between">
                         <div>
-                            <h2 className="text-sm font-semibold text-white">Active Remote Sessions</h2>
-                            <p className="text-xs text-slate-500">Currently active remote desktop connections</p>
+                            <h2 className="text-sm font-semibold text-foreground">Active Remote Sessions</h2>
+                            <p className="text-xs text-muted-foreground">Currently active remote desktop connections</p>
                         </div>
                         <Link href="/remote" className="text-xs text-nerve hover:text-nerve/80 transition-colors">
                             View All →

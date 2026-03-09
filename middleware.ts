@@ -21,6 +21,7 @@ const CSRF_EXEMPT_PATHS = [
     '/api/agent/',       // Agent endpoints use API key auth
     '/api/health',       // Health check
     '/api/ready',        // Readiness probe
+    '/api/cron',         // Cron jobs use Bearer tokens natively
 ];
 
 // Public routes (no authentication required)
@@ -38,6 +39,7 @@ const PUBLIC_PATHS = [
     '/api/csrf',         // CSRF token endpoint
     '/api/partners',     // Public partner directory
     '/api/invitations',  // Invitation verification (token-based)
+    '/api/cron',         // Bypasses NextAuth (managed by CRON_SECRET)
 ];
 
 /**

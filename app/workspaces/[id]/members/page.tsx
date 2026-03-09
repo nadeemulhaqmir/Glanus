@@ -94,7 +94,7 @@ export default function WorkspaceMembersPage() {
         return (
             <div className="text-center py-12">
                 <ShieldAlert className="w-12 h-12 text-destructive mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Access Denied</h3>
+                <h3 className="text-xl font-bold text-foreground mb-2">Access Denied</h3>
                 <p className="text-slate-400">{error}</p>
             </div>
         );
@@ -118,7 +118,7 @@ export default function WorkspaceMembersPage() {
                 </button>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">Team Members</h1>
+                        <h1 className="text-3xl font-bold text-foreground mb-2">Team Members</h1>
                         <p className="text-slate-400">Manage who has access to this workspace and their roles</p>
                     </div>
                     <button type="button"
@@ -150,7 +150,7 @@ export default function WorkspaceMembersPage() {
                                             {member.user.name?.[0]?.toUpperCase() || member.user.email[0].toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-white text-sm">
+                                            <p className="font-medium text-foreground text-sm">
                                                 {member.user.name || 'Unknown User'}
                                             </p>
                                             <p className="text-xs text-slate-400">
@@ -187,7 +187,7 @@ export default function WorkspaceMembersPage() {
                                 <Mail className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-white">Invite Teammate</h2>
+                                <h2 className="text-lg font-bold text-foreground">Invite Teammate</h2>
                                 <p className="text-xs text-slate-400">They will receive an email link to join</p>
                             </div>
                         </div>

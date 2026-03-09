@@ -49,7 +49,7 @@ export default function BrandingSettings({ workspace }: { workspace: Workspace }
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-medium text-white">Branding</h2>
+                <h2 className="text-lg font-medium text-foreground">Branding</h2>
                 <p className="text-sm text-slate-500">
                     Customize the look and feel of your workspace.
                 </p>

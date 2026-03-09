@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Download, FileText, Activity, Server, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/lib/toast';
+import { csrfFetch } from '@/lib/api/csrfFetch';
 
 export default function ReportsPage() {
     const params = useParams();
@@ -15,7 +16,7 @@ export default function ReportsPage() {
     const handleDownload = async (type: string) => {
         setIsGenerating(type);
         try {
-            const res = await fetch(`/api/workspaces/${workspaceId}/reports?type=${type}`, {
+            const res = await csrfFetch(`/api/workspaces/${workspaceId}/reports?type=${type}`, {
                 method: 'GET'
             });
 
@@ -65,8 +66,8 @@ export default function ReportsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-white mb-2">Executive Reports</h1>
-                <p className="text-slate-400">Generate, schedule, and download analytical summaries to CSV directly from the database.</p>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Executive Reports</h1>
+                <p className="text-muted-foreground">Generate, schedule, and download analytical summaries to CSV directly from the database.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

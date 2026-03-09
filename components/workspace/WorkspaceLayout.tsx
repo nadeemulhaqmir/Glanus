@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useWorkspace } from '@/lib/workspace/context';
+import { NotificationPopover } from '@/components/workspace/NotificationPopover';
 
 interface NavItem {
     href: string;
@@ -83,6 +84,16 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
             ),
         },
         {
+            href: `${basePath}/mdm`,
+            label: 'MDM Profiles',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                </svg>
+            ),
+        },
+        {
             href: `${basePath}/reflex`,
             label: 'Reflex Engine',
             section: 'Operations',
@@ -99,6 +110,36 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
             icon: (
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/audit`,
+            label: 'Audit Logs',
+            section: 'Workspace',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/notifications`,
+            label: 'Notifications',
+            section: 'Workspace',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/partner`,
+            label: 'IT Partner',
+            section: 'Workspace',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.83-5.83m0 0l2.58-2.58a2 2 0 000-2.83l-1.42-1.42a2 2 0 00-2.83 0l-2.58 2.58m5.83 5.83L11.42 15.17m-6.59-6.59l2.58-2.58a2 2 0 012.83 0l1.42 1.42a2 2 0 010 2.83l-2.58 2.58m-5.83-5.83L8.83 8.83m-6.59 6.59L4.83 8.83m-2.58 2.58a2 2 0 000 2.83l1.42 1.42a2 2 0 002.83 0m0 0l-2.58-2.58m0 0l2.58 2.58m0 0l-2.58 2.58" />
                 </svg>
             ),
         },
@@ -234,7 +275,14 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
             </aside>
 
             {/* Main content */}
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto relative">
+                {/* Global Top Header */}
+                <header className="sticky top-0 z-30 flex h-14 items-center justify-end border-b border-border bg-surface-1/80 px-6 backdrop-blur">
+                    <div className="flex items-center gap-4">
+                        <NotificationPopover />
+                    </div>
+                </header>
+
                 <div className="mx-auto max-w-7xl px-6 py-6">
                     {children}
                 </div>

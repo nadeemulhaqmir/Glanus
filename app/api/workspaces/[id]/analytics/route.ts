@@ -46,6 +46,7 @@ export const GET = withErrorHandler(async (
         totalAgents,
         alerts,
         recentActivity,
+        agentHealthData,
     ] = await Promise.all([
         // Current asset count
         prisma.asset.count({
@@ -94,7 +95,56 @@ export const GET = withErrorHandler(async (
             orderBy: { createdAt: 'desc' },
             take: 20,
         }),
+        // Agent health metrics — latest metric per agent
+        prisma.agentConnection.findMany({
+            where: { workspaceId },
+            select: {
+                status: true,
+                metrics: {
+                    orderBy: { timestamp: 'desc' },
+                    take: 1,
+                    select: {
+                        cpuUsage: true,
+                        ramUsed: true,
+                        ramTotal: true,
+                        diskUsed: true,
+                        diskTotal: true,
+                    },
+                },
+            },
+        }),
     ]);
+
+    // Compute system health from agent metrics
+    const onlineAgentsWithMetrics = agentHealthData.filter(
+        (a: any) => a.status === 'ONLINE' && a.metrics.length > 0
+    );
+    const offlineAgentCount = agentHealthData.filter((a: any) => a.status === 'OFFLINE').length;
+    const errorAgentCount = agentHealthData.filter((a: any) => a.status === 'ERROR').length;
+
+    let avgCpu = 0, avgRam = 0, avgDisk = 0;
+    if (onlineAgentsWithMetrics.length > 0) {
+        let cpuSum = 0, ramSum = 0, diskSum = 0;
+        for (const agent of onlineAgentsWithMetrics) {
+            const m = agent.metrics[0];
+            cpuSum += m.cpuUsage ?? 0;
+            ramSum += m.ramTotal > 0 ? (m.ramUsed / m.ramTotal) * 100 : 0;
+            diskSum += m.diskTotal > 0 ? (m.diskUsed / m.diskTotal) * 100 : 0;
+        }
+        avgCpu = Math.round(cpuSum / onlineAgentsWithMetrics.length);
+        avgRam = Math.round(ramSum / onlineAgentsWithMetrics.length);
+        avgDisk = Math.round(diskSum / onlineAgentsWithMetrics.length);
+    }
+
+    const systemHealth = {
+        avgCpu,
+        avgRam,
+        avgDisk,
+        agentsOnline: activeAgents,
+        agentsOffline: offlineAgentCount,
+        agentsError: errorAgentCount,
+        totalAgents,
+    };
 
     // Calculate changes
     const assetChange = assetCount - assetCountPrevious;
@@ -155,6 +205,7 @@ export const GET = withErrorHandler(async (
                 : 0,
         },
         alerts: alertCounts,
+        systemHealth,
         recentActivity: recentActivity.map(event => ({
             id: event.id,
             action: event.action,

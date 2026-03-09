@@ -117,15 +117,15 @@ export default function WorkspaceAgentsPage() {
         <>
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-white mb-2">Agent Monitoring</h1>
-                <p className="text-slate-400">Monitor all installed Glanus agents in this workspace</p>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Agent Monitoring</h1>
+                <p className="text-muted-foreground">Monitor all installed Glanus agents in this workspace</p>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
                     <p className="text-sm text-slate-400 mb-1">Total Agents</p>
-                    <p className="text-3xl font-bold text-white">{stats.total}</p>
+                    <p className="text-3xl font-bold text-foreground">{stats.total}</p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
                     <p className="text-sm text-slate-400 mb-1">Online</p>
@@ -152,7 +152,7 @@ export default function WorkspaceAgentsPage() {
                         <div className="mx-auto w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
                             <Server className="w-6 h-6 text-slate-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-white mb-2">No Agents Installed</h3>
+                        <h3 className="text-lg font-medium text-foreground mb-2">No Agents Installed</h3>
                         <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">
                             Install the Glanus agent on your assets to enable remote monitoring and management.
                         </p>
@@ -197,7 +197,7 @@ export default function WorkspaceAgentsPage() {
                                             <div className="flex items-center space-x-2">
                                                 <span className="text-2xl">{getPlatformIcon(agent.platform)}</span>
                                                 <div>
-                                                    <p className="text-sm font-medium text-white">{agent.platform}</p>
+                                                    <p className="text-sm font-medium text-foreground">{agent.platform}</p>
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-xs text-slate-500">v{agent.agentVersion}</p>
                                                         {agent.isOutdated && (

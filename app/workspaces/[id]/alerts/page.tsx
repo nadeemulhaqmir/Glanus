@@ -224,8 +224,8 @@ export default function WorkspaceAlertsPage() {
                 </button>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">Notifications Hub</h1>
-                        <p className="text-slate-400">Monitor workspace activity and configure threshold alerts</p>
+                        <h1 className="text-3xl font-bold text-foreground mb-2">Notifications Hub</h1>
+                        <p className="text-muted-foreground">Monitor workspace activity and configure threshold alerts</p>
                     </div>
                     <button type="button"
                         onClick={createNewRule}
@@ -242,8 +242,8 @@ export default function WorkspaceAlertsPage() {
                 <button
                     onClick={() => setActiveTab('inbox')}
                     className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'inbox'
-                            ? 'border-nerve text-nerve'
-                            : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
+                        ? 'border-nerve text-nerve'
+                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
                         }`}
                 >
                     Inbox Feed
@@ -251,8 +251,8 @@ export default function WorkspaceAlertsPage() {
                 <button
                     onClick={() => setActiveTab('configuration')}
                     className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'configuration'
-                            ? 'border-nerve text-nerve'
-                            : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
+                        ? 'border-nerve text-nerve'
+                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
                         }`}
                 >
                     Configuration & Rules
@@ -278,8 +278,8 @@ export default function WorkspaceAlertsPage() {
                             <div className="mx-auto w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
                                 <Bell className="w-6 h-6 text-slate-400" />
                             </div>
-                            <h3 className="text-lg font-medium text-white mb-2">Inbox is Clear</h3>
-                            <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                            <h3 className="text-lg font-medium text-foreground mb-2">Inbox is Clear</h3>
+                            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                                 You have no new notifications or alerts for this workspace.
                             </p>
                         </div>
@@ -292,7 +292,7 @@ export default function WorkspaceAlertsPage() {
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between mb-1">
-                                            <p className="text-sm font-medium text-white">
+                                            <p className="text-sm font-medium text-foreground">
                                                 {item.type === 'insight' ? item.action : `${item.actor} performed: ${item.action}`}
                                             </p>
                                             <span className="text-xs text-slate-500 whitespace-nowrap ml-4">
@@ -342,8 +342,8 @@ export default function WorkspaceAlertsPage() {
                                 <div className="mx-auto w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
                                     <Bell className="w-6 h-6 text-slate-400" />
                                 </div>
-                                <h3 className="text-lg font-medium text-white mb-2">No Alert Rules Configured</h3>
-                                <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                                <h3 className="text-lg font-medium text-foreground mb-2">No Alert Rules Configured</h3>
+                                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                                     You haven't set up any monitoring alerts for this workspace yet.
                                 </p>
                             </div>
@@ -353,7 +353,7 @@ export default function WorkspaceAlertsPage() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center space-x-3 mb-2">
-                                            <h3 className="text-lg font-semibold text-white">{rule.name}</h3>
+                                            <h3 className="text-lg font-semibold text-foreground">{rule.name}</h3>
                                             <span className={`px-2 py-1 rounded text-xs font-semibold ${rule.enabled ? 'bg-health-good/15 text-health-good' : 'bg-slate-800/50 text-slate-200'
                                                 }`}>
                                                 {rule.enabled ? 'Enabled' : 'Disabled'}
@@ -403,7 +403,7 @@ export default function WorkspaceAlertsPage() {
                     {editingRule && (
                         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                             <div className="rounded-xl border border-slate-800 bg-slate-900/95 backdrop-blur-xl max-w-2xl w-full p-6">
-                                <h2 className="text-2xl font-bold text-white mb-6">{isCreating ? 'Create Alert Rule' : 'Edit Alert Rule'}</h2>
+                                <h2 className="text-2xl font-bold text-foreground mb-6">{isCreating ? 'Create Alert Rule' : 'Edit Alert Rule'}</h2>
 
                                 <div className="space-y-4">
                                     <div>

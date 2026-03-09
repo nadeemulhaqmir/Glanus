@@ -1,7 +1,18 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { ReliabilityScore } from '@/components/analytics/ReliabilityScore';
 import { NarrativeFeed } from '@/components/workspace/NarrativeFeed';
+
+interface SystemHealth {
+    avgCpu: number;
+    avgRam: number;
+    avgDisk: number;
+    agentsOnline: number;
+    agentsOffline: number;
+    agentsError: number;
+    totalAgents: number;
+}
 
 interface MissionControlProps {
     data: {
@@ -11,6 +22,7 @@ interface MissionControlProps {
         alertCount?: number;
         reliabilityScore?: number;
         previousReliabilityScore?: number;
+        systemHealth?: SystemHealth;
         recentActivity: Array<{
             id: string;
             action: string;
@@ -23,10 +35,12 @@ interface MissionControlProps {
         }>;
     };
     workspaceName: string;
+    workspaceId?: string;
     plan?: string;
 }
 
-export function MissionControl({ data, workspaceName, plan }: MissionControlProps) {
+export function MissionControl({ data, workspaceName, workspaceId, plan }: MissionControlProps) {
+    const router = useRouter();
     const {
         assetCount,
         activeUsers,
@@ -34,6 +48,7 @@ export function MissionControl({ data, workspaceName, plan }: MissionControlProp
         alertCount = 0,
         reliabilityScore = 92,
         previousReliabilityScore,
+        systemHealth,
         recentActivity,
     } = data;
 
@@ -62,7 +77,6 @@ export function MissionControl({ data, workspaceName, plan }: MissionControlProp
                     <button
                         type="button"
                         onClick={() => {
-                            const workspaceId = window.location.pathname.split('/workspaces/')[1]?.split('/')[0];
                             if (workspaceId) {
                                 window.location.href = `/api/workspaces/${workspaceId}/reports?format=csv&include=inventory`;
                             }
@@ -145,6 +159,11 @@ export function MissionControl({ data, workspaceName, plan }: MissionControlProp
                 </div>
             </div>
 
+            {/* System Health Widget */}
+            {systemHealth && systemHealth.totalAgents > 0 && (
+                <SystemHealthWidget health={systemHealth} />
+            )}
+
             {/* Bottom section: Activity feed + Quick actions */}
             <div className={`grid gap-5 ${isSmall ? '' : 'lg:grid-cols-[1fr_320px]'}`}>
                 {/* Activity Feed */}
@@ -169,21 +188,25 @@ export function MissionControl({ data, workspaceName, plan }: MissionControlProp
                                     label="Add Asset"
                                     icon="＋"
                                     accentClass="bg-nerve/10 text-nerve"
+                                    onClick={() => router.push('/assets/new')}
                                 />
                                 <QuickAction
                                     label="Invite Member"
                                     icon="↗"
                                     accentClass="bg-cortex/10 text-cortex"
+                                    onClick={() => router.push(`/workspaces/${workspaceId}/members`)}
                                 />
                                 <QuickAction
                                     label="Create Alert Rule"
                                     icon="⚡"
                                     accentClass="bg-oracle/10 text-oracle"
+                                    onClick={() => router.push(`/workspaces/${workspaceId}/alerts`)}
                                 />
                                 <QuickAction
                                     label="Run Script"
                                     icon="▶"
                                     accentClass="bg-reflex/10 text-reflex"
+                                    onClick={() => router.push(`/workspaces/${workspaceId}/agents`)}
                                 />
                             </div>
                         </div>
@@ -243,13 +266,16 @@ function QuickAction({
     label,
     icon,
     accentClass,
+    onClick,
 }: {
     label: string;
     icon: string;
     accentClass: string;
+    onClick?: () => void;
 }) {
     return (
         <button type="button"
+            onClick={onClick}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium 
                        text-foreground transition-colors hover:bg-accent/50"
         >
@@ -258,5 +284,77 @@ function QuickAction({
             </span>
             {label}
         </button>
+    );
+}
+
+/* ===== System Health Widget ===== */
+
+function HealthMeter({ label, value, icon, color }: {
+    label: string;
+    value: number;
+    icon: string;
+    color: 'nerve' | 'cortex' | 'reflex';
+}) {
+    const colorMap = {
+        nerve: { bg: 'bg-nerve', text: 'text-nerve' },
+        cortex: { bg: 'bg-cortex', text: 'text-cortex' },
+        reflex: { bg: 'bg-reflex', text: 'text-reflex' },
+    };
+    const barColor = value > 85 ? 'bg-red-500' : value > 65 ? 'bg-amber-500' : colorMap[color].bg;
+    const textColor = value > 85 ? 'text-red-400' : value > 65 ? 'text-amber-400' : colorMap[color].text;
+
+    return (
+        <div className="flex-1 min-w-[120px]">
+            <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <span>{icon}</span> {label}
+                </span>
+                <span className={`text-sm font-bold tabular-nums ${textColor}`}>{value}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
+                <div
+                    className={`h-full rounded-full transition-all duration-700 ease-out ${barColor}`}
+                    style={{ width: `${Math.min(value, 100)}%` }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function SystemHealthWidget({ health }: { health: SystemHealth }) {
+    return (
+        <div className="card">
+            <div className="flex items-center justify-between mb-5">
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                    <svg className="h-4 w-4 text-nerve" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                    </svg>
+                    System Health Pulse
+                </h2>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        {health.agentsOnline} online
+                    </span>
+                    {health.agentsOffline > 0 && (
+                        <span className="flex items-center gap-1">
+                            <span className="h-2 w-2 rounded-full bg-slate-500" />
+                            {health.agentsOffline} offline
+                        </span>
+                    )}
+                    {health.agentsError > 0 && (
+                        <span className="flex items-center gap-1">
+                            <span className="h-2 w-2 rounded-full bg-red-500" />
+                            {health.agentsError} error
+                        </span>
+                    )}
+                </div>
+            </div>
+            <div className="flex gap-6 flex-wrap">
+                <HealthMeter label="CPU Avg" value={health.avgCpu} icon="⚙" color="nerve" />
+                <HealthMeter label="RAM Avg" value={health.avgRam} icon="◫" color="cortex" />
+                <HealthMeter label="Disk Avg" value={health.avgDisk} icon="◉" color="reflex" />
+            </div>
+        </div>
     );
 }

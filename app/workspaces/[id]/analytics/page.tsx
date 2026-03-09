@@ -41,6 +41,15 @@ interface AnalyticsData {
         warning: number;
         critical: number;
     };
+    systemHealth?: {
+        avgCpu: number;
+        avgRam: number;
+        avgDisk: number;
+        agentsOnline: number;
+        agentsOffline: number;
+        agentsError: number;
+        totalAgents: number;
+    };
     recentActivity: Array<{
         id: string;
         action: string;
@@ -165,8 +174,10 @@ export default function AnalyticsPage() {
                     alertCount: analytics.alertCount,
                     reliabilityScore: analytics.reliabilityScore,
                     recentActivity: analytics.recentActivity,
+                    systemHealth: analytics.systemHealth,
                 }}
                 workspaceName={analytics.workspaceName}
+                workspaceId={workspaceId}
                 plan={analytics.plan}
             />
 

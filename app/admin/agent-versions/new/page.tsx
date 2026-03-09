@@ -51,7 +51,7 @@ export default function NewAgentVersionPage() {
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-white mb-2">Publish New Release</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Publish New Release</h1>
                 <p className="text-slate-400">
                     Draft a new glanus-agent OTA package. Agents pinging the updater will pull the highest semantic Active release.
                 </p>

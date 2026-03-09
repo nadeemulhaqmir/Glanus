@@ -68,10 +68,10 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
         <form onSubmit={handleSubmit} className="space-y-8 text-sm">
             {/* Rule Identity Section */}
             <div className="space-y-4">
-                <h3 className="text-white font-medium border-b border-slate-800 pb-2">1. Rule Definition</h3>
+                <h3 className="text-foreground font-medium border-b border-border pb-2">1. Rule Definition</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-slate-400 font-medium ml-1">Rule Name</label>
+                        <label className="text-muted-foreground font-medium ml-1">Rule Name</label>
                         <input
                             type="text"
                             required
@@ -83,7 +83,7 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
                     </div>
                 </div>
                 <div className="space-y-1.5">
-                    <label className="text-slate-400 font-medium ml-1">Description (Optional)</label>
+                    <label className="text-muted-foreground font-medium ml-1">Description (Optional)</label>
                     <textarea
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -95,10 +95,10 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
 
             {/* Trigger State */}
             <div className="space-y-4">
-                <h3 className="text-white font-medium border-b border-slate-800 pb-2">2. Cortex Assessment Trigger</h3>
+                <h3 className="text-foreground font-medium border-b border-border pb-2">2. Cortex Assessment Trigger</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-slate-400 font-medium ml-1">Resource Metric</label>
+                        <label className="text-muted-foreground font-medium ml-1">Resource Metric</label>
                         <select
                             value={trigger.metric}
                             onChange={(e) => setTrigger({ ...trigger, metric: e.target.value as any })}
@@ -110,7 +110,7 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-slate-400 font-medium ml-1">Threshold Operator</label>
+                        <label className="text-muted-foreground font-medium ml-1">Threshold Operator</label>
                         <select
                             value={trigger.operator}
                             onChange={(e) => setTrigger({ ...trigger, operator: e.target.value as any })}
@@ -122,7 +122,7 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-slate-400 font-medium ml-1">Value Marker</label>
+                        <label className="text-muted-foreground font-medium ml-1">Value Marker</label>
                         <input
                             type="number"
                             required
@@ -138,13 +138,13 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
 
             {/* Action Resolution */}
             <div className="space-y-4">
-                <h3 className="text-white font-medium border-b border-slate-800 pb-2 flex items-center gap-2">
+                <h3 className="text-foreground font-medium border-b border-border pb-2 flex items-center gap-2">
                     3. Consequence Action
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-slate-400 font-medium ml-1">Action Type</label>
+                        <label className="text-muted-foreground font-medium ml-1">Action Type</label>
                         <select
                             value={action.type}
                             onChange={(e) => setAction({ ...action, type: e.target.value as any })}
@@ -158,7 +158,7 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
 
                     {action.type === 'run_script' && (
                         <div className="space-y-1.5">
-                            <label className="text-slate-400 font-medium ml-1">Identified Script Target</label>
+                            <label className="text-muted-foreground font-medium ml-1">Identified Script Target</label>
                             <input
                                 type="text"
                                 required
@@ -173,7 +173,7 @@ export function ReflexRuleForm({ workspaceId, onSuccess, onCancel }: ReflexRuleF
 
                 <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-4">
                     <div className="space-y-1.5">
-                        <label className="text-white font-medium ml-1 flex items-center gap-2">
+                        <label className="text-foreground font-medium ml-1 flex items-center gap-2">
                             Autonomy Level
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

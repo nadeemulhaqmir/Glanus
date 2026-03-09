@@ -124,7 +124,7 @@ export default function ReflexDashboardPage() {
         <div className="flex-1 space-y-6">
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <Zap className="text-nerve h-6 w-6" />
                         Reflex Automation Engine
                     </h1>
@@ -175,7 +175,7 @@ export default function ReflexDashboardPage() {
                     {queue.length === 0 ? (
                         <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
                             <ShieldAlert className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-white mb-2">No Actions Queued</h3>
+                            <h3 className="text-lg font-medium text-foreground mb-2">No Actions Queued</h3>
                             <p className="text-slate-400">
                                 The Reflex engine resolves CORTEX recommendations against your rules natively. Any actions awaiting required Admin validation will appear here.
                             </p>
@@ -187,7 +187,7 @@ export default function ReflexDashboardPage() {
                                     <div className="flex items-start justify-between">
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-3">
-                                                <h3 className="text-lg font-medium text-white">{item.rule.name || item.consequence?.estimatedImpact}</h3>
+                                                <h3 className="text-lg font-medium text-foreground">{item.rule.name || item.consequence?.estimatedImpact}</h3>
                                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusToken(item.status)}`}>
                                                     {item.status.toUpperCase()}
                                                 </span>
@@ -230,7 +230,7 @@ export default function ReflexDashboardPage() {
                                                         <Activity className="w-5 h-5" />
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-white">Execute `{item.rule.action.scriptName || item.rule.action.type}`</p>
+                                                        <p className="text-sm font-medium text-foreground">Execute `{item.rule.action.scriptName || item.rule.action.type}`</p>
                                                         <p className="text-xs text-slate-400">Autonomy Required: {item.rule.autonomyLevel?.toUpperCase()}</p>
                                                     </div>
                                                 </div>
@@ -271,7 +271,7 @@ export default function ReflexDashboardPage() {
                 <div className="space-y-4">
                     {isCreatingRule ? (
                         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                            <h2 className="text-lg font-bold text-white mb-6">Create Automation Rule</h2>
+                            <h2 className="text-lg font-bold text-foreground mb-6">Create Automation Rule</h2>
                             <ReflexRuleForm
                                 workspaceId={params.id as string}
                                 onSuccess={() => { setIsCreatingRule(false); fetchData(); }}
@@ -283,7 +283,7 @@ export default function ReflexDashboardPage() {
                             {rules.length === 0 ? (
                                 <div className="col-span-full bg-slate-900 border border-slate-800 rounded-xl p-12 text-center">
                                     <ListFilter className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-white mb-2">No Rules Configured</h3>
+                                    <h3 className="text-lg font-medium text-foreground mb-2">No Rules Configured</h3>
                                     <p className="text-slate-400 mb-6">
                                         Define how Glanus automatically responds to metric thresholds or intelligence insights.
                                     </p>
@@ -296,7 +296,7 @@ export default function ReflexDashboardPage() {
                                     <div key={rule.id} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-colors">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
-                                                <h3 className="text-white font-medium flex items-center gap-2">
+                                                <h3 className="text-foreground font-medium flex items-center gap-2">
                                                     {rule.name}
                                                     {!rule.enabled && <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">DISABLED</span>}
                                                 </h3>

@@ -239,8 +239,8 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="flex items-center gap-4">
                         <span className="text-4xl">{asset.category?.icon || '📦'}</span>
                         <div>
-                            <h1 className="text-3xl font-bold text-white">{asset.name}</h1>
-                            <p className="text-slate-400 mt-1">{asset.category?.name || 'Uncategorized'}</p>
+                            <h1 className="text-3xl font-bold text-foreground">{asset.name}</h1>
+                            <p className="text-muted-foreground mt-1">{asset.category?.name || 'Uncategorized'}</p>
                         </div>
                     </div>
 
@@ -297,7 +297,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="lg:col-span-2 space-y-6">
                     {/* Status */}
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
-                        <h2 className="text-lg font-semibold text-white mb-4">Status</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-4">Status</h2>
                         <div className="flex items-center gap-2">
                             <span
                                 className={`px-3 py-1 text-sm font-medium rounded ${asset.status === 'AVAILABLE'
@@ -314,18 +314,18 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
                     {/* Field Values */}
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
-                        <h2 className="text-lg font-semibold text-white mb-4">Details</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-4">Details</h2>
 
                         {!asset.fieldValues || asset.fieldValues.length === 0 ? (
-                            <p className="text-slate-500">No additional fields defined</p>
+                            <p className="text-muted-foreground">No additional fields defined</p>
                         ) : (
                             <div className="space-y-4">
                                 {asset.fieldValues.map((fv) => (
                                     <div key={fv.id}>
-                                        <dt className="text-sm font-medium text-slate-500">
+                                        <dt className="text-sm font-medium text-muted-foreground">
                                             {fv.fieldDefinition.label}
                                         </dt>
-                                        <dd className="mt-1 text-sm text-white">
+                                        <dd className="mt-1 text-sm text-foreground">
                                             {fv.fieldDefinition.fieldType === 'JSON' ? (
                                                 <pre className="bg-slate-900/30 p-3 rounded text-xs font-mono overflow-x-auto">
                                                     {formatFieldValue(fv)}
@@ -342,21 +342,21 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
                     {/* Metadata */}
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
-                        <h2 className="text-lg font-semibold text-white mb-4">Metadata</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-4">Metadata</h2>
                         <div className="space-y-3 text-sm">
                             <div>
-                                <span className="text-slate-500">Asset ID:</span>
-                                <span className="ml-2 font-mono text-white">{asset.id}</span>
+                                <span className="text-muted-foreground">Asset ID:</span>
+                                <span className="ml-2 font-mono text-foreground">{asset.id}</span>
                             </div>
                             <div>
-                                <span className="text-slate-500">Created:</span>
-                                <span className="ml-2 text-white">
+                                <span className="text-muted-foreground">Created:</span>
+                                <span className="ml-2 text-foreground">
                                     {formatDateTime(asset.createdAt)}
                                 </span>
                             </div>
                             <div>
-                                <span className="text-slate-500">Updated:</span>
-                                <span className="ml-2 text-white">
+                                <span className="text-muted-foreground">Updated:</span>
+                                <span className="ml-2 text-foreground">
                                     {formatDateTime(asset.updatedAt)}
                                 </span>
                             </div>
@@ -367,10 +367,10 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                 {/* Actions Panel */}
                 <div className="lg:col-span-1">
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6 sticky top-8">
-                        <h2 className="text-lg font-semibold text-white mb-4">Actions</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-4">Actions</h2>
 
                         {actions.length === 0 ? (
-                            <p className="text-sm text-slate-500">No actions available</p>
+                            <p className="text-sm text-muted-foreground">No actions available</p>
                         ) : (
                             <div className="space-y-2">
                                 {actions.map((action) => (
@@ -382,11 +382,11 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                                     >
                                         <span className="text-2xl">{action.icon || '⚡'}</span>
                                         <div className="flex-1">
-                                            <div className="text-sm font-medium text-white">
+                                            <div className="text-sm font-medium text-foreground">
                                                 {action.label}
                                             </div>
                                             {action.description && (
-                                                <div className="text-xs text-slate-500 mt-1">
+                                                <div className="text-xs text-muted-foreground mt-1">
                                                     {action.description}
                                                 </div>
                                             )}
@@ -408,7 +408,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="rounded-xl border border-slate-800 bg-slate-900/95 backdrop-blur-xl max-w-2xl w-full max-h-[80vh] overflow-auto">
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-semibold text-white">
+                                <h3 className="text-xl font-semibold text-foreground">
                                     Execution Result
                                 </h3>
                                 <button type="button"
