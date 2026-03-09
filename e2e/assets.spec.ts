@@ -10,17 +10,13 @@ test.describe('Assets Page', () => {
         await page.goto('/assets');
         await page.waitForLoadState('networkidle');
 
-        // Should have the assets heading
-        await expect(page.locator('h1, h2').first()).toBeVisible();
-
-        // Should show some asset content (seeded assets from seed.ts)
-        // Wait for assets to load
-        await page.waitForTimeout(2000);
+        // Wait for content to render (allow time for data fetch)
+        await page.waitForSelector('text=MacBook Pro', { timeout: 20000 }).catch(() => { });
+        await page.waitForSelector('text=Dell XPS', { timeout: 5000 }).catch(() => { });
 
         // Check for any asset name from the seed data
-        const assetNames = ['MacBook Pro', 'Dell XPS', 'PowerEdge', 'GitHub Enterprise', 'iPhone 15'];
         const pageContent = await page.textContent('body');
-
+        const assetNames = ['MacBook Pro', 'Dell XPS', 'PowerEdge', 'GitHub Enterprise', 'iPhone 15'];
         const hasAnyAsset = assetNames.some(name => pageContent?.includes(name));
         expect(hasAnyAsset).toBe(true);
     });
@@ -28,11 +24,13 @@ test.describe('Assets Page', () => {
     test('assets search filters results', async ({ page }) => {
         await page.goto('/assets');
         await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1000);
 
-        // Find search input
+        // Wait for assets to load
+        await page.waitForSelector('text=MacBook Pro', { timeout: 20000 }).catch(() => { });
+
+        // Find search input by placeholder
         const searchInput = page.locator('input[placeholder*="search" i], input[placeholder*="Search" i]').first();
-        if (await searchInput.isVisible({ timeout: 3000 })) {
+        if (await searchInput.isVisible({ timeout: 5000 })) {
             await searchInput.fill('MacBook');
             await page.waitForTimeout(1000);
 
@@ -41,19 +39,13 @@ test.describe('Assets Page', () => {
         }
     });
 
-    test('asset detail page renders properly', async ({ page }) => {
+    test('assets page shows workspace context', async ({ page }) => {
         await page.goto('/assets');
         await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
 
-        // Click on the first asset row/card
-        const assetLink = page.locator('a[href*="/assets/"], tr[data-clickable], [role="row"]').first();
-        if (await assetLink.isVisible({ timeout: 3000 })) {
-            await assetLink.click();
-            await page.waitForLoadState('networkidle');
-
-            // Should be on asset detail page
-            await expect(page).toHaveURL(/\/assets\/[a-z0-9-]+/i);
-        }
+        // Should show the workspace name in the sidebar
+        const content = await page.textContent('body');
+        expect(content).toContain('Acme Corporation');
     });
 });

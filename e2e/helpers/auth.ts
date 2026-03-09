@@ -2,21 +2,31 @@ import { test as base, expect, Page } from '@playwright/test';
 
 /**
  * Login helper — authenticates using the seeded admin account.
- * Stores session state so subsequent tests skip the login step.
+ * 
+ * The Glanus login page uses React controlled inputs (useState + onChange)
+ * with NextAuth's signIn('credentials', { redirect: false }) → router.push('/dashboard').
  */
 export async function login(page: Page, email = 'admin@glanus.com', password = 'password123') {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    // Fill credentials
-    await page.fill('input[type="email"], input[name="email"]', email);
-    await page.fill('input[type="password"], input[name="password"]', password);
+    // Wait for login form to be interactive
+    const emailInput = page.locator('#email');
+    await emailInput.waitFor({ state: 'visible', timeout: 20000 });
 
-    // Submit
+    // Clear and type to trigger React onChange events properly
+    await emailInput.click();
+    await emailInput.fill(email);
+
+    const passwordInput = page.locator('#password');
+    await passwordInput.click();
+    await passwordInput.fill(password);
+
+    // Submit — button says "Sign In"
     await page.click('button[type="submit"]');
 
-    // Wait for redirect away from login
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
+    // Wait for redirect to /dashboard (30s for first-time cold-start compile)
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
 }
 
 /**
