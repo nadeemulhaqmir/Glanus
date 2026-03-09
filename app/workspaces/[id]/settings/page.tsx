@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { csrfFetch } from '@/lib/api/csrfFetch';
+import { useToast } from '@/lib/toast';
 import { Settings, ShieldAlert, AlertTriangle, Building2, Paintbrush } from 'lucide-react';
 
 interface WorkspaceDetails {
@@ -17,6 +18,7 @@ export default function WorkspaceSettingsPage() {
     const params = useParams();
     const router = useRouter();
     const workspaceId = params.id as string;
+    const { success: toastSuccess, error: toastError } = useToast();
 
     const [workspace, setWorkspace] = useState<WorkspaceDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -71,9 +73,9 @@ export default function WorkspaceSettingsPage() {
                 const data = await res.json();
                 throw new Error(data.error || 'Failed to update settings');
             }
-            alert('Settings saved successfully!');
+            toastSuccess('Settings Saved', 'Workspace settings updated successfully.');
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to update settings');
+            toastError('Save Failed', err instanceof Error ? err.message : 'Failed to update settings');
         } finally {
             setIsSaving(false);
         }
@@ -93,7 +95,7 @@ export default function WorkspaceSettingsPage() {
             setIsDeleteModalOpen(false);
             router.push('/dashboard'); // Kick back to root
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to delete workspace');
+            toastError('Delete Failed', err instanceof Error ? err.message : 'Failed to delete workspace');
             setIsDeleting(false);
         }
     };

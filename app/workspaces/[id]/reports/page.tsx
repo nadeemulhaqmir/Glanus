@@ -77,7 +77,7 @@ export default function ReportsPage() {
                             <report.icon className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white mb-2">{report.title}</h3>
+                            <h3 className="text-lg font-semibold text-foreground mb-2">{report.title}</h3>
                             <p className="text-sm text-slate-400 leading-relaxed">{report.description}</p>
                         </div>
                         <Button

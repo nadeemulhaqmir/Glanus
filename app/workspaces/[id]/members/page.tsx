@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { csrfFetch } from '@/lib/api/csrfFetch';
+import { useToast } from '@/lib/toast';
 import { UserPlus, ShieldAlert, Mail } from 'lucide-react';
 
 interface Member {
@@ -20,6 +21,7 @@ export default function WorkspaceMembersPage() {
     const params = useParams();
     const router = useRouter();
     const workspaceId = params.id as string;
+    const { success: toastSuccess, error: toastError } = useToast();
 
     const [members, setMembers] = useState<Member[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -69,9 +71,9 @@ export default function WorkspaceMembersPage() {
             setInviteEmail('');
             setInviteRole('VIEWER');
             setIsInviteModalOpen(false);
-            alert('Invitation sent successfully!'); // In a real app, use a toast
+            toastSuccess('Invitation Sent', `An invitation has been sent to ${inviteEmail}`);
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : 'Failed to send invite');
+            toastError('Invite Failed', err instanceof Error ? err.message : 'Failed to send invite');
         } finally {
             setIsSubmitting(false);
         }
