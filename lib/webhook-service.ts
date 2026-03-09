@@ -29,13 +29,13 @@ export class WebhookService {
 
         for (let attempt = 0; attempt < this.maxRetries; attempt++) {
             try {
-                const result = await this.sendAttempt(url, payload, secret);
+                await this.sendAttempt(url, payload, secret);
                 return { success: true };
             } catch (error: unknown) {
                 lastError = error instanceof Error ? error.message : 'Unknown error';
 
-                // Don't retry on final attempt
-                if (attempt < this.maxRetries) {
+                // Don't delay after the final attempt
+                if (attempt < this.maxRetries - 1) {
                     await this.delay(this.retryDelays[attempt]);
                 }
             }
