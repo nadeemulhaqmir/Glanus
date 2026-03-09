@@ -239,7 +239,7 @@ export default function ActiveSessionPage() {
                 <div className="bg-slate-900 border-b border-slate-800 px-6 py-4">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
                         <div>
-                            <h1 className="text-xl font-bold text-white">{session.asset.name}</h1>
+                            <h1 className="text-xl font-bold text-foreground">{session.asset.name}</h1>
                             <p className="text-sm text-slate-400">{session.asset.category}</p>
                         </div>
                         <div className="text-sm text-slate-400">
