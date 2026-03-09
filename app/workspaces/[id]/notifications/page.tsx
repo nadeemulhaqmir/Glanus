@@ -86,7 +86,7 @@ export default function NotificationsPage() {
                                 <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-xl border border-border bg-surface-1 p-4 shadow-sm transition-transform hover:-translate-y-1">
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                                            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                                                 {notif.type === 'AI_INSIGHT' && (
                                                     <span className="text-xs uppercase font-bold text-nerve bg-nerve/10 px-2 py-0.5 rounded-sm">
                                                         Oracle
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
                                         {/* Expand AI Recommendations */}
                                         {notif.type === 'AI_INSIGHT' && notif.metadata && (notif.metadata as any).recommendations && (
                                             <div className="mt-3 rounded-lg bg-surface-2 p-3 border border-border/50">
-                                                <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
                                                     <svg className="h-3 w-3 text-oracle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a8.966 8.966 0 01-3-2.92m3 2.92a8.966 8.966 0 003-2.92m-3-2.92a8.966 8.966 0 00-3-2.92" />
                                                     </svg>
