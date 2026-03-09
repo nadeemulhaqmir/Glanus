@@ -20,9 +20,7 @@ export async function POST(request: NextRequest) {
             return apiError(400, 'Invalid platform. Must be WINDOWS, MACOS, or LINUX');
         }
 
-        // Get latest version from database
-        // This assumes you have an AgentVersion table
-        // If not, you can hardcode or use environment variables
+        // Get latest active version for this platform
         const latestVersion = await prisma.agentVersion.findFirst({
             where: {
                 platform: normalizedPlatform,

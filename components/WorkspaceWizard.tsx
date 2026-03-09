@@ -162,7 +162,7 @@ export default function WorkspaceWizard({ onComplete, showSampleDataOption = fal
                 {currentStep === 1 && (
                     <div className="space-y-6 max-w-lg mx-auto animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold text-white">Let's build your workspace</h2>
+                            <h2 className="text-2xl font-bold text-foreground">Let's build your workspace</h2>
                             <p className="text-slate-500 mt-2">Give your new workspace a home.</p>
                         </div>
 
@@ -213,7 +213,7 @@ export default function WorkspaceWizard({ onComplete, showSampleDataOption = fal
                 {currentStep === 2 && (
                     <div className="space-y-8 max-w-lg mx-auto animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold text-white">Brand your workspace</h2>
+                            <h2 className="text-2xl font-bold text-foreground">Brand your workspace</h2>
                             <p className="text-slate-500 mt-2">Choose colors that match your company identity.</p>
                         </div>
 
@@ -277,7 +277,7 @@ export default function WorkspaceWizard({ onComplete, showSampleDataOption = fal
                 {currentStep === 3 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold text-white">Select a Plan</h2>
+                            <h2 className="text-2xl font-bold text-foreground">Select a Plan</h2>
                             <p className="text-slate-500 mt-2">Start for free, upgrade as you grow.</p>
                         </div>
 
@@ -296,7 +296,7 @@ export default function WorkspaceWizard({ onComplete, showSampleDataOption = fal
                                         className="mt-0.5 rounded border-blue-300 text-nerve focus:ring-nerve/50"
                                     />
                                     <div>
-                                        <div className="text-sm font-medium text-white">Create sample data</div>
+                                        <div className="text-sm font-medium text-foreground">Create sample data</div>
                                         <div className="text-xs text-slate-500 mt-0.5">
                                             Add demo assets, locations, and alerts to help you get started
                                         </div>
