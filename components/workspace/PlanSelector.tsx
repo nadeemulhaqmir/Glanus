@@ -91,9 +91,9 @@ export default function PlanSelector({ selectedPlan, onChange }: PlanSelectorPro
 
                     <div className="flex flex-col h-full">
                         <div className="mb-4">
-                            <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                            <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
                             <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold text-white">
+                                <span className="text-2xl font-bold text-foreground">
                                     {plan.price}
                                 </span>
                                 {plan.price !== 'Custom' && (

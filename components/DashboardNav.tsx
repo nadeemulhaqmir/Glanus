@@ -48,7 +48,7 @@ export function DashboardNav() {
                             stroke="hsl(168, 100%, 45%)" strokeWidth="2.5" strokeLinecap="round" />
                         <circle cx="16" cy="16" r="2" fill="hsl(168, 100%, 45%)" opacity="0.6" />
                     </svg>
-                    <span className="text-lg font-semibold text-white">Glanus</span>
+                    <span className="text-lg font-semibold text-foreground">Glanus</span>
                 </Link>
                 <div className="hidden gap-1 md:flex">
                     {NAV_ITEMS.map(({ href, label, icon }) => (
