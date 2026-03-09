@@ -172,7 +172,7 @@ export default function CertificationCenterPage() {
             <div className="py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-4xl mx-auto">
                     <div className="text-center mb-12">
-                        <h1 className="text-4xl font-bold text-white mb-4">Certification Center</h1>
+                        <h1 className="text-4xl font-bold text-foreground mb-4">Certification Center</h1>
                         <p className="text-lg text-slate-400">
                             Advance your certification level to unlock higher capacity and better matching
                         </p>
@@ -225,7 +225,7 @@ export default function CertificationCenterPage() {
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6 mb-6">
                         <div className="flex justify-between items-center mb-4">
                             <div>
-                                <h1 className="text-2xl font-bold text-white">{exam.level} Certification Exam</h1>
+                                <h1 className="text-2xl font-bold text-foreground">{exam.level} Certification Exam</h1>
                                 <p className="text-sm text-slate-400">
                                     {answeredCount} / {questions.length} answered
                                 </p>
@@ -247,7 +247,7 @@ export default function CertificationCenterPage() {
                         {questions.map((question) => (
                             <div key={question.index} className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
                                 <div className="flex items-start justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-white">
+                                    <h3 className="text-lg font-semibold text-foreground">
                                         {question.index + 1}. {question.question}
                                     </h3>
                                     <span className="text-xs bg-slate-800/50 px-2 py-1 rounded">

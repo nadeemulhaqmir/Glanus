@@ -121,7 +121,7 @@ export default function PartnerSignupPage() {
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-2">Become a Glanus Partner</h1>
+                    <h1 className="text-4xl font-bold text-foreground mb-2">Become a Glanus Partner</h1>
                     <p className="text-lg text-slate-400">
                         Join our certified partner network and earn 50% revenue share
                     </p>
@@ -379,7 +379,7 @@ export default function PartnerSignupPage() {
                         <div className="mt-8 flex justify-between">
                             {step > 1 && (
                                 <button type="button"
-                                    
+
                                     onClick={prevStep}
                                     className="px-6 py-2 border border-slate-700 rounded-md text-slate-300 hover:bg-slate-900/30 transition"
                                 >
@@ -389,7 +389,7 @@ export default function PartnerSignupPage() {
 
                             {step < 4 ? (
                                 <button type="button"
-                                    
+
                                     onClick={nextStep}
                                     className="ml-auto px-6 py-2 bg-nerve text-white rounded-md hover:brightness-110 transition"
                                 >

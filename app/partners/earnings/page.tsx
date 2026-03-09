@@ -124,7 +124,7 @@ export default function PartnerEarningsPage() {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">Earnings & Payouts</h1>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Earnings & Payouts</h1>
                     <p className="text-slate-400">Track your revenue, top-performing workspaces, and payout history</p>
                 </div>
 

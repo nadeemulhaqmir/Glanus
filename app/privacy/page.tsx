@@ -15,12 +15,12 @@ export default function PrivacyPage() {
                     ← Back to Home
                 </Link>
 
-                <h1 className="text-3xl font-bold text-white mb-2">Privacy Policy</h1>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Privacy Policy</h1>
                 <p className="text-slate-400 text-sm mb-10">Last updated: February 2026</p>
 
                 <div className="space-y-8 text-slate-300 leading-relaxed">
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">1. Information We Collect</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">1. Information We Collect</h2>
                         <p className="mb-3">We collect the following categories of information:</p>
                         <ul className="list-disc list-inside space-y-2 text-slate-400">
                             <li><strong className="text-slate-200">Account Information</strong> — Name, email address, password (hashed), and role within workspaces.</li>
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">2. How We Use Your Information</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">2. How We Use Your Information</h2>
                         <ul className="list-disc list-inside space-y-2 text-slate-400">
                             <li>Providing, maintaining, and improving the Glanus platform.</li>
                             <li>Processing transactions and managing your subscription.</li>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">3. Data Storage &amp; Security</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">3. Data Storage &amp; Security</h2>
                         <p>
                             Your data is stored in secure PostgreSQL databases with encrypted connections.
                             Passwords are hashed using bcrypt with salt rounds. API keys are stored as SHA-256
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">4. Multi-Tenant Isolation</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">4. Multi-Tenant Isolation</h2>
                         <p>
                             Glanus is a multi-tenant platform. Each workspace is logically isolated — data belonging
                             to one workspace is never accessible from another. Access within a workspace is controlled
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">5. Data Sharing</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">5. Data Sharing</h2>
                         <p className="mb-2">We do not sell your personal data. We may share data with:</p>
                         <ul className="list-disc list-inside space-y-2 text-slate-400">
                             <li><strong className="text-slate-200">Service Providers</strong> — Stripe (payments), SendGrid (email), Sentry (error tracking).</li>
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">6. Data Retention</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">6. Data Retention</h2>
                         <p>
                             Account data is retained while your account is active. Upon account deletion, personal
                             data is purged within 30 days. Audit logs are retained for 90 days for security
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">7. Your Rights (GDPR)</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">7. Your Rights (GDPR)</h2>
                         <p className="mb-2">Under the General Data Protection Regulation, you have the right to:</p>
                         <ul className="list-disc list-inside space-y-2 text-slate-400">
                             <li><strong className="text-slate-200">Access</strong> — Request a copy of your personal data.</li>
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">8. Cookies</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">8. Cookies</h2>
                         <p>
                             We use essential cookies for authentication sessions (NextAuth.js session tokens) and
                             CSRF protection. These are strictly necessary for the Service to function and cannot
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">9. Children&apos;s Privacy</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">9. Children&apos;s Privacy</h2>
                         <p>
                             The Service is not directed to individuals under the age of 16. We do not knowingly
                             collect personal information from children.
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">10. Changes to This Policy</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">10. Changes to This Policy</h2>
                         <p>
                             We may update this Privacy Policy periodically. Material changes will be communicated
                             via email or a prominent notice within the Service. Your continued use constitutes
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">11. Contact</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">11. Contact</h2>
                         <p>
                             For privacy-related inquiries, data access requests, or to exercise your GDPR rights,
                             contact us at{' '}

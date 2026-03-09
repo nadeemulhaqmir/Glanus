@@ -15,12 +15,12 @@ export default function TermsPage() {
                     ← Back to Home
                 </Link>
 
-                <h1 className="text-3xl font-bold text-white mb-2">Terms of Service</h1>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Terms of Service</h1>
                 <p className="text-slate-400 text-sm mb-10">Last updated: February 2026</p>
 
                 <div className="space-y-8 text-slate-300 leading-relaxed">
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">1. Acceptance of Terms</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">1. Acceptance of Terms</h2>
                         <p>
                             By accessing or using the Glanus platform (&quot;Service&quot;), you agree to be bound by these Terms
                             of Service. If you do not agree to these terms, do not use the Service.
@@ -28,7 +28,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">2. Description of Service</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">2. Description of Service</h2>
                         <p>
                             Glanus is a multi-tenant IT asset management platform providing asset tracking, monitoring,
                             analytics, remote management, and partner ecosystem management. The Service is available
@@ -37,7 +37,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">3. User Accounts</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">3. User Accounts</h2>
                         <ul className="list-disc list-inside space-y-2 text-slate-400">
                             <li>You must provide accurate and complete registration information.</li>
                             <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
@@ -47,7 +47,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">4. Workspace &amp; Data Ownership</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">4. Workspace &amp; Data Ownership</h2>
                         <p>
                             You retain all rights to the data you submit to the Service. Each workspace is isolated
                             and data is scoped to the workspace level. Workspace owners and administrators control
@@ -56,7 +56,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">5. Acceptable Use</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">5. Acceptable Use</h2>
                         <p className="mb-2">You agree not to:</p>
                         <ul className="list-disc list-inside space-y-2 text-slate-400">
                             <li>Use the Service for any unlawful purpose or in violation of any applicable laws.</li>
@@ -68,7 +68,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">6. Subscription &amp; Billing</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">6. Subscription &amp; Billing</h2>
                         <p>
                             Paid subscriptions are billed according to the plan selected. Subscription fees are
                             non-refundable except as required by law. We reserve the right to modify pricing with
@@ -78,7 +78,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">7. Partner Program</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">7. Partner Program</h2>
                         <p>
                             Partners participating in the Glanus Partner Program are subject to additional terms
                             including revenue sharing arrangements (70/30 split), certification requirements,
@@ -87,7 +87,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">8. Intellectual Property</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">8. Intellectual Property</h2>
                         <p>
                             The Service, including its design, code, and branding, is owned by Glanus and protected by
                             intellectual property laws. You are granted a limited, non-exclusive license to use the
@@ -96,7 +96,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">9. Limitation of Liability</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">9. Limitation of Liability</h2>
                         <p>
                             To the maximum extent permitted by law, Glanus shall not be liable for any indirect,
                             incidental, special, consequential, or punitive damages, including loss of data, revenue,
@@ -105,7 +105,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">10. Termination</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">10. Termination</h2>
                         <p>
                             Either party may terminate the agreement at any time. Upon termination, your access to
                             the Service will be revoked and your data may be deleted after a 30-day retention period.
@@ -114,7 +114,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">11. Changes to Terms</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">11. Changes to Terms</h2>
                         <p>
                             We may update these Terms from time to time. We will notify you of material changes
                             via email or through the Service. Continued use of the Service after changes constitutes
@@ -123,7 +123,7 @@ export default function TermsPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-lg font-semibold text-white mb-3">12. Contact</h2>
+                        <h2 className="text-lg font-semibold text-foreground mb-3">12. Contact</h2>
                         <p>
                             For questions about these Terms, please contact us at{' '}
                             <a href="mailto:legal@glanus.com" className="text-nerve hover:text-nerve/80 transition-colors">

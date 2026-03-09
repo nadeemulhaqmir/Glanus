@@ -169,7 +169,7 @@ export default function AssetAgentPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-semibold text-white mb-2">No Agent Installed</h2>
+                    <h2 className="text-xl font-semibold text-foreground mb-2">No Agent Installed</h2>
                     <p className="text-sm text-slate-400 mb-6">
                         Install the Glanus agent on this asset to enable remote monitoring and management
                     </p>
@@ -211,7 +211,7 @@ export default function AssetAgentPage() {
             {/* Header */}
             <div className="mb-8 flex justify-between items-center animate-fade-in">
                 <div>
-                    <h1 className="text-2xl font-bold text-white mb-1">Agent Monitoring</h1>
+                    <h1 className="text-2xl font-bold text-foreground mb-1">Agent Monitoring</h1>
                     <p className="text-sm text-slate-400">{agent.hostname} • {agent.platform}</p>
                 </div>
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${agentStatusBadge[agent.status] || agentStatusBadge.OFFLINE}`}>
@@ -226,7 +226,7 @@ export default function AssetAgentPage() {
                     {/* Real-Time Metrics */}
                     {agent.status === 'ONLINE' && (
                         <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
-                            <h2 className="text-sm font-semibold text-white mb-5">Real-Time Metrics</h2>
+                            <h2 className="text-sm font-semibold text-foreground mb-5">Real-Time Metrics</h2>
                             <div className="grid grid-cols-3 gap-6">
                                 <MetricGauge label="CPU Usage" value={agent.cpuUsage} color="nerve" />
                                 <MetricGauge label="RAM Usage" value={agent.ramUsage} color="cortex" />
@@ -255,7 +255,7 @@ export default function AssetAgentPage() {
                     {agent.status === 'ONLINE' && (
                         <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
                             <div className="flex justify-between items-center mb-5">
-                                <h2 className="text-sm font-semibold text-white">Historical Metrics</h2>
+                                <h2 className="text-sm font-semibold text-foreground">Historical Metrics</h2>
                                 <div className="flex gap-1">
                                     {(['1h', '24h', '7d', '30d'] as const).map((range) => (
                                         <button type="button"
@@ -286,7 +286,7 @@ export default function AssetAgentPage() {
 
                     {/* Script Executor */}
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
-                        <h2 className="text-sm font-semibold text-white mb-5">Execute Remote Script</h2>
+                        <h2 className="text-sm font-semibold text-foreground mb-5">Execute Remote Script</h2>
                         <form onSubmit={executeScript} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Script Name</label>
@@ -294,7 +294,7 @@ export default function AssetAgentPage() {
                                     type="text"
                                     value={scriptName}
                                     onChange={(e) => setScriptName(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-white
+                                    className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-foreground
                                                        placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-nerve/50 focus:border-nerve/50"
                                     placeholder="e.g., Check Disk Space"
                                     required
@@ -306,7 +306,7 @@ export default function AssetAgentPage() {
                                 <select
                                     value={language}
                                     onChange={(e) => setLanguage(e.target.value as 'powershell' | 'bash' | 'python')}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-white
+                                    className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-foreground
                                                        focus:outline-none focus:ring-1 focus:ring-nerve/50 focus:border-nerve/50"
                                 >
                                     <option value="powershell">PowerShell (Windows)</option>
@@ -321,7 +321,7 @@ export default function AssetAgentPage() {
                                     rows={6}
                                     value={scriptBody}
                                     onChange={(e) => setScriptBody(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-white font-mono
+                                    className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-foreground font-mono
                                                        placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-nerve/50 focus:border-nerve/50"
                                     placeholder={
                                         language === 'powershell' ? 'Get-PSDrive -PSProvider FileSystem' :
@@ -355,7 +355,7 @@ export default function AssetAgentPage() {
                 <div className="space-y-6">
                     {/* Agent Info */}
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-5">
-                        <h3 className="text-sm font-semibold text-white mb-4">Agent Info</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">Agent Info</h3>
                         <div className="space-y-3 text-sm">
                             <InfoRow label="Version" value={agent.agentVersion} />
                             {agent.ipAddress && <InfoRow label="IP Address" value={agent.ipAddress} />}
@@ -366,7 +366,7 @@ export default function AssetAgentPage() {
 
                     {/* Recent Executions */}
                     <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-5">
-                        <h3 className="text-sm font-semibold text-white mb-4">Recent Executions</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">Recent Executions</h3>
                         {executions.length === 0 ? (
                             <p className="text-xs text-slate-500">No executions yet</p>
                         ) : (
@@ -395,7 +395,7 @@ export default function AssetAgentPage() {
             {executions.length > 0 && (
                 <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
                     <div className="border-b border-slate-800 px-5 py-4">
-                        <h2 className="text-sm font-semibold text-white">Execution History</h2>
+                        <h2 className="text-sm font-semibold text-foreground">Execution History</h2>
                     </div>
                     <div className="divide-y divide-slate-800/50">
                         {executions.map((exec) => (

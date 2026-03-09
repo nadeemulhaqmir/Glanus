@@ -131,7 +131,7 @@ export default function ActionsPage({ params }: { params: Promise<{ id: string }
                                 <div className="flex items-center gap-3">
                                     <span className="text-2xl">{action.icon || '⚡'}</span>
                                     <div>
-                                        <h3 className="text-lg font-semibold text-white">{action.label}</h3>
+                                        <h3 className="text-lg font-semibold text-foreground">{action.label}</h3>
                                         <p className="text-sm text-slate-500">{action.slug}</p>
                                     </div>
                                 </div>

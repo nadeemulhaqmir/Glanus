@@ -84,7 +84,7 @@ export default function InsightsPage() {
         <>
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-2xl font-bold text-white">Insights</h1>
+                <h1 className="text-2xl font-bold text-foreground">Insights</h1>
                 <p className="mt-1 text-sm text-slate-400">
                     AI-generated insights across your workspaces
                 </p>
@@ -123,7 +123,7 @@ export default function InsightsPage() {
                     {/* Severity Breakdown */}
                     {summary && summary.total > 0 && (
                         <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/50 p-5">
-                            <h2 className="mb-4 text-sm font-semibold text-white">Severity Distribution</h2>
+                            <h2 className="mb-4 text-sm font-semibold text-foreground">Severity Distribution</h2>
                             <div className="flex gap-6">
                                 {Object.entries(summary.severity).map(([severity, count]) => (
                                     <div key={severity} className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function InsightsPage() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <h3 className="text-sm font-semibold text-white">{insight.title}</h3>
+                                                <h3 className="text-sm font-semibold text-foreground">{insight.title}</h3>
                                                 <p className="mt-1 text-xs leading-relaxed opacity-70">{insight.description}</p>
                                             </div>
                                             <div className="text-right">

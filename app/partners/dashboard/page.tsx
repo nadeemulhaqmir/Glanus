@@ -146,7 +146,7 @@ function PartnerDashboardContent() {
 
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">{partner.companyName}</h1>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">{partner.companyName}</h1>
                     <div className="flex items-center space-x-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-semibold ${partner.status === 'ACTIVE' ? 'bg-health-good/15 text-health-good' :
                             partner.status === 'VERIFIED' ? 'bg-nerve/10 text-nerve' :
@@ -203,7 +203,7 @@ function PartnerDashboardContent() {
                                         <div key={assignment.id} className="border border-slate-800 rounded-lg p-4">
                                             <div className="flex items-start justify-between mb-3">
                                                 <div>
-                                                    <h3 className="font-semibold text-white">{assignment.workspace.name}</h3>
+                                                    <h3 className="font-semibold text-foreground">{assignment.workspace.name}</h3>
                                                     <p className="text-sm text-slate-400">
                                                         Requested {formatDate(assignment.assignedAt)}
                                                     </p>
@@ -250,7 +250,7 @@ function PartnerDashboardContent() {
                                         >
                                             <div className="flex justify-between items-center">
                                                 <div>
-                                                    <h3 className="font-semibold text-white">{assignment.workspace.name}</h3>
+                                                    <h3 className="font-semibold text-foreground">{assignment.workspace.name}</h3>
                                                     <p className="text-sm text-slate-400">Status: {assignment.status}</p>
                                                 </div>
                                                 <div className="text-right">

@@ -84,7 +84,7 @@ export default function InvitationPage({ params: paramsPromise }: { params: Prom
                     <div className="w-16 h-16 bg-health-critical/10 rounded-full flex items-center justify-center mx-auto mb-4 text-health-critical">
                         <XCircle className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Invitation Error</h2>
+                    <h2 className="text-xl font-bold text-foreground mb-2">Invitation Error</h2>
                     <p className="text-slate-500 mb-6">{inviteState.error}</p>
                     <Button onClick={() => router.push('/')} variant="secondary" className="w-full">
                         Go Home
@@ -107,7 +107,7 @@ export default function InvitationPage({ params: paramsPromise }: { params: Prom
                     <Mail className="w-8 h-8" />
                 </div>
 
-                <h1 className="text-2xl font-bold text-white mb-2">
+                <h1 className="text-2xl font-bold text-foreground mb-2">
                     You've been invited!
                 </h1>
 

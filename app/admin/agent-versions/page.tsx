@@ -44,7 +44,7 @@ export default async function AgentVersionsPage() {
 
             {Object.entries(mappedVersions).map(([platform, platVersions]) => (
                 <div key={platform} className="space-y-4">
-                    <h2 className="text-lg font-semibold text-white capitalize flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-foreground capitalize flex items-center gap-2">
                         {platform.toLowerCase()} Builds
                         <Badge variant="info" className="text-xs">
                             {platVersions.length} Total
@@ -71,7 +71,7 @@ export default async function AgentVersionsPage() {
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-3 mb-1">
-                                                <h3 className="text-lg font-semibold text-white">v{version.version}</h3>
+                                                <h3 className="text-lg font-semibold text-foreground">v{version.version}</h3>
                                                 {version.status === 'ACTIVE' && (
                                                     <Badge variant="success" className="text-xs">Active Release</Badge>
                                                 )}
