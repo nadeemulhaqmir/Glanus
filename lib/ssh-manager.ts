@@ -1,6 +1,5 @@
 import { NodeSSH } from 'node-ssh';
 import fs from 'fs/promises';
-import path from 'path';
 
 /**
  * SSH configuration for remote command execution

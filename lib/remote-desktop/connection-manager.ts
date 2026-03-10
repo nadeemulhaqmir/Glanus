@@ -116,6 +116,8 @@ export class RemoteDesktopManager {
     startRecording(): void {
         if (!this.webrtcClient) return;
 
+        // SimplePeer does not expose remote streams via public API
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const stream = (this.webrtcClient as any).peer?.streams?.[0];
         if (!stream) return;
 

@@ -103,6 +103,7 @@ async function saveRulesToDB(workspaceId: string, rules: AutomationRule[]): Prom
             settings: {
                 ...settings,
                 reflexRules: rules,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any, // Prisma JSON field — no typed alternative
         },
     });
@@ -223,7 +224,7 @@ export async function getActionQueue(workspaceId: string): Promise<ActionQueueIt
         take: 50,
     });
 
-    return items.map((item: any) => ({
+    return items.map((item) => ({
         id: item.id,
         rule: item.ruleSnapshot as unknown as AutomationRule,
         consequence: item.consequence as unknown as ConsequenceAssessment,
@@ -280,7 +281,9 @@ export async function processRecommendation(
             workspaceId,
             ruleId: matchingRule.id,
             ruleName: matchingRule.name,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ruleSnapshot: matchingRule as any, // Prisma JSON field
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             consequence: consequence as any, // Prisma JSON field
             status,
         }

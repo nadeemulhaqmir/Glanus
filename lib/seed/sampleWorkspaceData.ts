@@ -16,7 +16,7 @@ export interface SampleDataOptions {
  * Generate sample assets for a new workspace
  */
 export function generateSampleAssets(options: SampleDataOptions): Prisma.AssetCreateManyInput[] {
-    const { workspaceId, userId } = options;
+    const { workspaceId } = options;
 
     return [
         {
@@ -109,7 +109,7 @@ export async function createSampleWorkspaceData(
     prisma: typeof PrismaInstance,
     options: SampleDataOptions
 ): Promise<void> {
-    const { workspaceId, userId } = options;
+    const { workspaceId } = options;
 
     try {
         // Create sample assets

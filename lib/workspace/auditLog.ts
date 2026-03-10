@@ -6,7 +6,6 @@
  */
 
 import { prisma } from '@/lib/db';
-import { Prisma } from '@prisma/client';
 import { logInfo } from '@/lib/logger';
 
 export type AuditAction =

@@ -1,4 +1,4 @@
-import { Workspace, Partner, PartnerCertificationLevel } from '@prisma/client';
+import { Partner, PartnerCertificationLevel } from '@prisma/client';
 
 /**
  * Partner Assignment Algorithm

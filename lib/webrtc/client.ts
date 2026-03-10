@@ -104,18 +104,17 @@ export class WebRTCClient {
         }
     }
 
-    public async getDisplayMedia(constraints?: MediaStreamConstraints): Promise<MediaStream> {
+    public async getDisplayMedia(constraints?: DisplayMediaStreamOptions): Promise<MediaStream> {
         try {
-            const stream = await (navigator.mediaDevices as any).getDisplayMedia(
+            const stream = await navigator.mediaDevices.getDisplayMedia(
                 constraints || {
                     video: {
-                        cursor: 'always',
                         width: { ideal: 1920, max: 1920 },
                         height: { ideal: 1080, max: 1080 },
                         frameRate: { ideal: 30, max: 60 },
                     },
                     audio: false,
-                }
+                } as DisplayMediaStreamOptions
             );
 
             this.stream = stream;
@@ -148,11 +147,15 @@ export class WebRTCClient {
     }
 
     private async getConnectionMetrics(): Promise<ConnectionMetrics | null> {
+        // SimplePeer does not expose `_pc` in its type definitions,
+        // but it is the only way to access the underlying RTCPeerConnection.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (!this.peer || !(this.peer as any)._pc) {
             return null;
         }
 
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const pc = (this.peer as any)._pc as RTCPeerConnection;
             const stats = await pc.getStats();
 

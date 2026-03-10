@@ -166,7 +166,7 @@ export async function logPrivilegeEscalation(
 export async function logSuspiciousActivity(
     description: string,
     ipAddress: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
 ): Promise<void> {
     await logSecurityEvent({
         action: 'SUSPICIOUS_ACTIVITY',

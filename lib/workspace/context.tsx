@@ -37,7 +37,7 @@ interface WorkspaceContextType {
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [isLoading, setIsLoading] = useState(true);

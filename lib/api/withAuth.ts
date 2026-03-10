@@ -14,6 +14,7 @@ import { logError } from '@/lib/logger';
 import { ValidationError } from '@/lib/validation';
 import type { WorkspaceRole } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/nextjs';
 
 // ============================================
 // Custom API Error
@@ -189,7 +190,8 @@ export function withErrorHandler<T extends any[]>(
                 return apiError(400, error.message || 'Database error');
             }
 
-            // Log unexpected errors
+            // Report unexpected errors to Sentry for production monitoring
+            Sentry.captureException(error);
             logError('API error', error);
 
             return apiError(500, 'Internal server error');
