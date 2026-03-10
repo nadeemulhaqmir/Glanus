@@ -30,12 +30,24 @@ export async function POST(request: Request) {
         return apiError(400, 'Webhook signature verification failed');
     }
 
-    // Idempotency check: skip already-processed events
-    const existingEvent = await prisma.stripeEvent.findUnique({
-        where: { eventId: event.id },
-    });
+    // Idempotency check: claim the event BEFORE running the handler.
+    // Using upsert so a concurrent duplicate retry gets a P2002 unique-constraint
+    // error and backs off — preventing double-execution (e.g. double credit reset).
+    let claimed = false;
+    try {
+        const result = await prisma.stripeEvent.upsert({
+            where: { eventId: event.id },
+            create: { eventId: event.id, type: event.type, processed: false },
+            update: {},
+        });
+        // If the record already existed (processed=true), it was already handled
+        claimed = !result.processed;
+    } catch (_err) {
+        // P2002 — another worker already claimed it; treat as duplicate
+        claimed = false;
+    }
 
-    if (existingEvent) {
+    if (!claimed) {
         logInfo('[STRIPE_WEBHOOK] Duplicate event skipped', { eventId: event.id, type: event.type });
         return apiSuccess({ received: true, duplicate: true });
     }
@@ -77,17 +89,19 @@ export async function POST(request: Request) {
                 logInfo(`[STRIPE_WEBHOOK] Unhandled event type: ${event.type}`);
         }
 
-        // Record processed event for idempotency
-        await prisma.stripeEvent.create({
-            data: {
-                eventId: event.id,
-                type: event.type,
-                processed: true,
-            },
+        // Mark event as fully processed
+        await prisma.stripeEvent.update({
+            where: { eventId: event.id },
+            data: { processed: true },
         });
 
         return apiSuccess({ received: true });
     } catch (error: unknown) {
+        // Mark event as failed so next retry can reclaim it
+        await prisma.stripeEvent.update({
+            where: { eventId: event.id },
+            data: { processed: false },
+        }).catch(() => { }); // best-effort
         logError('[STRIPE_WEBHOOK] Error processing event', error, { eventId: event.id, type: event.type });
         return apiError(500, 'Webhook processing failed');
     }

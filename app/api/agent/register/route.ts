@@ -32,6 +32,15 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const data = registerSchema.parse(body);
 
+        // Verify workspace exists
+        const workspace = await prisma.workspace.findUnique({
+            where: { id: data.workspaceId },
+            select: { id: true },
+        });
+        if (!workspace) {
+            return apiError(404, 'Workspace not found');
+        }
+
         // Verify asset exists and belongs to workspace
         const asset = await prisma.asset.findFirst({
             where: {

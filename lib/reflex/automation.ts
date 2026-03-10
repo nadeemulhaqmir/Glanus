@@ -94,9 +94,7 @@ async function saveRulesToDB(workspaceId: string, rules: AutomationRule[]): Prom
         where: { id: workspaceId },
         select: { settings: true },
     });
-
     const settings = (workspace?.settings as Record<string, unknown>) || {};
-
     await prisma.workspace.update({
         where: { id: workspaceId },
         data: {
@@ -193,16 +191,36 @@ export async function saveRule(
     workspaceId: string,
     rule: AutomationRule,
 ): Promise<AutomationRule> {
-    const rules = await loadRulesFromDB(workspaceId);
-    const existingIndex = rules.findIndex(r => r.id === rule.id);
+    // Atomic read-modify-write inside a transaction to prevent concurrent
+    // saves from clobbering each other's changes.
+    await prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+            where: { id: workspaceId },
+            select: { settings: true },
+        });
 
-    if (existingIndex >= 0) {
-        rules[existingIndex] = rule;
-    } else {
-        rules.push(rule);
-    }
+        const settings = (workspace?.settings as Record<string, unknown>) || {};
+        const rules = (settings.reflexRules as AutomationRule[]) || [];
 
-    await saveRulesToDB(workspaceId, rules);
+        const existingIndex = rules.findIndex(r => r.id === rule.id);
+        if (existingIndex >= 0) {
+            rules[existingIndex] = rule;
+        } else {
+            rules.push(rule);
+        }
+
+        await tx.workspace.update({
+            where: { id: workspaceId },
+            data: {
+                settings: {
+                    ...settings,
+                    reflexRules: rules,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
+            },
+        });
+    });
+
     return rule;
 }
 
@@ -210,9 +228,25 @@ export async function deleteRule(
     workspaceId: string,
     ruleId: string,
 ): Promise<void> {
-    const rules = await loadRulesFromDB(workspaceId);
-    const filtered = rules.filter(r => r.id !== ruleId);
-    await saveRulesToDB(workspaceId, filtered);
+    // Atomic read-modify-write to prevent concurrent deletes from conflicting
+    await prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+            where: { id: workspaceId },
+            select: { settings: true },
+        });
+        const settings = (workspace?.settings as Record<string, unknown>) || {};
+        const rules = ((settings.reflexRules as AutomationRule[]) || []).filter(r => r.id !== ruleId);
+        await tx.workspace.update({
+            where: { id: workspaceId },
+            data: {
+                settings: {
+                    ...settings,
+                    reflexRules: rules,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
+            },
+        });
+    });
 }
 
 // ─── Action Queue ────────────────────────────────────────
@@ -373,17 +407,19 @@ export async function executeAction(
             });
 
             if (agent) {
-                // Queue a restart command that the agent picks up on next heartbeat
+                // Use the AGENT'S platform (stored in DB), not the server's process.platform.
+                // In production the server runs Linux while agents may be Windows or macOS.
+                const isWindows = agent.platform === 'WINDOWS';
                 await prisma.scriptExecution.create({
                     data: {
                         agentId: agent.id,
                         assetId: agent.assetId,
                         workspaceId,
                         scriptName: `Restart Agent (${item.rule.name})`,
-                        scriptBody: process.platform === 'win32'
+                        scriptBody: isWindows
                             ? 'Restart-Service GlanusAgent -Force'
                             : 'sudo systemctl restart glanus-agent',
-                        language: process.platform === 'win32' ? 'powershell' : 'bash',
+                        language: isWindows ? 'powershell' : 'bash',
                         status: 'PENDING',
                         createdBy: 'REFLEX_ENGINE',
                     },

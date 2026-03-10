@@ -42,6 +42,7 @@ export class RemoteDesktopManager {
     private reconnectAttempts = 0;
     private mediaRecorder: MediaRecorder | null = null;
     private recordedChunks: Blob[] = [];
+    private isHost = false; // remembered for reconnect
 
     constructor(config: RemoteSessionConfig, events?: RemoteDesktopEvents) {
         this.config = {
@@ -63,6 +64,7 @@ export class RemoteDesktopManager {
      * 3. Exchanges SDP offers/answers via WebSocket
      */
     async connect(isHost: boolean): Promise<void> {
+        this.isHost = isHost;
         this.setState('connecting');
 
         try {
@@ -166,10 +168,23 @@ export class RemoteDesktopManager {
         };
 
         this.webrtcClient.onDisconnect = () => {
-            if (this.config.autoReconnect && this.reconnectAttempts < (this.config.maxReconnectAttempts || 3)) {
+            const maxAttempts = this.config.maxReconnectAttempts ?? 3;
+            if (this.config.autoReconnect && this.reconnectAttempts < maxAttempts) {
                 this.setState('reconnecting');
                 this.reconnectAttempts++;
-                // Reconnection logic would go here
+
+                // Tear down stale connections before reconnecting
+                if (this.ws) { this.ws.close(); this.ws = null; }
+                if (this.webrtcClient) { this.webrtcClient.destroy(); this.webrtcClient = null; }
+
+                // Exponential backoff: 1s, 2s, 4s ...
+                const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 10000);
+                setTimeout(() => {
+                    this.connect(this.isHost).catch(err => {
+                        this.setState('error');
+                        this.events.onError?.(err instanceof Error ? err : new Error(String(err)));
+                    });
+                }, delay);
             } else {
                 this.setState('disconnected');
             }
