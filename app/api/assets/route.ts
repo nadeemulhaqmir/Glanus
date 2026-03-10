@@ -16,13 +16,7 @@ import { createAssetSchema } from '@/lib/schemas/asset.schemas';
 // GET /api/assets - List assets with filtering and pagination
 export const GET = withErrorHandler(async (request: NextRequest) => {
     const user = await requireAuth();
-
-    const dbUser = await prisma.user.findUnique({
-        where: { email: user.email! },
-    });
-    if (!dbUser) {
-        return apiError(404, 'User not found');
-    }
+    // Note: requireAuth() returns {id, email, role, ...} from session — no extra DB lookup needed
 
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
@@ -30,7 +24,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
         return apiError(400, 'Workspace ID required. Please select a workspace.');
     }
 
-    const { hasAccess } = await verifyWorkspaceAccess(dbUser.id, workspaceId);
+    const { hasAccess } = await verifyWorkspaceAccess(user.id, workspaceId);
     if (!hasAccess) {
         return apiError(403, 'Access denied to workspace');
     }
@@ -59,19 +53,21 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
     if (assignedToId) where.assignedToId = assignedToId;
     if (location) where.location = { contains: location, mode: 'insensitive' };
 
-    const total = await prisma.asset.count({ where });
-
-    const assets = await prisma.asset.findMany({
-        where,
-        skip,
-        take: limit ?? 20,
-        orderBy: { [sortBy ?? 'createdAt']: sortOrder ?? 'desc' } as Record<string, 'asc' | 'desc'>,
-        include: {
-            physicalAsset: true,
-            digitalAsset: true,
-            assignedTo: { select: { id: true, name: true, email: true } },
-        },
-    });
+    // Parallelize independent count + list queries
+    const [total, assets] = await Promise.all([
+        prisma.asset.count({ where }),
+        prisma.asset.findMany({
+            where,
+            skip,
+            take: limit ?? 20,
+            orderBy: { [sortBy ?? 'createdAt']: sortOrder ?? 'desc' } as Record<string, 'asc' | 'desc'>,
+            include: {
+                physicalAsset: true,
+                digitalAsset: true,
+                assignedTo: { select: { id: true, name: true, email: true } },
+            },
+        }),
+    ]);
 
     return apiSuccess({
         assets,

@@ -6,7 +6,16 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
+    // Add connection pool config to the URL to prevent exhaustion under load.
+    // connection_limit: max concurrent connections per Prisma Client instance.
+    // pool_timeout: seconds to wait for a free connection before throwing.
+    const baseUrl = process.env.DATABASE_URL || '';
+    const datasourceUrl = baseUrl.includes('connection_limit')
+        ? baseUrl
+        : `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}connection_limit=10&pool_timeout=20`;
+
     return new PrismaClient({
+        datasourceUrl,
         log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     }).$extends(softDeleteExtension);
 }
@@ -16,3 +25,4 @@ export const prisma =
     createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+

@@ -46,7 +46,8 @@ export const GET = withErrorHandler(async (
         totalAgents,
         alerts,
         recentActivity,
-        agentHealthData,
+        agentList,
+        latestMetrics,
     ] = await Promise.all([
         // Current asset count
         prisma.asset.count({
@@ -95,38 +96,46 @@ export const GET = withErrorHandler(async (
             orderBy: { createdAt: 'desc' },
             take: 20,
         }),
-        // Agent health metrics — latest metric per agent
+        // Agent list (status only — no nested metrics)
         prisma.agentConnection.findMany({
             where: { workspaceId },
-            select: {
-                status: true,
-                metrics: {
-                    orderBy: { timestamp: 'desc' },
-                    take: 1,
-                    select: {
-                        cpuUsage: true,
-                        ramUsed: true,
-                        ramTotal: true,
-                        diskUsed: true,
-                        diskTotal: true,
-                    },
-                },
-            },
+            select: { id: true, status: true },
         }),
+        // Latest metric per agent — single DISTINCT ON query instead of N+1
+        prisma.$queryRaw<Array<{
+            agentId: string;
+            cpuUsage: number;
+            ramUsed: number;
+            ramTotal: number;
+            diskUsed: number;
+            diskTotal: number;
+        }>>`
+            SELECT DISTINCT ON ("agentId")
+                "agentId", "cpuUsage", "ramUsed", "ramTotal", "diskUsed", "diskTotal"
+            FROM "AgentMetric"
+            WHERE "agentId" IN (
+                SELECT id FROM "AgentConnection" WHERE "workspaceId" = ${workspaceId}
+            )
+            ORDER BY "agentId", "timestamp" DESC
+        `,
     ]);
 
-    // Compute system health from agent metrics
-    const onlineAgentsWithMetrics = agentHealthData.filter(
-        (a: any) => a.status === 'ONLINE' && a.metrics.length > 0
+    // Build a quick-lookup map: agentId → latest metric
+    const metricByAgentId = new Map(latestMetrics.map(m => [m.agentId, m]));
+
+
+    // Compute system health from agent metrics using the Map built above
+    const onlineAgentsWithMetrics = agentList.filter(
+        a => a.status === 'ONLINE' && metricByAgentId.has(a.id)
     );
-    const offlineAgentCount = agentHealthData.filter((a: any) => a.status === 'OFFLINE').length;
-    const errorAgentCount = agentHealthData.filter((a: any) => a.status === 'ERROR').length;
+    const offlineAgentCount = agentList.filter(a => a.status === 'OFFLINE').length;
+    const errorAgentCount = agentList.filter(a => a.status === 'ERROR').length;
 
     let avgCpu = 0, avgRam = 0, avgDisk = 0;
     if (onlineAgentsWithMetrics.length > 0) {
         let cpuSum = 0, ramSum = 0, diskSum = 0;
         for (const agent of onlineAgentsWithMetrics) {
-            const m = agent.metrics[0];
+            const m = metricByAgentId.get(agent.id)!;
             cpuSum += m.cpuUsage ?? 0;
             ramSum += m.ramTotal > 0 ? (m.ramUsed / m.ramTotal) * 100 : 0;
             diskSum += m.diskTotal > 0 ? (m.diskUsed / m.diskTotal) * 100 : 0;
@@ -145,6 +154,7 @@ export const GET = withErrorHandler(async (
         agentsError: errorAgentCount,
         totalAgents,
     };
+
 
     // Calculate changes
     const assetChange = assetCount - assetCountPrevious;

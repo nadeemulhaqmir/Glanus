@@ -28,12 +28,17 @@ export const GET = withErrorHandler(async (
     });
 
     const activeVersions = await prisma.agentVersion.findMany({
-        where: { status: 'ACTIVE' }
+        where: { status: 'ACTIVE' },
+        take: 10, // platform count is bounded (WINDOWS, MACOS, LINUX)
     });
 
+    // Build a Map for O(1) lookup instead of .find() per agent
+    const versionByPlatform = new Map(activeVersions.map((v: any) => [v.platform, v.version]));
+
     const data = agents.map((agent: any) => {
-        const activeRelease = activeVersions.find((v: any) => v.platform === agent.platform);
-        const isOutdated = activeRelease ? agent.agentVersion !== activeRelease.version : false;
+        const isOutdated = versionByPlatform.has(agent.platform)
+            ? agent.agentVersion !== versionByPlatform.get(agent.platform)
+            : false;
 
         return {
             id: agent.id,
