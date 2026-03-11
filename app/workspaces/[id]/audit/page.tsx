@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { csrfFetch } from '@/lib/api/csrfFetch';
-import { Search, ChevronDown, ChevronRight, Filter, RefreshCw, FileText } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Filter, RefreshCw, FileText, Download, Calendar } from 'lucide-react';
 import { SkeletonDashboard } from '@/components/ui/Skeleton';
+import { useToast } from '@/lib/toast';
 
 interface AuditLog {
     id: string;
@@ -47,6 +48,10 @@ export default function AuditLogsPage() {
     const [page, setPage] = useState(1);
     const [searchAction, setSearchAction] = useState('');
     const [resourceType, setResourceType] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [isExporting, setIsExporting] = useState(false);
+    const { success: toastSuccess, error: toastError } = useToast();
 
     const fetchLogs = async () => {
         setIsLoading(true);
@@ -57,6 +62,8 @@ export default function AuditLogsPage() {
                 limit: '20',
                 ...(searchAction && { action: searchAction }),
                 ...(resourceType && { resourceType }),
+                ...(startDate && { startDate }),
+                ...(endDate && { endDate }),
             });
 
             const res = await csrfFetch(`/api/workspaces/${workspaceId}/audit?${queryParams}`);
@@ -78,7 +85,36 @@ export default function AuditLogsPage() {
         if (workspaceId) {
             fetchLogs();
         }
-    }, [workspaceId, page, searchAction, resourceType]);
+    }, [workspaceId, page, searchAction, resourceType, startDate, endDate]);
+
+    const handleExport = async (format: 'csv' | 'json') => {
+        setIsExporting(true);
+        try {
+            const queryParams = new URLSearchParams({
+                format,
+                ...(searchAction && { action: searchAction }),
+                ...(resourceType && { resourceType }),
+                ...(startDate && { startDate }),
+                ...(endDate && { endDate }),
+            });
+            const res = await csrfFetch(`/api/workspaces/${workspaceId}/audit/export?${queryParams}`);
+            if (!res.ok) throw new Error('Export failed');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audit-logs.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            toastSuccess('Export Complete', `Audit logs exported as ${format.toUpperCase()}`);
+        } catch {
+            toastError('Export Failed', 'Could not export audit logs');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const toggleRow = (id: string) => {
         const newSet = new Set(expandedRows);
@@ -102,6 +138,14 @@ export default function AuditLogsPage() {
                     <p className="text-muted-foreground">Enterprise compliance matrix tracking all platform mutations.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => handleExport('csv')}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-4 py-2 border border-nerve/30 text-nerve rounded-lg hover:bg-nerve/10 transition-colors disabled:opacity-50 text-sm font-medium"
+                    >
+                        <Download className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
+                        Export CSV
+                    </button>
                     <button
                         onClick={fetchLogs}
                         disabled={isLoading}
@@ -146,6 +190,25 @@ export default function AuditLogsPage() {
                         <option value="MdmProfile">MdmProfile</option>
                         <option value="ReflexRule">ReflexRule</option>
                     </select>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="relative flex items-center">
+                        <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input type="date" value={startDate}
+                            onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                            className="pl-9 pr-3 py-2 bg-surface-2 border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-nerve w-40" />
+                    </div>
+                    <span className="text-muted-foreground text-xs">to</span>
+                    <div className="relative flex items-center">
+                        <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input type="date" value={endDate}
+                            onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                            className="pl-9 pr-3 py-2 bg-surface-2 border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-nerve w-40" />
+                    </div>
+                    {(startDate || endDate) && (
+                        <button onClick={() => { setStartDate(''); setEndDate(''); setPage(1); }}
+                            className="text-xs text-slate-400 hover:text-foreground underline">Clear dates</button>
+                    )}
                 </div>
             </div>
 

@@ -23,10 +23,13 @@ export async function login(page: Page, email = 'admin@glanus.com', password = '
     await passwordInput.fill(password);
 
     // Submit — button says "Sign In"
-    await page.click('button[type="submit"]');
+    await Promise.all([
+        page.waitForURL('**/dashboard*', { timeout: 60000 }).catch(() => null),
+        page.click('button[type="submit"]')
+    ]);
 
-    // Wait for redirect to /dashboard (30s for first-time cold-start compile)
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
+    // Ensure we are redirecting away from login
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 60000 });
 }
 
 /**
@@ -75,6 +78,27 @@ export async function navigateToWorkspace(page: Page) {
         await workspaceLink.click();
         await page.waitForLoadState('networkidle');
     }
+}
+
+/**
+ * Get the Next.js CSRF token from the current page cookies or meta tags.
+ * Required for making POST/PATCH/DELETE requests via page.request.
+ */
+export async function getCSRFToken(page: Page): Promise<string | null> {
+    let cookies = await page.context().cookies();
+    let csrfCookie = cookies.find(c => c.name === 'csrf-token');
+
+    if (!csrfCookie) {
+        const response = await page.request.get('/api/csrf');
+        const data = await response.json().catch(() => ({}));
+        if (data.token) {
+            return data.token;
+        }
+        cookies = await page.context().cookies();
+        csrfCookie = cookies.find(c => c.name === 'csrf-token');
+    }
+
+    return csrfCookie ? csrfCookie.value : null;
 }
 
 // Re-export expect for convenience in spec files

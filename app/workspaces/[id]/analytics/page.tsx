@@ -8,6 +8,8 @@ import { TopologyMap } from '@/components/workspace/TopologyMap';
 import { SkeletonDashboard } from '@/components/ui/Skeleton';
 import type { OperationalGraphData } from '@/lib/nerve/operational-graph';
 import { csrfFetch } from '@/lib/api/csrfFetch';
+import { Wrench, Calendar, AlertTriangle, Clock } from 'lucide-react';
+import Link from 'next/link';
 
 interface AnalyticsData {
     workspaceName: string;
@@ -66,6 +68,14 @@ interface AnalyticsData {
         } | null;
         createdAt: string;
     }>;
+    maintenance?: {
+        upcoming: number;
+        inProgress: number;
+        overdue: number;
+    };
+    partnerAssignment?: {
+        status: string;
+    } | null;
 }
 
 interface IntelligenceSummary {
@@ -184,6 +194,68 @@ export default function AnalyticsPage() {
             {/* Intelligence bar (ORACLE summary) */}
             {showIntelligence && (
                 <IntelligenceBar summary={intelligence} workspaceId={workspaceId} />
+            )}
+
+            {/* Maintenance Summary Widget */}
+            {analytics.maintenance && (analytics.maintenance.upcoming > 0 || analytics.maintenance.inProgress > 0 || analytics.maintenance.overdue > 0) && (
+                <div className="card">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Wrench size={16} className="text-nerve" />
+                            <h3 className="text-sm font-semibold text-foreground">Maintenance Overview</h3>
+                        </div>
+                        <Link href={`/workspaces/${workspaceId}/maintenance`} className="text-xs text-nerve hover:underline">
+                            View All →
+                        </Link>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3 text-center">
+                            <Calendar size={18} className="mx-auto text-blue-400 mb-1" />
+                            <p className="text-2xl font-bold text-blue-400">{analytics.maintenance.upcoming}</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Upcoming</p>
+                        </div>
+                        <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3 text-center">
+                            <Clock size={18} className="mx-auto text-amber-400 mb-1" />
+                            <p className="text-2xl font-bold text-amber-400">{analytics.maintenance.inProgress}</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-wider">In Progress</p>
+                        </div>
+                        <div className="rounded-lg bg-red-500/5 border border-red-500/10 p-3 text-center">
+                            <AlertTriangle size={18} className="mx-auto text-red-400 mb-1" />
+                            <p className="text-2xl font-bold text-red-400">{analytics.maintenance.overdue}</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-wider">Overdue</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Partner Marketplace CTA */}
+            {(!analytics.partnerAssignment || analytics.partnerAssignment.status === 'PENDING') && (
+                <div className="relative overflow-hidden rounded-xl border border-nerve/30 bg-gradient-to-r from-nerve/5 to-transparent p-6 shadow-lg shadow-nerve/5">
+                    <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-nerve/10 blur-3xl"></div>
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="max-w-xl">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xl">🤝</span>
+                                <h3 className="text-lg font-bold text-foreground">Glanus Partner Network</h3>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-nerve/20 text-nerve uppercase tracking-widest border border-nerve/30">Managed Services</span>
+                            </div>
+                            <p className="text-sm text-slate-400">
+                                Overwhelmed by IT management? Instantly hire a certified Managed Service Provider (MSP) to monitor your fleet, handle REFLEX automations, and resolve alerts 24/7.
+                            </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                            <Link
+                                href={`/workspaces/${workspaceId}/partner`}
+                                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-nerve text-white hover:brightness-110 font-medium transition-all shadow-md shadow-nerve/20 w-full md:w-auto"
+                            >
+                                Find a IT Partner
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Topology Map */}

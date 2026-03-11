@@ -12,6 +12,7 @@
 
 import { prisma } from '@/lib/db';
 import { logError } from '@/lib/logger';
+import { fireWebhookAsync, WebhookEvents } from '@/lib/notifications/webhook-delivery';
 import type { Recommendation } from '@/lib/cortex/reasoning';
 
 // ─── Types ───────────────────────────────────────────────
@@ -357,6 +358,21 @@ export async function executeAction(
         });
 
         if (item.rule.action.type === 'run_script') {
+            // Resolve script body from Script Library if scriptId is provided
+            let scriptBody = item.rule.action.message || 'echo "Reflex Auto-Execution Triggered"';
+            let scriptLanguage: string = 'bash';
+
+            if (item.rule.action.scriptId) {
+                const libraryScript = await prisma.script.findUnique({
+                    where: { id: item.rule.action.scriptId },
+                    select: { content: true, language: true, name: true },
+                });
+                if (libraryScript) {
+                    scriptBody = libraryScript.content;
+                    scriptLanguage = libraryScript.language;
+                }
+            }
+
             const agent = await prisma.agentConnection.findFirst({
                 where: {
                     workspaceId,
@@ -371,18 +387,26 @@ export async function executeAction(
                         agentId: agent.id,
                         assetId: agent.assetId,
                         workspaceId,
-                        scriptName: item.rule.name,
-                        scriptBody: item.rule.action.message || 'echo "Reflex Auto-Execution Triggered"',
-                        language: 'bash',
+                        scriptName: item.rule.action.scriptName || item.rule.name,
+                        scriptBody,
+                        language: scriptLanguage,
                         status: 'PENDING',
                         createdBy: 'REFLEX_ENGINE',
+                        ...(item.rule.action.scriptId ? { scriptId: item.rule.action.scriptId } : {}),
                     }
                 });
+
+                // Fire webhook notification for script execution
+                const { eventType, data } = WebhookEvents.reflexActionExecuted(
+                    item.rule.name, 'run_script', 'dispatched',
+                    { agentId: agent.id, hostname: agent.hostname }
+                );
+                fireWebhookAsync(workspaceId, eventType, data);
             } else {
                 throw new Error('No online agents available to execute this action.');
             }
         } else if (item.rule.action.type === 'send_notification') {
-            // Create a notification audit log entry that the NotificationPopover picks up
+            // Create an in-app notification audit log entry that the NotificationPopover picks up
             await prisma.auditLog.create({
                 data: {
                     workspaceId,
@@ -396,6 +420,13 @@ export async function executeAction(
                     },
                 },
             });
+
+            // Fire real HTTP webhook delivery to configured workspace endpoint
+            const { eventType, data } = WebhookEvents.reflexActionExecuted(
+                item.rule.name, 'send_notification', 'delivered',
+                { message: item.rule.action.message, channel: item.rule.action.notificationChannel || 'in-app' }
+            );
+            fireWebhookAsync(workspaceId, eventType, data);
 
         } else if (item.rule.action.type === 'restart_agent') {
             const agent = await prisma.agentConnection.findFirst({

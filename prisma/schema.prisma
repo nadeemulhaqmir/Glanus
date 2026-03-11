@@ -234,6 +234,7 @@ model Workspace {
 
   // Agent RMM (Glanus 2.0 Phase 3)
   agentConnections AgentConnection[]     @relation("WorkspaceAgents")
+  scripts          Script[]              @relation("WorkspaceScripts")
   scriptExecutions ScriptExecution[]     @relation("WorkspaceScripts")
   alertRules       AlertRule[]           @relation("WorkspaceAlertRules")
   webhooks         NotificationWebhook[] @relation("WorkspaceWebhooks")
@@ -241,6 +242,15 @@ model Workspace {
   actionQueueItems ActionQueueItem[]
   aiInsights       AIInsight[]
   mdmProfiles      MdmProfile[]          @relation("WorkspaceMdmProfiles")
+  reportSchedules  ReportSchedule[]      @relation("WorkspaceReportSchedules")
+  scriptSchedules  ScriptSchedule[]      @relation("WorkspaceScriptSchedules")
+  apiKeys          ApiKey[]              @relation("WorkspaceApiKeys")
+  maintenanceWindows MaintenanceWindow[]
+  patchPolicies    PatchPolicy[]         // Phase 31: Patch Management
+  ztnaPolicies     ZtnaPolicy[]          // Phase 32: Zero-Trust Access
+  networkDevices   NetworkDevice[]       // Phase 33: Network Discovery
+  discoveryScans   DiscoveryScan[]       // Phase 33: Network Discovery
+  tickets          Ticket[]              // Phase 34: Helpdesk & Support Ticketing
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -256,6 +266,9 @@ model WorkspaceMember {
   userId      String
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   role        WorkspaceRole @default(MEMBER)
+
+  // Phase 34: Helpdesk & Support Ticketing
+  ticketsAssigned Ticket[] @relation("TicketAssignee")
 
   joinedAt DateTime @default(now())
 
@@ -377,6 +390,10 @@ model User {
   actionExecutions     AssetActionExecution[] @relation("UserActionExecutions")
   createdRelationships AssetRelationship[]    @relation("UserAssetRelationships")
 
+  // Phase 34: Helpdesk & Support Ticketing
+  ticketsCreated Ticket[]        @relation("TicketCreator")
+  ticketMessages TicketMessage[] @relation("TicketMessageSender")
+
   @@index([email])
 }
 
@@ -428,6 +445,12 @@ model Asset {
 
   // Phase 12: MDM
   mdmAssignments MdmAssignment[]
+
+  // Phase 16: Maintenance Windows
+  maintenanceWindows MaintenanceWindow[]
+
+  // Phase 34: Helpdesk & Support Ticketing
+  tickets Ticket[] @relation("AssetTickets")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -560,6 +583,55 @@ model RemoteSession {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+}
+
+model Script {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceScripts", fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?   @db.Text
+  language    String    // 'bash', 'powershell', 'python'
+  content     String    @db.Text
+  tags        String[]
+  isPublic    Boolean   @default(false)
+  
+  executions  ScriptExecution[] @relation("ScriptTemplate")
+  schedules   ScriptSchedule[]  @relation("ScriptSchedules")
+  patchPolicies PatchPolicy[]   @relation("ScriptPatchPolicies") // Phase 31: Patch Management
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([language])
+}
+
+model ScriptSchedule {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceScriptSchedules", fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  scriptId    String
+  script      Script    @relation("ScriptSchedules", fields: [scriptId], references: [id], onDelete: Cascade)
+  
+  name           String
+  description    String?   @db.Text
+  targetIds      Json      // Array of Agent IDs to execute against
+  cronExpression String    // e.g., "0 0 * * *"
+  enabled        Boolean   @default(true)
+  
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  runCount    Int       @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([scriptId])
+  @@index([nextRunAt])
 }
 
 // ============================================
@@ -1164,9 +1236,15 @@ model AgentConnection {
   networkUp   Float?
   networkDown Float?
 
+  // Deduplication State Engine
+  lastMetricSavedAt DateTime?
+
   // Relations
   metrics AgentMetric[]
   scripts ScriptExecution[]
+  installedSoftware InstalledSoftware[] // Phase 30: Endpoint Software Inventory
+  discoveredDevices NetworkDevice[]     @relation("AgentDiscoveredDevices")
+  discoveryScans    DiscoveryScan[]     @relation("AgentDiscoveryScans")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1225,7 +1303,11 @@ model ScriptExecution {
   workspaceId String
   workspace   Workspace @relation("WorkspaceScripts", fields: [workspaceId], references: [id])
 
-  // Script
+  // Optional link if spawned from the Script Library (mass deployment) 
+  scriptId    String?
+  script      Script?   @relation("ScriptTemplate", fields: [scriptId], references: [id], onDelete: SetNull)
+
+  // Script (inline payload)
   scriptName String
   scriptBody String @db.Text
   language   String // "powershell", "bash", "python"
@@ -1380,4 +1462,303 @@ model MdmAssignment {
   @@index([profileId])
   @@index([assetId])
   @@index([categoryId])
+}
+
+// ============================================
+// SCHEDULED REPORT DELIVERIES (Phase 9)
+// ============================================
+
+model ReportSchedule {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceReportSchedules", fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Schedule Configuration
+  name         String
+  reportType   String    // 'asset_inventory', 'rmm_health', 'cortex_insights'
+  format       String    @default("csv") // 'csv', 'pdf'
+  frequency    String    // 'daily', 'weekly', 'monthly'
+  dayOfWeek    Int?      // 0-6 (Sunday-Saturday), used for weekly
+  dayOfMonth   Int?      // 1-31, used for monthly
+  timeOfDay    String    @default("08:00") // HH:mm UTC
+  timezone     String    @default("UTC")
+
+  // Delivery Configuration
+  recipients   String[]  // Array of email addresses
+  enabled      Boolean   @default(true)
+
+  // Tracking
+  lastRunAt    DateTime?
+  lastStatus   String?   // 'success', 'failed'
+  lastError    String?   @db.Text
+  runCount     Int       @default(0)
+
+  // Audit
+  createdBy    String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([workspaceId, enabled])
+  @@index([frequency])
+}
+
+// ============================================
+// API KEY MANAGEMENT
+// ============================================
+model ApiKey {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation("WorkspaceApiKeys", fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Key Identity
+  name        String                       // Human-readable label (e.g. "CI/CD Pipeline Key")
+  prefix      String                       // First 8 chars of key for identification (e.g. "glns_abc1")
+  keyHash     String   @unique             // SHA-256 hash of the full key (never store plaintext)
+
+  // Permissions
+  scopes      String[] @default(["read"])   // Allowed scopes: read, write, admin, agents, scripts
+
+  // Usage Tracking
+  lastUsedAt  DateTime?
+  usageCount  Int      @default(0)
+
+  // Lifecycle
+  expiresAt   DateTime?                    // Optional expiration
+  revokedAt   DateTime?                    // Soft-revoke timestamp
+  createdBy   String                       // User ID who created the key
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([prefix])
+}
+
+// ─── Phase 16: Asset Maintenance Windows ────────────────────
+model MaintenanceWindow {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  type        String   @default("preventive") // preventive, corrective, inspection
+
+  // Scheduling
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  actualStart    DateTime?
+  actualEnd      DateTime?
+
+  // Status
+  status      String   @default("scheduled") // scheduled, in_progress, completed, cancelled
+  priority    String   @default("medium")    // low, medium, high, critical
+
+  // Notes & outcomes
+  notes       String?  @db.Text
+  cost        Float?
+
+  // Relations
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([assetId])
+  @@index([workspaceId])
+  @@index([scheduledStart])
+  @@index([status])
+}
+
+// ============================================
+// GLANUS 2.0 PHASE 30: SOFTWARE INVENTORY
+// ============================================
+
+model InstalledSoftware {
+  id              String   @id @default(cuid())
+  agentId         String
+  agentConnection AgentConnection @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  name            String
+  version         String?
+  publisher       String?
+  installDate     DateTime?
+  sizeMB          Float?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([name])
+}
+
+// ============================================
+// GLANUS 2.0 PHASE 31: PATCH MANAGEMENT
+// ============================================
+
+model PatchPolicy {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  name            String
+  targetSoftware  String   // Application name to hunt for in InstalledSoftware
+  actionScriptId  String
+  actionScript    Script    @relation("ScriptPatchPolicies", fields: [actionScriptId], references: [id], onDelete: Restrict)
+  
+  isEnabled       Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([targetSoftware])
+}
+
+// ============================================
+// ZERO-TRUST NETWORK ACCESS (Phase 32 ZTNA)
+// ============================================
+
+model ZtnaPolicy {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  isEnabled   Boolean   @default(false)
+  ipWhitelist String    @db.Text // Comma-separated strict IP validations
+  action      String    @default("BLOCK") // Extensible for future heuristics e.g "REQUIRE_MFA"
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, isEnabled])
+}
+
+// ============================================
+// PHASE 33: NETWORK DISCOVERY & AUTOMATION
+// ============================================
+
+enum DiscoveryScanStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model NetworkDevice {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  discoveredById String?
+  discoveredBy   AgentConnection? @relation("AgentDiscoveredDevices", fields: [discoveredById], references: [id], onDelete: SetNull)
+  
+  ipAddress      String
+  macAddress     String?
+  hostname       String?
+  deviceType     String    @default("UNKNOWN") // ROUTER, PRINTER, SWITCH, UNKNOWN
+  snmpData       Json?
+  
+  lastSeen       DateTime  @default(now())
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  @@index([workspaceId])
+  @@index([discoveredById])
+  @@index([ipAddress])
+}
+
+model DiscoveryScan {
+  id           String              @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  agentId      String
+  agent        AgentConnection     @relation("AgentDiscoveryScans", fields: [agentId], references: [id], onDelete: Cascade)
+
+  subnet       String
+  status       DiscoveryScanStatus @default(PENDING)
+  devicesFound Int                 @default(0)
+  
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([workspaceId])
+  @@index([agentId])
+}
+
+// ============================================
+// PHASE 34: HELPDESK & SUPPORT TICKETING
+// ============================================
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Ticket {
+  id          String         @id @default(cuid())
+  number      Int            @unique @default(autoincrement()) // Human-readable ID
+  
+  workspaceId String
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String         @db.Text
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(NORMAL)
+
+  assetId     String?
+  asset       Asset?         @relation("AssetTickets", fields: [assetId], references: [id], onDelete: SetNull)
+
+  creatorId   String
+  creator     User           @relation("TicketCreator", fields: [creatorId], references: [id])
+
+  assigneeId  String?
+  assignee    WorkspaceMember? @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  messages    TicketMessage[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  resolvedAt  DateTime?
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([assigneeId])
+  @@index([assetId])
+}
+
+model TicketMessage {
+  id         String   @id @default(cuid())
+  
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  senderId   String
+  sender     User     @relation("TicketMessageSender", fields: [senderId], references: [id])
+
+  content    String   @db.Text
+  isInternal Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([ticketId])
+  @@index([senderId])
 }

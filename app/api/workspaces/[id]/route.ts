@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
-import { requireAuth, requireWorkspaceAccess, requireWorkspaceRole, withErrorHandler, ApiError } from '@/lib/api/withAuth';
+import { NextRequest } from 'next/server';
+import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { apiSuccess, apiError, apiDeleted } from '@/lib/api/response';
 
 
@@ -14,12 +15,12 @@ const updateWorkspaceSchema = z.object({
 
 // GET /api/workspaces/[id] - Get workspace details
 export const GET = withErrorHandler(async (
-    request: Request,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) => {
     const { id } = await context.params;
     const user = await requireAuth();
-    const { workspace } = await requireWorkspaceRole(id, user.id, 'OWNER');
+    const { workspace } = await requireWorkspaceRole(id, user.id, 'OWNER', request);
 
     // Fetch full workspace details
     const fullWorkspace = await prisma.workspace.findUnique({
@@ -59,14 +60,14 @@ export const GET = withErrorHandler(async (
 
 // PATCH /api/workspaces/[id] - Update workspace
 export const PATCH = withErrorHandler(async (
-    request: Request,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) => {
     const params = await context.params;
     const user = await requireAuth();
 
     // Require ADMIN or higher
-    await requireWorkspaceRole(params.id, user.id, 'ADMIN');
+    await requireWorkspaceRole(params.id, user.id, 'ADMIN', request);
 
     // Validate request body
     const body = await request.json();
@@ -106,14 +107,14 @@ export const PATCH = withErrorHandler(async (
 
 // DELETE /api/workspaces/[id] - Delete workspace
 export const DELETE = withErrorHandler(async (
-    request: Request,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) => {
     const params = await context.params;
     const user = await requireAuth();
 
     // Only OWNER can delete
-    await requireWorkspaceRole(params.id, user.id, 'OWNER');
+    await requireWorkspaceRole(params.id, user.id, 'OWNER', request);
 
     // Log the deletion BEFORE cascade-deleting the workspace to avoid
     // integrity issues (audit log references may fail post-cascade).

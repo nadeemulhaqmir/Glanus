@@ -7,6 +7,7 @@
  */
 
 import { getServerSession } from 'next-auth';
+import { NextRequest } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { apiError } from '@/lib/api/response';
@@ -14,6 +15,7 @@ import { logError } from '@/lib/logger';
 import { ValidationError } from '@/lib/validation';
 import type { WorkspaceRole } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { ZodError } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 
 // ============================================
@@ -63,7 +65,8 @@ export async function requireAuth() {
  */
 export async function requireWorkspaceAccess(
     workspaceId: string,
-    userId: string
+    userId: string,
+    request?: NextRequest
 ) {
     const workspace = await prisma.workspace.findUnique({
         where: { id: workspaceId },
@@ -72,6 +75,9 @@ export async function requireWorkspaceAccess(
             members: {
                 where: { userId },
             },
+            ztnaPolicies: {
+                where: { isEnabled: true }
+            }
         },
     });
 
@@ -84,6 +90,22 @@ export async function requireWorkspaceAccess(
 
     if (!isOwner && !membership) {
         throw new ApiError(403, 'Access denied');
+    }
+
+    // Evaluate ZTNA
+    if (request && workspace.ztnaPolicies.length > 0) {
+        // Extract IP from Vercel/Nginx proxy array or fallback to raw connection
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+            || request.headers.get('x-real-ip')
+            || '127.0.0.1';
+
+        for (const policy of workspace.ztnaPolicies) {
+            const whitelistedIps = policy.ipWhitelist.split(',').map((i: string) => i.trim());
+            // Simplistic exact match logic. Extend with CIDR libraries if necessary.
+            if (!whitelistedIps.includes(ip) && policy.action === 'BLOCK') {
+                throw new ApiError(403, 'Access denied by Workspace Zero-Trust Network Policy');
+            }
+        }
     }
 
     const effectiveRole: WorkspaceRole = isOwner
@@ -104,9 +126,10 @@ export async function requireWorkspaceAccess(
 export async function requireWorkspaceRole(
     workspaceId: string,
     userId: string,
-    minRole: WorkspaceRole
+    minRole: WorkspaceRole,
+    request?: NextRequest
 ) {
-    const access = await requireWorkspaceAccess(workspaceId, userId);
+    const access = await requireWorkspaceAccess(workspaceId, userId, request);
 
     if (!hasMinimumRole(access.role, minRole)) {
         throw new ApiError(403, `Requires ${minRole} role or higher`);
@@ -173,6 +196,10 @@ export function withErrorHandler<T extends unknown[]>(
 
             if (error instanceof ValidationError) {
                 return apiError(400, error.message, error.toJSON().details);
+            }
+
+            if (error instanceof ZodError) {
+                return apiError(400, 'Validation failed', error.errors);
             }
 
             // Handle Prisma validation errors (invalid enum values, invalid arguments)

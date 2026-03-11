@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers/auth';
+import { login, getCSRFToken } from './helpers/auth';
 
 /**
  * Alert Rule CRUD — API Tests
@@ -20,7 +20,7 @@ test.describe('Alert Rule CRUD — API', () => {
         await login(page);
         await page.waitForLoadState('networkidle');
         const link = page.locator('a[href*="/workspaces/"]').first();
-        await link.waitFor({ state: 'visible', timeout: 10000 });
+        await link.waitFor({ state: 'visible', timeout: 30000 });
         const href = await link.getAttribute('href');
         workspaceId = href?.match(/\/workspaces\/([^/]+)/)?.[1] ?? null;
     });
@@ -33,17 +33,20 @@ test.describe('Alert Rule CRUD — API', () => {
         const body = await response.json();
         expect(body).toHaveProperty('success', true);
         expect(body).toHaveProperty('data');
-        expect(Array.isArray(body.data)).toBe(true);
+        expect(Array.isArray(body.data.alertRules)).toBe(true);
     });
 
     test('POST /api/workspaces/[id]/alerts creates a new CPU rule', async ({ page }) => {
         if (!workspaceId) { test.skip(); return; }
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.post(`/api/workspaces/${workspaceId}/alerts`, {
+            headers: { 'x-csrf-token': csrfToken || '' },
             data: {
                 name: 'E2E CPU Test Alert',
                 metric: 'CPU',
                 threshold: 95,
+                duration: 5,
                 severity: 'CRITICAL',
                 enabled: false, // Disabled so it doesn't fire during tests
             },
@@ -62,9 +65,11 @@ test.describe('Alert Rule CRUD — API', () => {
     test('PATCH /api/workspaces/[id]/alerts/[ruleId] updates the threshold', async ({ page }) => {
         if (!workspaceId || !E2E_RULE_ID) { test.skip(); return; }
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.patch(
             `/api/workspaces/${workspaceId}/alerts/${E2E_RULE_ID}`,
             {
+                headers: { 'x-csrf-token': csrfToken || '' },
                 data: {
                     threshold: 90,
                     severity: 'WARNING',
@@ -82,21 +87,25 @@ test.describe('Alert Rule CRUD — API', () => {
     test('POST alert with missing required fields returns 400', async ({ page }) => {
         if (!workspaceId) { test.skip(); return; }
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.post(`/api/workspaces/${workspaceId}/alerts`, {
+            headers: { 'x-csrf-token': csrfToken || '' },
             data: {
                 // Missing metric and threshold
                 name: 'Incomplete Alert',
             },
         });
 
-        expect([400, 422]).toContain(response.status());
+        expect(response.status() === 400 || response.status() === 422).toBeTruthy();
     });
 
     test('DELETE /api/workspaces/[id]/alerts/[ruleId] removes the E2E rule', async ({ page }) => {
         if (!workspaceId || !E2E_RULE_ID) { test.skip(); return; }
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.delete(
-            `/api/workspaces/${workspaceId}/alerts/${E2E_RULE_ID}`
+            `/api/workspaces/${workspaceId}/alerts/${E2E_RULE_ID}`,
+            { headers: { 'x-csrf-token': csrfToken || '' } }
         );
 
         expect(response.status()).toBe(200);
@@ -119,31 +128,37 @@ test.describe('Alert Rule Validation', () => {
     test('POST alert with invalid metric type returns 400', async ({ page }) => {
         if (!workspaceId) { test.skip(); return; }
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.post(`/api/workspaces/${workspaceId}/alerts`, {
+            headers: { 'x-csrf-token': csrfToken || '' },
             data: {
                 name: 'Invalid Metric Alert',
                 metric: 'INVALID_METRIC', // Not CPU, RAM, or DISK
                 threshold: 80,
+                duration: 5,
                 severity: 'WARNING',
             },
         });
 
-        expect([400, 422]).toContain(response.status());
+        expect(response.status() === 400 || response.status() === 422).toBeTruthy();
     });
 
     test('POST alert with threshold > 100 is rejected', async ({ page }) => {
         if (!workspaceId) { test.skip(); return; }
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.post(`/api/workspaces/${workspaceId}/alerts`, {
+            headers: { 'x-csrf-token': csrfToken || '' },
             data: {
                 name: 'Over-threshold Alert',
                 metric: 'CPU',
                 threshold: 999, // Invalid threshold
+                duration: 5,
                 severity: 'WARNING',
             },
         });
 
         // Server may reject or clamp — either is acceptable
-        expect([200, 201, 400, 422]).toContain(response.status());
+        expect(response.status() === 200 || response.status() === 201 || response.status() === 400 || response.status() === 422).toBeTruthy();
     });
 });

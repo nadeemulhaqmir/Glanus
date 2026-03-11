@@ -53,9 +53,14 @@ export async function POST(request: NextRequest) {
             return apiError(404, 'Asset not found or does not belong to workspace');
         }
 
-        // Check if agent already exists for this asset
-        const existingAgent = await prisma.agentConnection.findUnique({
-            where: { assetId: data.assetId },
+        // Check if agent already exists based on hardware uniqueness
+        const existingAgent = await prisma.agentConnection.findFirst({
+            where: {
+                assetId: data.assetId,
+                workspaceId: data.workspaceId,
+                hostname: data.hostname,
+                ...(data.macAddress ? { macAddress: data.macAddress } : {}),
+            },
         });
 
         if (existingAgent) {

@@ -7,9 +7,10 @@ import Link from 'next/link';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/EmptyState';
 import { formatDateTime } from '@/lib/utils';
-import { ArrowLeft, Edit, Trash2, Play, Clock, CheckCircle, XCircle, Monitor } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Play, Clock, CheckCircle, XCircle, Monitor, Wrench, Calendar } from 'lucide-react';
 import { useToast } from '@/lib/toast';
 import { ConfirmDialog } from '@/components/ui';
+import { useWorkspace } from '@/lib/workspace/context';
 
 interface AssetFieldValue {
     id: string;
@@ -42,6 +43,8 @@ interface AssetDetail {
         icon: string;
     };
     fieldValues: AssetFieldValue[];
+    physicalAsset?: Record<string, any> | null;
+    digitalAsset?: Record<string, any> | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -60,6 +63,13 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
     const [executionResult, setExecutionResult] = useState<{ status: string; output?: React.ReactNode; error?: string } | null>(null);
     const [showExecutionDialog, setShowExecutionDialog] = useState(false);
     const [connectingRemote, setConnectingRemote] = useState(false);
+    const { workspace: currentWorkspace } = useWorkspace();
+
+    // Maintenance windows for this asset
+    const [maintenanceWindows, setMaintenanceWindows] = useState<Array<{
+        id: string; title: string; type: string; status: string;
+        priority: string; scheduledStart: string; scheduledEnd: string;
+    }>>([]);
 
     useEffect(() => {
         const init = async () => {
@@ -70,6 +80,15 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
         };
         init();
     }, [params]);
+
+    // Fetch maintenance windows for this asset
+    useEffect(() => {
+        if (!assetId || !currentWorkspace?.id) return;
+        csrfFetch(`/api/workspaces/${currentWorkspace.id}/maintenance?assetId=${assetId}&limit=10`)
+            .then(r => r.json())
+            .then(d => setMaintenanceWindows(d.data?.windows || []))
+            .catch(() => { });
+    }, [assetId, currentWorkspace?.id]);
 
     const fetchAsset = async (id: string) => {
         try {
@@ -335,8 +354,54 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                                             )}
                                         </dd>
                                     </div>
-                                ))
-                                }</div>
+                                ))}
+
+                                {/* Phase 26: Physical Asset Details */}
+                                {asset.physicalAsset && (
+                                    <>
+                                        <div className="col-span-full border-t border-slate-800 my-4 pt-4">
+                                            <h3 className="text-sm font-bold text-nerve mb-3">Hardware Specifications</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {Object.entries(asset.physicalAsset).map(([key, val]) => {
+                                                    if (!val || key === 'id' || key === 'assetId' || key === 'createdAt' || key === 'updatedAt') return null;
+                                                    return (
+                                                        <div key={key}>
+                                                            <dt className="text-xs font-medium text-muted-foreground uppercase">{key.replace(/([A-Z])/g, ' $1').trim()}</dt>
+                                                            <dd className="mt-1 text-sm text-foreground">{String(val)}</dd>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Phase 26: Digital Asset Details */}
+                                {asset.digitalAsset && (
+                                    <>
+                                        <div className="col-span-full border-t border-slate-800 my-4 pt-4">
+                                            <h3 className="text-sm font-bold text-nerve mb-3">Software & License Metrics</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {Object.entries(asset.digitalAsset).map(([key, val]) => {
+                                                    if (!val || key === 'id' || key === 'assetId' || key === 'createdAt' || key === 'updatedAt') return null;
+
+                                                    // Specialized formatting
+                                                    let displayVal = String(val);
+                                                    if (key === 'monthlyRecurringCost') displayVal = `$${Number(val).toFixed(2)}`;
+                                                    if (key === 'renewalDate' && val) displayVal = new Date(val as string).toLocaleDateString();
+
+                                                    return (
+                                                        <div key={key}>
+                                                            <dt className="text-xs font-medium text-muted-foreground uppercase">{key.replace(/([A-Z])/g, ' $1').trim()}</dt>
+                                                            <dd className="mt-1 text-sm text-foreground">{displayVal}</dd>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         )}
                     </div>
 
@@ -362,6 +427,39 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                             </div>
                         </div>
                     </div>
+
+                    {/* Maintenance Windows */}
+                    {maintenanceWindows.length > 0 && (
+                        <div className="rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                                    <Wrench size={18} className="text-nerve" />
+                                    Maintenance
+                                </h2>
+                                {currentWorkspace?.id && (
+                                    <Link href={`/workspaces/${currentWorkspace.id}/maintenance`} className="text-xs text-nerve hover:underline">
+                                        View All →
+                                    </Link>
+                                )}
+                            </div>
+                            <div className="space-y-3">
+                                {maintenanceWindows.map(w => (
+                                    <div key={w.id} className="flex items-center gap-3 text-sm">
+                                        <Calendar size={14} className={w.status === 'completed' ? 'text-green-400' : w.status === 'in_progress' ? 'text-amber-400' : 'text-blue-400'} />
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-foreground font-medium truncate block">{w.title}</span>
+                                            <span className="text-xs text-slate-500">{new Date(w.scheduledStart).toLocaleDateString()} • {w.type}</span>
+                                        </div>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${w.status === 'completed' ? 'bg-green-500/10 text-green-400' :
+                                            w.status === 'in_progress' ? 'bg-amber-500/10 text-amber-400' :
+                                                w.status === 'cancelled' ? 'bg-slate-500/10 text-slate-400' :
+                                                    'bg-blue-500/10 text-blue-400'
+                                            }`}>{w.status.replace('_', ' ')}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Actions Panel */}

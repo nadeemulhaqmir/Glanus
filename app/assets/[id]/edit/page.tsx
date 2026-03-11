@@ -40,9 +40,12 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
         name: '',
         categoryId: '',
         status: 'AVAILABLE',
+        assetType: 'DYNAMIC' as 'PHYSICAL' | 'DIGITAL' | 'DYNAMIC',
     });
 
     const [customFields, setCustomFields] = useState<Record<string, any>>({});
+    const [physicalAsset, setPhysicalAsset] = useState<Record<string, any>>({});
+    const [digitalAsset, setDigitalAsset] = useState<Record<string, any>>({});
 
     // Unwrap params and fetch asset data
     useEffect(() => {
@@ -75,7 +78,32 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
                 name: asset.name || '',
                 categoryId: asset.categoryId || '',
                 status: asset.status || 'AVAILABLE',
+                assetType: asset.assetType || 'DYNAMIC',
             });
+
+            if (asset.physicalAsset) {
+                setPhysicalAsset({
+                    category: asset.physicalAsset.category,
+                    processor: asset.physicalAsset.processor,
+                    ram: asset.physicalAsset.ram,
+                    storage: asset.physicalAsset.storage,
+                    osVersion: asset.physicalAsset.osVersion,
+                    macAddress: asset.physicalAsset.macAddress,
+                    ipAddress: asset.physicalAsset.ipAddress,
+                });
+            }
+            if (asset.digitalAsset) {
+                setDigitalAsset({
+                    category: asset.digitalAsset.category,
+                    vendor: asset.digitalAsset.vendor,
+                    licenseKey: asset.digitalAsset.licenseKey,
+                    licenseType: asset.digitalAsset.licenseType,
+                    seatCount: asset.digitalAsset.seatCount,
+                    subscriptionTier: asset.digitalAsset.subscriptionTier,
+                    monthlyRecurringCost: asset.digitalAsset.monthlyRecurringCost,
+                    renewalDate: asset.digitalAsset.renewalDate ? new Date(asset.digitalAsset.renewalDate).toISOString().split('T')[0] : '',
+                });
+            }
 
             // 4. Pre-fill Custom Mapping Data
             const existingCustomState: Record<string, any> = {};
@@ -132,10 +160,33 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
         setSubmitting(true);
 
         try {
-            const payload = {
+            const payload: any = {
                 ...formData,
                 customFields: customFields
             };
+
+            if (formData.assetType === 'PHYSICAL') {
+                payload.physicalAsset = {
+                    category: physicalAsset.category || 'OTHER',
+                    processor: physicalAsset.processor,
+                    ram: physicalAsset.ram ? parseInt(physicalAsset.ram) : undefined,
+                    storage: physicalAsset.storage ? parseInt(physicalAsset.storage) : undefined,
+                    osVersion: physicalAsset.osVersion,
+                    macAddress: physicalAsset.macAddress,
+                    ipAddress: physicalAsset.ipAddress,
+                }
+            } else if (formData.assetType === 'DIGITAL') {
+                payload.digitalAsset = {
+                    category: digitalAsset.category || 'OTHER',
+                    vendor: digitalAsset.vendor,
+                    licenseKey: digitalAsset.licenseKey,
+                    licenseType: digitalAsset.licenseType || 'PERPETUAL',
+                    seatCount: digitalAsset.seatCount ? parseInt(digitalAsset.seatCount) : undefined,
+                    subscriptionTier: digitalAsset.subscriptionTier,
+                    monthlyRecurringCost: digitalAsset.monthlyRecurringCost ? parseFloat(digitalAsset.monthlyRecurringCost) : undefined,
+                    renewalDate: digitalAsset.renewalDate ? new Date(digitalAsset.renewalDate).toISOString() : undefined,
+                }
+            }
 
             const response = await csrfFetch(`/api/assets/${id}`, {
                 method: 'PUT',
@@ -224,8 +275,125 @@ export default function EditAssetPage({ params }: { params: Promise<{ id: string
                             </select>
                             <p className="text-xs text-slate-500 mt-1">Warning: Changing the Class will erase existing custom variables on Save.</p>
                         </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Asset Type Track *</label>
+                            <div className="grid grid-cols-3 gap-4">
+                                <button
+                                    type="button"
+                                    className={`p-4 border rounded-lg text-center transition-all ${formData.assetType === 'PHYSICAL' ? 'border-nerve bg-nerve/10 text-nerve' : 'border-slate-800 text-slate-400 hover:bg-slate-800'}`}
+                                    onClick={() => updateField('assetType', 'PHYSICAL')}
+                                >
+                                    <div className="font-bold mb-1">Physical Hardware</div>
+                                    <div className="text-xs opacity-70">Laptops, Servers, Network</div>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`p-4 border rounded-lg text-center transition-all ${formData.assetType === 'DIGITAL' ? 'border-nerve bg-nerve/10 text-nerve' : 'border-slate-800 text-slate-400 hover:bg-slate-800'}`}
+                                    onClick={() => updateField('assetType', 'DIGITAL')}
+                                >
+                                    <div className="font-bold mb-1">Digital Asset</div>
+                                    <div className="text-xs opacity-70">SaaS, Licenses, Domains</div>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`p-4 border rounded-lg text-center transition-all ${formData.assetType === 'DYNAMIC' ? 'border-nerve bg-nerve/10 text-nerve' : 'border-slate-800 text-slate-400 hover:bg-slate-800'}`}
+                                    onClick={() => updateField('assetType', 'DYNAMIC')}
+                                >
+                                    <div className="font-bold mb-1">Custom / Other</div>
+                                    <div className="text-xs opacity-70">Pure dynamic matrix</div>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {/* Step 1.5: Hardware / Software Specifics */}
+                {formData.assetType === 'PHYSICAL' && (
+                    <div className="card">
+                        <h2 className="text-xl font-bold text-foreground mb-6 border-b border-border pb-4">Hardware Specifications</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Hardware Category</label>
+                                <select className="input w-full" value={physicalAsset.category || 'LAPTOP'} onChange={e => setPhysicalAsset({ ...physicalAsset, category: e.target.value })}>
+                                    <option value="LAPTOP">Laptop</option>
+                                    <option value="DESKTOP">Desktop</option>
+                                    <option value="SERVER">Server / Rack</option>
+                                    <option value="NETWORK_EQUIPMENT">Network Engine</option>
+                                    <option value="MOBILE_DEVICE">Mobile Device</option>
+                                    <option value="OTHER">Other / Peripheral</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">MAC Address</label>
+                                <input type="text" className="input w-full" placeholder="00:00:00:00:00:00" value={physicalAsset.macAddress || ''} onChange={e => setPhysicalAsset({ ...physicalAsset, macAddress: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">IP Address / Host</label>
+                                <input type="text" className="input w-full" placeholder="192.168.1.100" value={physicalAsset.ipAddress || ''} onChange={e => setPhysicalAsset({ ...physicalAsset, ipAddress: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">OS Version</label>
+                                <input type="text" className="input w-full" placeholder="Windows 11 Pro" value={physicalAsset.osVersion || ''} onChange={e => setPhysicalAsset({ ...physicalAsset, osVersion: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">RAM (GB)</label>
+                                <input type="number" className="input w-full" placeholder="16" value={physicalAsset.ram || ''} onChange={e => setPhysicalAsset({ ...physicalAsset, ram: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Storage Array (GB)</label>
+                                <input type="number" className="input w-full" placeholder="512" value={physicalAsset.storage || ''} onChange={e => setPhysicalAsset({ ...physicalAsset, storage: e.target.value })} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {formData.assetType === 'DIGITAL' && (
+                    <div className="card">
+                        <h2 className="text-xl font-bold text-foreground mb-6 border-b border-border pb-4">Software & License Metrics</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Software Category</label>
+                                <select className="input w-full" value={digitalAsset.category || 'SAAS_SUBSCRIPTION'} onChange={e => setDigitalAsset({ ...digitalAsset, category: e.target.value })}>
+                                    <option value="SAAS_SUBSCRIPTION">SaaS Subscription</option>
+                                    <option value="LICENSE">License Key</option>
+                                    <option value="API_SERVICE">API Service / Cloud</option>
+                                    <option value="WEB_APPLICATION">Web App Domain</option>
+                                    <option value="OTHER">Other Digital Space</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Vendor / Provider</label>
+                                <input type="text" className="input w-full" placeholder="e.g. Microsoft, AWS" value={digitalAsset.vendor || ''} onChange={e => setDigitalAsset({ ...digitalAsset, vendor: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">License Type</label>
+                                <select className="input w-full" value={digitalAsset.licenseType || 'SUBSCRIPTION'} onChange={e => setDigitalAsset({ ...digitalAsset, licenseType: e.target.value })}>
+                                    <option value="SUBSCRIPTION">Recurring Subscription</option>
+                                    <option value="PERPETUAL">Perpetual (One-time)</option>
+                                    <option value="OPEN_SOURCE">Open Source</option>
+                                    <option value="ENTERPRISE">Enterprise Agreement</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Seat Count / Licenses</label>
+                                <input type="number" className="input w-full" placeholder="50" value={digitalAsset.seatCount || ''} onChange={e => setDigitalAsset({ ...digitalAsset, seatCount: e.target.value })} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">License Key / Access Token</label>
+                                <input type="text" className="input w-full font-mono text-xs" placeholder="XXXX-XXXX-XXXX-XXXX" value={digitalAsset.licenseKey || ''} onChange={e => setDigitalAsset({ ...digitalAsset, licenseKey: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Monthly Cost</label>
+                                <input type="number" step="0.01" className="input w-full" placeholder="$0.00" value={digitalAsset.monthlyRecurringCost || ''} onChange={e => setDigitalAsset({ ...digitalAsset, monthlyRecurringCost: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Renewal Date</label>
+                                <input type="date" className="input w-full" value={digitalAsset.renewalDate || ''} onChange={e => setDigitalAsset({ ...digitalAsset, renewalDate: e.target.value })} />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 2. Dynamic Schema UI */}
                 {category && (

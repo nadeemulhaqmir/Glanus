@@ -2,7 +2,7 @@
 import { csrfFetch } from '@/lib/api/csrfFetch';
 import { useToast } from '@/lib/toast';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -178,20 +178,23 @@ export default function AssetsPage() {
     };
 
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+    const [bulkStatusTarget, setBulkStatusTarget] = useState('');
 
     const handleBulkDelete = async () => {
         setShowBulkDeleteConfirm(false);
+        if (!workspace?.id) return;
 
         setBulkActionLoading(true);
         try {
-            const response = await csrfFetch('/api/assets/bulk/delete', {
+            const response = await csrfFetch(`/api/workspaces/${workspace.id}/assets/bulk`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ assetIds: Array.from(selectedAssets) }),
+                body: JSON.stringify({ action: 'delete', assetIds: Array.from(selectedAssets) }),
             });
 
             if (!response.ok) throw new Error('Bulk delete failed');
 
+            const result = await response.json();
             setSelectedAssets(new Set());
             setShowBulkActions(false);
             fetchAssets(pagination.page);
@@ -202,9 +205,64 @@ export default function AssetsPage() {
         }
     };
 
+    const handleBulkStatusChange = async (newStatus: string) => {
+        if (!workspace?.id || !newStatus) return;
+
+        setBulkActionLoading(true);
+        try {
+            const response = await csrfFetch(`/api/workspaces/${workspace.id}/assets/bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'update_status', assetIds: Array.from(selectedAssets), payload: { status: newStatus } }),
+            });
+
+            if (!response.ok) throw new Error('Bulk status update failed');
+
+            setSelectedAssets(new Set());
+            setShowBulkActions(false);
+            setBulkStatusTarget('');
+            fetchAssets(pagination.page);
+        } catch (error: unknown) {
+            showError('Bulk status error:', error instanceof Error ? error.message : 'An unexpected error occurred');
+        } finally {
+            setBulkActionLoading(false);
+        }
+    };
+
     const handleBulkExport = async () => {
         if (!workspace?.id) return;
-        window.open(`/api/assets/export?workspaceId=${workspace.id}`, '_blank');
+        window.open(`/api/workspaces/${workspace.id}/export?format=csv&scope=assets`, '_blank');
+    };
+
+    // CSV Import
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: number } | null>(null);
+
+    const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !workspace?.id) return;
+
+        setImporting(true);
+        setImportResult(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await csrfFetch(`/api/workspaces/${workspace.id}/assets/import`, {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error?.message || data.error || 'Import failed');
+            const result = data.data;
+            setImportResult({ imported: result.imported, skipped: result.skipped, errors: result.errors });
+            fetchAssets(1);
+        } catch (err: unknown) {
+            showError('Import Failed', err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     if (loading && assets.length === 0 && categories.length === 0) return <PageSpinner text="Loading assets…" />;
@@ -229,23 +287,44 @@ export default function AssetsPage() {
                         {loading ? 'Loading assets...' : `${pagination.total} asset${pagination.total !== 1 ? 's' : ''} found`}
                     </p>
                 </div>
-                <Link
-                    href="/assets/new"
-                    className="btn-primary inline-flex items-center gap-2"
-                >
-                    <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                <div className="flex items-center gap-2">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleImportCSV}
+                        className="hidden"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={importing}
+                        className="btn-secondary inline-flex items-center gap-2"
                     >
-                        <path d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Asset
-                </Link>
+                        {importing ? (
+                            <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-nerve" /> Importing…</>
+                        ) : (
+                            <><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>Import CSV</>
+                        )}
+                    </button>
+                    <Link
+                        href="/assets/new"
+                        className="btn-primary inline-flex items-center gap-2"
+                    >
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Asset
+                    </Link>
+                </div>
             </div>
 
             {/* Filters */}
@@ -368,20 +447,29 @@ export default function AssetsPage() {
                         <div className="text-sm font-medium text-foreground">
                             {selectedAssets.size} asset(s) selected
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
+                            <select
+                                value={bulkStatusTarget}
+                                onChange={e => { setBulkStatusTarget(e.target.value); if (e.target.value) handleBulkStatusChange(e.target.value); }}
+                                disabled={bulkActionLoading}
+                                className="bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none"
+                            >
+                                <option value="">Change Status…</option>
+                                {statuses.map(s => <option key={s} value={s}>{getStatusLabel(s)}</option>)}
+                            </select>
                             <button type="button"
                                 onClick={handleBulkExport}
                                 disabled={bulkActionLoading}
                                 className="btn-secondary text-sm"
                             >
-                                📄 Export Selected
+                                📄 Export CSV
                             </button>
                             <button type="button"
                                 onClick={() => setShowBulkDeleteConfirm(true)}
                                 disabled={bulkActionLoading}
                                 className="btn bg-destructive text-white hover:bg-destructive/80 text-sm"
                             >
-                                {bulkActionLoading ? 'Deleting...' : '🗑️ Delete Selected'}
+                                {bulkActionLoading ? 'Processing...' : '🗑️ Delete Selected'}
                             </button>
                         </div>
                     </div>
@@ -436,6 +524,7 @@ export default function AssetsPage() {
                                             checked={selectedAssets.size === assets.length && assets.length > 0}
                                             onChange={toggleSelectAll}
                                             className="rounded border-slate-700"
+                                            aria-label="Select all assets"
                                         />
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -467,6 +556,7 @@ export default function AssetsPage() {
                                                 checked={selectedAssets.has(asset.id)}
                                                 onChange={() => toggleAssetSelection(asset.id)}
                                                 className="rounded border-slate-700"
+                                                aria-label={`Select asset ${asset.name}`}
                                             />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">

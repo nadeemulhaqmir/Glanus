@@ -2,6 +2,7 @@
 import { alertEvaluator } from './alert-evaluator';
 import { webhookService } from './webhook-service';
 import { emailService } from './email-service';
+import { fireWebhookAsync, WebhookEvents } from './notifications/webhook-delivery';
 import { prisma } from './db';
 
 interface NotificationResult {
@@ -120,6 +121,13 @@ export class NotificationOrchestrator {
                             } else {
                                 result.errors.push(`Webhook failed: ${webhookResult.error}`);
                             }
+
+                            // Also fire structured event through the audit-logged delivery pipeline
+                            const { eventType, data } = WebhookEvents.alertTriggered(
+                                { id: rule.id, name: rule.name, metric: trigger.metric, threshold: trigger.threshold },
+                                { hostname: trigger.assetName, currentValue: trigger.currentValue }
+                            );
+                            fireWebhookAsync(workspaceId, eventType, data);
                         }
                     } catch (error: unknown) {
                         result.errors.push(`Webhook error: ${error instanceof Error ? error.message : 'Unknown error'}`);

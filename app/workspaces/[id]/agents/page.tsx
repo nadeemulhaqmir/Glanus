@@ -270,7 +270,7 @@ export default function WorkspaceAgentsPage() {
                                                     </button>
                                                 )}
                                                 <Link
-                                                    href={`/assets/${agent.asset.id}/agent`}
+                                                    href={`/workspaces/${workspaceId}/agents/${agent.id}`}
                                                     className="text-sm text-nerve hover:underline"
                                                 >
                                                     View Details

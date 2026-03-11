@@ -105,6 +105,15 @@ export class RemoteDesktopManager {
         }
 
         if (this.webrtcClient) {
+            // Aggressively unhook and destroy all media stream tracks to release hardware locks
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const stream = (this.webrtcClient as any).peer?.streams?.[0];
+            if (stream) {
+                stream.getTracks().forEach((track: MediaStreamTrack) => {
+                    track.stop();
+                });
+            }
+
             this.webrtcClient.destroy();
             this.webrtcClient = null;
         }

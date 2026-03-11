@@ -35,10 +35,9 @@ export function RemoteDesktopViewer({
             isInitiator: true,
         });
 
-        // Polling state
-        let lastSeenIceCandidates = 0;
-        const hasProcessedOffer = false;
-        let hasProcessedAnswer = false;
+        // Polling state using refs to persist across the closure if it were to re-run, but primarily for semantics
+        const lastSeenIceCandidates = { current: 0 };
+        const hasProcessedAnswer = { current: false };
 
         webrtcClient.onSignal = async (signal) => {
             console.debug('[Viewer] Sending signal to backend:', signal.type || 'candidate');
@@ -129,16 +128,16 @@ export function RemoteDesktopViewer({
                 const sessionData = sessionResponse.data || sessionResponse;
 
                 // Admin receives answer from Agent
-                if (sessionData.answer && !hasProcessedAnswer) {
+                if (sessionData.answer && !hasProcessedAnswer.current) {
                     console.debug('[Viewer] Received answer from agent');
                     webrtcClient.signal(sessionData.answer);
-                    hasProcessedAnswer = true;
+                    hasProcessedAnswer.current = true;
                 }
 
                 // Process new ICE candidates
                 const remoteCandidates = sessionData.iceCandidates || [];
-                if (remoteCandidates.length > lastSeenIceCandidates) {
-                    const newCandidates = remoteCandidates.slice(lastSeenIceCandidates);
+                if (remoteCandidates.length > lastSeenIceCandidates.current) {
+                    const newCandidates = remoteCandidates.slice(lastSeenIceCandidates.current);
                     newCandidates.forEach((candidate: any) => {
                         // Admin only applies agent candidates
                         if (candidate.source === 'agent') {
@@ -146,7 +145,7 @@ export function RemoteDesktopViewer({
                             webrtcClient.signal(candidate);
                         }
                     });
-                    lastSeenIceCandidates = remoteCandidates.length;
+                    lastSeenIceCandidates.current = remoteCandidates.length;
                 }
 
             } catch (error: unknown) {

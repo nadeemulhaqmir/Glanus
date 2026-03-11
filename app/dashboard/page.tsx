@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { formatDateTime } from '@/lib/utils';
 import { PageSpinner } from '@/components/ui/Spinner';
-import { ErrorState } from '@/components/ui/EmptyState';
+import { ErrorState, EmptyState } from '@/components/ui/EmptyState';
 import { useWorkspace } from '@/lib/workspace/context';
 import { csrfFetch } from '@/lib/api/csrfFetch';
 import Link from 'next/link';
@@ -193,7 +193,18 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                         ) : (
-                            <p className="py-6 text-center text-sm text-slate-500">No assets yet</p>
+                            <div className="py-2">
+                                <EmptyState
+                                    icon={
+                                        <svg className="h-8 w-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                    }
+                                    title="No assets yet"
+                                    description="Get started by adding infrastructure to your workspace."
+                                    action={{ label: 'Add Asset', href: '/assets/new' }}
+                                />
+                            </div>
                         )}
                     </div>
                 </div>
@@ -233,7 +244,17 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                         ) : (
-                            <p className="py-6 text-center text-sm text-slate-500">No active sessions</p>
+                            <div className="py-2">
+                                <EmptyState
+                                    icon={
+                                        <svg className="h-8 w-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    }
+                                    title="No active sessions"
+                                    description="There are currently no active remote desktop connections."
+                                />
+                            </div>
                         )}
                     </div>
                 </div>

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { apiSuccess } from '@/lib/api/response';
 import { requireAuth, withErrorHandler, ApiError } from '@/lib/api/withAuth';
 import { verifyWorkspaceAccess } from '@/lib/workspace/permissions';
-import { prisma } from '@/lib/db';
+import { MdmService } from '@/lib/services/MdmService';
 
 export const GET = withErrorHandler(async (
     req: NextRequest,
@@ -19,30 +19,7 @@ export const GET = withErrorHandler(async (
     const url = new URL(req.url);
     const profileId = url.searchParams.get('profileId');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const whereClause: any = {
-        profile: {
-            workspaceId
-        }
-    };
-
-    if (profileId) {
-        whereClause.profileId = profileId;
-    }
-
-    const assignments = await prisma.mdmAssignment.findMany({
-        where: whereClause,
-        include: {
-            asset: {
-                select: { id: true, name: true, serialNumber: true }
-            },
-            profile: {
-                select: { id: true, name: true, platform: true }
-            }
-        },
-        orderBy: { createdAt: 'desc' }
-    });
-
+    const assignments = await MdmService.getAssignments(workspaceId, profileId);
     return apiSuccess(assignments);
 });
 
@@ -59,42 +36,21 @@ export const POST = withErrorHandler(async (
     }
 
     const body = await req.json();
-    const { profileId, assetIds } = body;
 
-    if (!profileId || !assetIds || !Array.isArray(assetIds)) {
+    if (!body.profileId || !body.assetIds || !Array.isArray(body.assetIds)) {
         throw new ApiError(400, 'Profile ID and an array of Asset IDs are required');
     }
 
-    const profile = await prisma.mdmProfile.findUnique({
-        where: { id: profileId }
-    });
-
-    if (!profile || profile.workspaceId !== workspaceId) {
-        throw new ApiError(404, 'MDM profile not found');
+    try {
+        const assignments = await MdmService.assignProfiles(workspaceId, {
+            profileId: body.profileId,
+            assetIds: body.assetIds
+        });
+        return apiSuccess(assignments, { message: 'Profiles assigned successfully' }, 201);
+    } catch (error: any) {
+        if (error.message.includes('not found')) {
+            throw new ApiError(404, 'MDM profile not found');
+        }
+        throw new ApiError(500, 'Failed to assign MDM profiles');
     }
-
-    const assignments = await Promise.all(
-        assetIds.map(async (assetId) => {
-            // Upsert to handle re-assignments tracking gracefully
-            return prisma.mdmAssignment.upsert({
-                where: {
-                    profileId_assetId: {
-                        profileId,
-                        assetId
-                    }
-                },
-                update: {
-                    status: 'PENDING',
-                    errorLog: null,
-                },
-                create: {
-                    profileId,
-                    assetId,
-                    status: 'PENDING'
-                }
-            });
-        })
-    );
-
-    return apiSuccess(assignments, { message: 'Profiles assigned successfully' }, 201);
 });

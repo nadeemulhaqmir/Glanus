@@ -144,7 +144,7 @@ export class AlertEvaluator {
         // Check duration (if specified)
         if (duration > 0) {
             const sustained = await this.checkSustainedViolation(
-                agent.id,
+                agent,
                 metric,
                 threshold,
                 duration
@@ -171,7 +171,7 @@ export class AlertEvaluator {
      * Check if metric has been over threshold for duration
      */
     private async checkSustainedViolation(
-        agentId: string,
+        agent: AgentWithAsset,
         metric: string,
         threshold: number,
         durationMinutes: number
@@ -181,7 +181,7 @@ export class AlertEvaluator {
 
         const metrics = await prisma.agentMetric.findMany({
             where: {
-                agentId,
+                agentId: agent.id,
                 timestamp: {
                     gte: startTime,
                 },
@@ -189,16 +189,24 @@ export class AlertEvaluator {
             orderBy: { timestamp: 'asc' },
         });
 
+        // Current Live State Check (Volatile memory configures absolute truth)
+        const currentVolatileValue = metric === 'CPU' ? agent.cpuUsage : metric === 'RAM' ? agent.ramUsage : agent.diskUsage;
+
         if (metrics.length === 0) {
-            return false;
+            // Prism Deduplication Engine dropped history because variance < 5%
+            // If the live value exceeds the threshold, the alert is sustained cleanly.
+            return (typeof currentVolatileValue === 'number' && currentVolatileValue > threshold);
         }
 
-        // Check if ALL readings in this period exceeded threshold
+        // Check if ALL historical readings in this period exceeded threshold
         const field = metric === 'CPU' ? 'cpuUsage' : metric === 'RAM' ? 'ramUsage' : 'diskUsage';
-        return metrics.every((m) => {
+        const sustainedHistory = metrics.every((m) => {
             const val = m[field as keyof typeof m];
             return typeof val === 'number' && val > threshold;
         });
+
+        // Both history and live state must trigger
+        return sustainedHistory && (typeof currentVolatileValue === 'number' && currentVolatileValue > threshold);
     }
 
     /**

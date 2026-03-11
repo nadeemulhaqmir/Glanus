@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useWorkspace } from '@/lib/workspace/context';
 import { NotificationPopover } from '@/components/workspace/NotificationPopover';
+import { CommandPalette } from '@/components/workspace/CommandPalette';
+import { Search, User } from 'lucide-react';
 
 interface NavItem {
     href: string;
@@ -104,6 +106,56 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
             ),
         },
         {
+            href: `${basePath}/patches`,
+            label: 'Patch Management',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/scripts`,
+            label: 'Script Library',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/network`,
+            label: 'Network Discovery',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/helpdesk`,
+            label: 'Support Tickets',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 01.106-.01L12.5 11.25m-1.5 0a.75.75 0 00-.106.01l-.041.02m1.647 0A.75.75 0 0112.5 11.25m-1.5 0a.75.75 0 00.106.01L11.25 11.25m0 0A.75.75 0 0110.5 12v3a2.25 2.25 0 002.25 2.25h1.5A2.25 2.25 0 0016.5 15v-3a.75.75 0 00-.75-.75h-1.5A.75.75 0 0013.5 12v3a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-3a.75.75 0 00-.25-.5l-3-3a1.5 1.5 0 010-2.121l1.5-1.5a1.5 1.5 0 012.121 0l3 3A1.5 1.5 0 0115 8.25v2.25z" />
+                </svg>
+            )
+        },
+        {
+            href: `${basePath}/reports`,
+            label: 'Reports',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+            ),
+        },
+        {
             href: `${basePath}/members`,
             label: 'Team',
             section: 'Workspace',
@@ -135,11 +187,31 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
         },
         {
             href: `${basePath}/partner`,
-            label: 'IT Partner',
+            label: 'IT Partner Match',
             section: 'Workspace',
             icon: (
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.83-5.83m0 0l2.58-2.58a2 2 0 000-2.83l-1.42-1.42a2 2 0 00-2.83 0l-2.58 2.58m5.83 5.83L11.42 15.17m-6.59-6.59l2.58-2.58a2 2 0 012.83 0l1.42 1.42a2 2 0 010 2.83l-2.58 2.58m-5.83-5.83L8.83 8.83m-6.59 6.59L4.83 8.83m-2.58 2.58a2 2 0 000 2.83l1.42 1.42a2 2 0 002.83 0m0 0l-2.58-2.58m0 0l2.58 2.58m0 0l-2.58 2.58" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/activity`,
+            label: 'Activity Feed',
+            section: 'Workspace',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/maintenance`,
+            label: 'Maintenance',
+            section: 'Workspace',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75a4.5 4.5 0 01-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 11-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 016.336-4.486l-3.276 3.276a3.004 3.004 0 002.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852z" />
                 </svg>
             ),
         },
@@ -154,6 +226,26 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
             ),
         },
         {
+            href: `${basePath}/remote`,
+            label: 'Remote Desktop',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/download-agent`,
+            label: 'Agent Installer',
+            section: 'Operations',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+            ),
+        },
+        {
             href: `${basePath}/settings`,
             label: 'Settings',
             section: 'Workspace',
@@ -161,6 +253,16 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            ),
+        },
+        {
+            href: `${basePath}/webhooks`,
+            label: 'Webhooks',
+            section: 'Workspace',
+            icon: (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
                 </svg>
             ),
         },
@@ -195,6 +297,18 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
                         </p>
                     </div>
                 </div>
+            </div>
+
+            {/* Search shortcut hint */}
+            <div className="px-4 pb-3">
+                <button
+                    onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+                    className="flex w-full items-center gap-2 rounded-lg border border-border bg-surface-2/50 px-3 py-1.5 text-xs text-muted-foreground hover:border-nerve/30 hover:text-foreground transition"
+                >
+                    <Search size={13} />
+                    <span className="flex-1 text-left">Search…</span>
+                    <kbd className="hidden sm:inline-block rounded border border-border bg-surface-1 px-1 py-0.5 text-[10px] font-mono">⌘K</kbd>
+                </button>
             </div>
 
             {/* Navigation */}
@@ -279,6 +393,10 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
                 {/* Global Top Header */}
                 <header className="sticky top-0 z-30 flex h-14 items-center justify-end border-b border-border bg-surface-1/80 px-6 backdrop-blur">
                     <div className="flex items-center gap-4">
+                        <Link href="/account" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition">
+                            <User size={14} />
+                            Account
+                        </Link>
                         <NotificationPopover />
                     </div>
                 </header>
@@ -286,6 +404,7 @@ export function WorkspaceLayout({ children }: { children: React.ReactNode }) {
                 <div className="mx-auto max-w-7xl px-6 py-6">
                     {children}
                 </div>
+                <CommandPalette />
             </main>
         </div>
     );

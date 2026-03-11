@@ -77,6 +77,15 @@ export async function middleware(request: NextRequest) {
 
     if (!token && !isPublicPath) {
         logWarn(`[Auth] Unauthenticated access blocked: ${pathname} [ReqID: ${requestId}]`);
+
+        // Return 401 JSON for API routes instead of redirecting to login page
+        if (pathname.startsWith('/api/')) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401, headers: { 'X-Request-Id': requestId } }
+            );
+        }
+
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('callbackUrl', pathname);
         return NextResponse.redirect(loginUrl);

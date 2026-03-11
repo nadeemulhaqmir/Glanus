@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+// Health Check Endpoint imports
 /**
  * Health Check Endpoint
  * 
@@ -6,6 +6,7 @@ import { apiSuccess, apiError } from '@/lib/api/response';
  * Used for load balancer health checks and monitoring.
  */
 
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 export async function GET() {
@@ -30,5 +31,5 @@ export async function GET() {
         httpStatus = 503;
     }
 
-    return apiSuccess(checks, undefined, httpStatus);
+    return NextResponse.json(checks, { status: httpStatus });
 }

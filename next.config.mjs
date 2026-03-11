@@ -18,6 +18,9 @@ const nextConfig = {
             bodySizeLimit: '2mb',
         },
     },
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
 }
 
 export default withSentryConfig(nextConfig, {

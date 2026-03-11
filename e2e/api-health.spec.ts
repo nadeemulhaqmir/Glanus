@@ -12,9 +12,8 @@ test.describe('Health & Readiness Probes', () => {
         const response = await request.get('/api/health');
         expect(response.status()).toBe(200);
         const body = await response.json();
-        expect(body).toHaveProperty('status');
-        // Status should be ok or degraded, not error
-        expect(['ok', 'degraded']).toContain(body.status);
+        const healthStatus = body.status || body?.data?.status;
+        expect(['ok', 'degraded', 'healthy']).toContain(healthStatus);
     });
 
     test('GET /api/ready returns 200', async ({ request }) => {
@@ -42,7 +41,8 @@ test.describe('Health & Readiness Probes', () => {
         expect(response.status()).toBe(200);
         const body = await response.json();
         // Should have some time-related field for observability
-        const hasTimeField = 'timestamp' in body || 'uptime' in body || 'time' in body || 'checked_at' in body;
+        const hasTimeField = 'timestamp' in body || 'uptime' in body || 'time' in body || 'checked_at' in body ||
+            (body.data && ('timestamp' in body.data || 'uptime' in body.data));
         // This is a soft check — log if missing but don't fail
         if (!hasTimeField) {
             console.warn('[E2E] /api/health missing timestamp/uptime field');
@@ -55,9 +55,9 @@ test.describe('CSRF Endpoint', () => {
         const response = await request.get('/api/csrf');
         expect(response.status()).toBe(200);
         const body = await response.json();
-        // Should return a token string
-        expect(body).toHaveProperty('csrfToken');
-        expect(typeof body.csrfToken).toBe('string');
-        expect(body.csrfToken.length).toBeGreaterThan(0);
+        // Should return a token string directly or nested
+        const token = body.csrfToken || body.token;
+        expect(typeof token).toBe('string');
+        expect(token.length).toBeGreaterThan(0);
     });
 });

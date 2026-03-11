@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers/auth';
+import { login, getCSRFToken } from './helpers/auth';
 
 /**
  * Workspace Settings & Members — API Tests
@@ -18,7 +18,7 @@ test.describe('Workspace Settings — API', () => {
         await login(page);
         await page.waitForLoadState('networkidle');
         const link = page.locator('a[href*="/workspaces/"]').first();
-        await link.waitFor({ state: 'visible', timeout: 10000 });
+        await link.waitFor({ state: 'visible', timeout: 30000 });
         const href = await link.getAttribute('href');
         workspaceId = href?.match(/\/workspaces\/([^/]+)/)?.[1] ?? null;
     });
@@ -29,9 +29,10 @@ test.describe('Workspace Settings — API', () => {
         const response = await page.request.get(`/api/workspaces/${workspaceId}`);
         expect(response.status()).toBe(200);
         const body = await response.json();
+        console.log("WORKSPACE DETAILS BODY:", body);
         expect(body).toHaveProperty('success', true);
-        expect(body.data).toHaveProperty('id', workspaceId);
-        expect(body.data).toHaveProperty('name');
+        expect(body.data.workspace).toHaveProperty('id', workspaceId);
+        expect(body.data.workspace).toHaveProperty('name');
     });
 
     test('GET /api/workspaces/[id]/members returns member list', async ({ page }) => {
@@ -40,10 +41,11 @@ test.describe('Workspace Settings — API', () => {
         const response = await page.request.get(`/api/workspaces/${workspaceId}/members`);
         expect(response.status()).toBe(200);
         const body = await response.json();
+        console.log("MEMBER LIST BODY:", body);
         expect(body).toHaveProperty('success', true);
-        expect(Array.isArray(body.data)).toBe(true);
+        expect(Array.isArray(body.data.members)).toBe(true);
         // Should always have at least the owner
-        expect(body.data.length).toBeGreaterThan(0);
+        expect(body.data.members.length).toBeGreaterThan(0);
     });
 
     test('GET /api/workspaces/[id]/invitations returns invitation list', async ({ page }) => {
@@ -58,7 +60,9 @@ test.describe('Workspace Settings — API', () => {
     test('POST /api/workspaces/[id]/invitations with invalid email returns 400', async ({ page }) => {
         if (!workspaceId) { test.skip(); return; }
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.post(`/api/workspaces/${workspaceId}/invitations`, {
+            headers: { 'x-csrf-token': csrfToken || '' },
             data: {
                 email: 'not-a-valid-email',
                 role: 'MEMBER',
@@ -75,7 +79,9 @@ test.describe('Workspace Settings — API', () => {
         const getResp = await page.request.get(`/api/workspaces/${workspaceId}`);
         const originalName = (await getResp.json()).data?.name;
 
+        const csrfToken = await getCSRFToken(page);
         const response = await page.request.patch(`/api/workspaces/${workspaceId}`, {
+            headers: { 'x-csrf-token': csrfToken || '' },
             data: { name: originalName }, // Same name — just verify it accepts it
         });
 

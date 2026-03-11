@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { apiSuccess } from '@/lib/api/response';
 import { requireAuth, withErrorHandler, ApiError } from '@/lib/api/withAuth';
 import { verifyWorkspaceAccess } from '@/lib/workspace/permissions';
-import { prisma } from '@/lib/db';
+import { MdmService } from '@/lib/services/MdmService';
 
 export const GET = withErrorHandler(async (
     req: NextRequest,
@@ -19,22 +19,7 @@ export const GET = withErrorHandler(async (
     const url = new URL(req.url);
     const platform = url.searchParams.get('platform');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const whereClause: any = { workspaceId };
-    if (platform) {
-        whereClause.platform = platform;
-    }
-
-    const profiles = await prisma.mdmProfile.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        include: {
-            _count: {
-                select: { assignments: true }
-            }
-        }
-    });
-
+    const profiles = await MdmService.getProfiles(workspaceId, platform);
     return apiSuccess(profiles);
 });
 
@@ -51,21 +36,18 @@ export const POST = withErrorHandler(async (
     }
 
     const body = await req.json();
-    const { name, description, platform, profileType, configPayload } = body;
 
-    if (!name || !platform || !profileType || !configPayload) {
+    // Explicit runtime validation mapping
+    if (!body.name || !body.platform || !body.profileType || !body.configPayload) {
         throw new ApiError(400, 'Missing required fields');
     }
 
-    const profile = await prisma.mdmProfile.create({
-        data: {
-            workspaceId,
-            name,
-            description,
-            platform,
-            profileType,
-            configPayload,
-        }
+    const profile = await MdmService.createProfile(workspaceId, {
+        name: body.name,
+        description: body.description,
+        platform: body.platform,
+        profileType: body.profileType,
+        configPayload: body.configPayload,
     });
 
     return apiSuccess(profile, { message: 'MDM profile created successfully' }, 201);

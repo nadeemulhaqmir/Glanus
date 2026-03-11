@@ -9,6 +9,7 @@
 
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import Link from 'next/link';
 
 export default function GlobalError({
     error,
@@ -39,18 +40,18 @@ export default function GlobalError({
 
                     <div className="flex gap-3 justify-center">
                         <button type="button"
-                    aria-label="Try again"
+                            aria-label="Try again"
                             onClick={() => reset()}
                             className="px-6 py-2.5 bg-nerve text-white font-medium rounded-lg transition-all hover:brightness-110 hover:shadow-lg hover:shadow-nerve/20"
                         >
                             Try again
                         </button>
-                        <a
+                        <Link
                             href="/"
-                            className="px-6 py-2.5 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-medium rounded-lg transition-colors"
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-zinc-800 hover:text-white h-10 px-4 py-2"
                         >
                             Go home
-                        </a>
+                        </Link>
                     </div>
 
                     {error.digest && (

@@ -22,7 +22,39 @@ const baseAssetSchema = z.object({
     tags: z.array(z.string()).optional(),
 
     // Dynamic field payloads
-    customFields: z.record(z.string(), z.string()).optional()
+    customFields: z.record(z.string(), z.any()).optional(),
+
+    // Phase 26: Physical Asset specific fields
+    physicalAsset: z.object({
+        category: z.enum(['LAPTOP', 'DESKTOP', 'SERVER', 'MOBILE_DEVICE', 'TABLET', 'PRINTER', 'NETWORK_EQUIPMENT', 'MONITOR', 'PERIPHERAL', 'OTHER']).optional(),
+        processor: z.string().max(255).optional(),
+        ram: z.number().int().positive().optional(),
+        storage: z.number().int().positive().optional(),
+        osVersion: z.string().max(255).optional(),
+        macAddress: z.string().max(255).optional(),
+        ipAddress: z.string().max(255).optional(),
+        isManaged: z.boolean().optional(),
+    }).optional(),
+
+    // Phase 26: Digital Asset specific fields
+    digitalAsset: z.object({
+        category: z.enum(['WEB_APPLICATION', 'MOBILE_APP', 'DESKTOP_APP', 'SAAS_SUBSCRIPTION', 'DATABASE', 'DEVELOPMENT_TOOL', 'SECURITY_DIGITAL', 'LICENSE', 'API_SERVICE', 'CLOUD_STORAGE', 'VIRTUAL_MACHINE', 'LLM', 'OTHER']).optional(),
+        version: z.string().max(255).optional(),
+        vendor: z.string().max(255).optional(),
+        licenseKey: z.string().optional(),
+        licenseType: z.enum(['PERPETUAL', 'SUBSCRIPTION', 'TRIAL', 'OPEN_SOURCE', 'FREEMIUM', 'ENTERPRISE']).optional(),
+        seatCount: z.number().int().positive().optional(),
+        seatsUsed: z.number().int().nonnegative().optional(),
+        subscriptionTier: z.string().max(255).optional(),
+        monthlyRecurringCost: z.number().nonnegative().optional(),
+        renewalDate: z.string().datetime().optional().or(z.literal('').transform(() => undefined)),
+        autoRenew: z.boolean().optional(),
+        host: z.string().max(255).optional(),
+        hostType: z.enum(['ASSET', 'PROVIDER', 'HYBRID', 'ON_PREMISE']).optional(),
+        url: z.string().url('Invalid URL format').optional().or(z.literal('').transform(() => undefined)),
+        connectionString: z.string().optional(),
+        databaseSize: z.number().int().nonnegative().optional(),
+    }).optional()
 });
 
 /**

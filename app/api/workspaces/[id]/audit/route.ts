@@ -30,6 +30,8 @@ export const GET = withErrorHandler(async (
     const action = searchParams.get('action');
     const resourceType = searchParams.get('resourceType');
     const assetId = searchParams.get('assetId');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
     const where: Prisma.AuditLogWhereInput = {
         workspaceId,
@@ -39,6 +41,15 @@ export const GET = withErrorHandler(async (
     if (action) where.action = { contains: action, mode: 'insensitive' };
     if (resourceType) where.resourceType = resourceType;
     if (assetId) where.assetId = assetId;
+    if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) (where.createdAt as Prisma.DateTimeFilter).gte = new Date(startDate);
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            (where.createdAt as Prisma.DateTimeFilter).lte = end;
+        }
+    }
 
     const [logs, total] = await Promise.all([
         prisma.auditLog.findMany({
