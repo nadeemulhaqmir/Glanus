@@ -82,7 +82,7 @@ export class MdmService {
         });
 
         if (!existing || existing.workspaceId !== workspaceId) {
-            throw new Error('MDM profile not found');
+            throw Object.assign(new Error('MDM profile not found'), { statusCode: 404 });
         }
 
         return prisma.mdmProfile.update({

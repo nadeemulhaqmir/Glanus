@@ -133,7 +133,13 @@ To add a new action handler type:
 2. Auth guard: `requireAuth()` + `requireWorkspaceRole/Access()`
 3. Validate body with `zod`
 4. Delegate to the appropriate service
-5. Return `apiSuccess(data)` or `apiError(status, message)`
+5. Return `apiSuccess(data)` or `apiError(status, message)` — **never** `NextResponse.json()` directly
+
+### Schema coercion guidelines
+
+- Use `z.coerce.number()` for numeric query params and body fields that may arrive as strings (form data, multipart)
+- Avoid `.or(z.string().transform(...))` patterns — they produce `string | number` union output types that break service call sites
+- Use `z.coerce.number().int().optional()` for optional integer fields (e.g. sort order, position)
 
 ### New service
 
@@ -141,6 +147,7 @@ To add a new action handler type:
 2. All Prisma calls live here — never in the route
 3. Throw errors with `Object.assign(new Error('...'), { statusCode: 4xx })` for route-layer handling
 4. If the feature owns multiple concerns (>3 logical groups), split into sibling services from day one
+5. Import service input types when calling from routes — never use `as any` casts at the call site
 
 ### New dynamic asset action type
 
@@ -150,7 +157,12 @@ See the "Action Handlers" section above.
 
 ## Known Improvement Opportunities
 
-No outstanding issues. All architectural improvements have been implemented.
+### Pending: `ZtnaPolicy` Prisma schema model
+
+`ZtnaService` references `(prisma as any).ztnaPolicy` because the `ZtnaPolicy` model exists in the service
+but has not yet been added to `prisma/schema.prisma`.  
+**Resolution:** Add `ZtnaPolicy` model to the schema and run `prisma generate` — the `as any` casts will be removable immediately after.
+
 
 
 ---

@@ -275,7 +275,7 @@ export class AssetService {
         });
 
         if (!asset) {
-            throw new Error('Asset not found');
+            throw Object.assign(new Error('Asset not found'), { statusCode: 404 });
         }
 
         return asset;
@@ -307,7 +307,7 @@ export class AssetService {
         });
 
         if (!existingAsset) {
-            throw new Error('Asset not found');
+            throw Object.assign(new Error('Asset not found'), { statusCode: 404 });
         }
 
         if (data.serialNumber && data.serialNumber !== existingAsset.serialNumber) {
