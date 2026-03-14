@@ -44,7 +44,10 @@
 | Service | File | Responsibility |
 |---|---|---|
 | `WorkspaceService` | `lib/services/WorkspaceService.ts` | Workspace CRUD, member management, activity feed |
-| `WorkspaceSubFeatureService` | `lib/services/WorkspaceSubFeatureService.ts` | Notifications, search, workspace agents, export, Stripe portal, patch policies |
+| `WorkspaceSubFeatureService` | `lib/services/WorkspaceSubFeatureService.ts` | Workspace-level utilities: data export (JSON/CSV) + Stripe billing portal session |
+| `WorkspaceAgentService` | `lib/services/WorkspaceAgentService.ts` | Workspace RMM: agent list with online/offline stats + agent telemetry detail |
+| `WorkspaceSearchService` | `lib/services/WorkspaceSearchService.ts` | Unified cross-entity search: assets, agents, AI insights |
+| `WorkspaceNotificationService` | `lib/services/WorkspaceNotificationService.ts` | Merged audit log + AI insight notification feed |
 | `WorkspacePartnerService` | `lib/services/WorkspacePartnerService.ts` | Partner lifecycle: removePartner, reviewPartner, assignPartner |
 | `WorkspaceApiKeyService` | `lib/services/WorkspaceApiKeyService.ts` | API key lifecycle: list, create (SHA-256 hash), revoke |
 | `WorkspaceWebhookService` | `lib/services/WorkspaceWebhookService.ts` | Workspace notification webhook lifecycle: get, upsert (create-or-update), delete |
@@ -61,7 +64,7 @@
 | `AgentService` | `lib/services/AgentService.ts` | Agent registration, heartbeat (Prism dedup engine), command results, update checks, software sync, discovery |
 | `RemoteSessionService` | `lib/services/RemoteSessionService.ts` | WebRTC remote session lifecycle |
 | `ScriptService` | `lib/services/ScriptService.ts` | Script CRUD and execution dispatch |
-| `PatchService` | `lib/services/PatchService.ts` | Patch policy CRUD |
+| `PatchService` | `lib/services/PatchService.ts` | Patch policy CRUD (get/create/update/delete) + execution dispatch across vulnerable endpoints |
 | `MdmService` | `lib/services/MdmService.ts` | Mobile device management |
 
 ### Security / AI / Analytics

@@ -1,54 +1,74 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
-import { getRules, saveRule } from '@/lib/reflex/automation';
+import { z } from 'zod';
+import { apiSuccess } from '@/lib/api/response';
+import { getRules, saveRule, AutomationRule } from '@/lib/reflex/automation';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 
-interface RouteContext {
-    params: Promise<{ id: string }>;
-}
+const triggerSchema = z.object({
+    type: z.enum(['metric_threshold', 'alert_fired', 'pattern_detected', 'schedule']),
+    metric: z.enum(['cpu', 'ram', 'disk']).optional(),
+    operator: z.enum(['gt', 'lt', 'eq']).optional(),
+    value: z.number().optional(),
+    alertSeverity: z.string().optional(),
+    cronExpression: z.string().optional(),
+});
 
-// GET /api/workspaces/[id]/reflex/rules - List automation rules
+const actionSchema = z.object({
+    type: z.enum(['run_script', 'send_notification', 'restart_agent', 'create_alert']),
+    scriptId: z.string().optional(),
+    scriptName: z.string().optional(),
+    notificationChannel: z.string().optional(),
+    message: z.string().optional(),
+    targetAssetId: z.string().optional(),
+});
+
+const saveRuleSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1, 'Rule name is required').max(255),
+    description: z.string().default(''),
+    trigger: triggerSchema,
+    action: actionSchema,
+    autonomyLevel: z.enum(['suggest', 'confirm', 'auto'] as const),
+    enabled: z.boolean().default(true),
+    cooldownMinutes: z.number().int().min(0).default(60),
+});
+
+type RouteContext = { params: Promise<{ id: string }> };
+
+/**
+ * GET /api/workspaces/[id]/reflex/rules — List automation rules for a workspace.
+ */
 export const GET = withErrorHandler(async (request: NextRequest, context: RouteContext) => {
     const user = await requireAuth();
     const { id: workspaceId } = await context.params;
     await requireWorkspaceRole(workspaceId, user.id, 'MEMBER', request);
-
-    try {
-        const rules = await getRules(workspaceId);
-        return apiSuccess(rules);
-    } catch (error: unknown) {
-        return apiError(500, 'Failed to fetch reflex automation rules', (error as Error).message);
-    }
+    const rules = await getRules(workspaceId);
+    return apiSuccess(rules);
 });
 
-// POST /api/workspaces/[id]/reflex/rules - Create or update an automation rule
+/**
+ * POST /api/workspaces/[id]/reflex/rules — Create or update an automation rule.
+ */
 export const POST = withErrorHandler(async (request: NextRequest, context: RouteContext) => {
     const user = await requireAuth();
     const { id: workspaceId } = await context.params;
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN', request);
 
-    try {
-        const body = await request.json();
-        if (!body.name || !body.trigger || !body.action || !body.autonomyLevel) {
-            return apiError(400, 'Missing required rule fields: name, trigger, action, autonomyLevel');
-        }
+    const data = saveRuleSchema.parse(await request.json());
 
-        const rulePayload = {
-            id: body.id || `rule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            name: body.name,
-            description: body.description || '',
-            trigger: body.trigger,
-            action: body.action,
-            autonomyLevel: body.autonomyLevel,
-            enabled: body.enabled ?? true,
-            cooldownMinutes: body.cooldownMinutes ?? 60,
-            createdBy: user.id,
-            workspaceId,
-        };
+    const rulePayload = {
+        id: data.id || `rule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: data.name,
+        description: data.description,
+        trigger: data.trigger,
+        action: data.action,
+        autonomyLevel: data.autonomyLevel,
+        enabled: data.enabled,
+        cooldownMinutes: data.cooldownMinutes,
+        createdBy: user.id,
+        workspaceId,
+    };
 
-        const rule = await saveRule(workspaceId, rulePayload);
-        return apiSuccess(rule, { message: 'Automation rule saved successfully' }, 201);
-    } catch (error: unknown) {
-        return apiError(500, 'Failed to save automation rule', (error as Error).message);
-    }
+    const rule = await saveRule(workspaceId, rulePayload);
+    return apiSuccess(rule, { message: 'Automation rule saved successfully' }, 201);
 });

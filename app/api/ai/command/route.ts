@@ -1,28 +1,36 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { AIService } from '@/lib/services/AIService';
 
-// POST /api/ai/command — Process natural language command
+const commandSchema = z.object({
+    input: z.string().min(1, 'Command input is required').max(4000),
+    workspaceId: z.string().min(1, 'Workspace ID is required'),
+    currentPath: z.string().optional(),
+});
+
+/**
+ * POST /api/ai/command — Process a natural language AI command.
+ *
+ * Rate-limited (strict-api). Requires authentication.
+ * Body: { input, workspaceId, currentPath? }
+ */
 export const POST = withErrorHandler(async (request: NextRequest) => {
     const rateLimitResponse = await withRateLimit(request, 'strict-api');
     if (rateLimitResponse) return rateLimitResponse;
 
     const user = await requireAuth();
-    const body = await request.json();
+    const data = commandSchema.parse(await request.json());
 
-    try {
-        const result = await AIService.processCommand({
-            input: body.input,
-            workspaceId: body.workspaceId,
-            currentPath: body.currentPath,
-            userName: user.name ?? undefined,
-            userEmail: user.email ?? undefined,
-        });
-        return apiSuccess(result);
-    } catch (err: unknown) {
-        const e = err as { statusCode?: number; message?: string };
-        return apiError(e.statusCode || 500, e.message || 'Failed to process command');
-    }
+    const result = await AIService.processCommand({
+        input: data.input,
+        workspaceId: data.workspaceId,
+        currentPath: data.currentPath,
+        userName: user.name ?? undefined,
+        userEmail: user.email ?? undefined,
+    });
+
+    return apiSuccess(result);
 });
