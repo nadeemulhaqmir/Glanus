@@ -1,3 +1,13 @@
+/**
+ * PatchService — Automated patch policy management and execution dispatch.
+ *
+ * Responsibilities:
+ *  - getPatchPolicies: list patch policies with vulnerable endpoint counts
+ *  - createPatchPolicy: create a new patch policy with remediation script validation
+ *  - updatePatchPolicy: update policy name/target/script/enabled flag
+ *  - deletePatchPolicy: remove a policy by ID
+ *  - executePatchPolicy: dispatch script executions to all vulnerable endpoints
+ */
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { ScriptStatus } from '@prisma/client';
@@ -118,4 +128,39 @@ export class PatchService {
 
         return { executedCount: payload.length };
     }
+    /**
+     * Update an existing patch policy.
+     */
+    static async updatePatchPolicy(workspaceId: string, patchId: string, data: PatchPolicyUpdateInput) {
+        const policy = await prisma.patchPolicy.findUnique({ where: { id: patchId, workspaceId } });
+        if (!policy) throw Object.assign(new Error('Patch policy not found'), { statusCode: 404 });
+
+        if (data.actionScriptId) {
+            const script = await prisma.script.findUnique({ where: { id: data.actionScriptId, workspaceId } });
+            if (!script) throw Object.assign(new Error('Replacement remediation script not found'), { statusCode: 404 });
+        }
+
+        return prisma.patchPolicy.update({
+            where: { id: patchId },
+            data,
+            include: { actionScript: { select: { id: true, name: true, language: true } } },
+        });
+    }
+
+    /**
+     * Delete a patch policy.
+     */
+    static async deletePatchPolicy(workspaceId: string, patchId: string) {
+        const policy = await prisma.patchPolicy.findUnique({ where: { id: patchId, workspaceId } });
+        if (!policy) throw Object.assign(new Error('Patch policy not found'), { statusCode: 404 });
+        await prisma.patchPolicy.delete({ where: { id: patchId } });
+        return { deleted: true };
+    }
+}
+
+export interface PatchPolicyUpdateInput {
+    name?: string;
+    targetSoftware?: string;
+    actionScriptId?: string;
+    isEnabled?: boolean;
 }

@@ -1,7 +1,7 @@
 import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceAccess, withErrorHandler } from '@/lib/api/withAuth';
-import { WorkspaceSubFeatureService } from '@/lib/services/WorkspaceSubFeatureService';
+import { WorkspaceAgentService } from '@/lib/services/WorkspaceAgentService';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -10,6 +10,6 @@ export const GET = withErrorHandler(async (_request: NextRequest, { params }: Ro
     const { id: workspaceId } = await params;
     const user = await requireAuth();
     await requireWorkspaceAccess(workspaceId, user.id);
-    const result = await WorkspaceSubFeatureService.listWorkspaceAgents(workspaceId);
+    const result = await WorkspaceAgentService.listWorkspaceAgents(workspaceId);
     return apiSuccess(result);
 });

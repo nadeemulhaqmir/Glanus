@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { apiSuccess, apiError, apiDeleted } from '@/lib/api/response';
-import { WorkspaceSubFeatureService, PatchPolicyUpdateInput } from '@/lib/services/WorkspaceSubFeatureService';
+import { PatchService, PatchPolicyUpdateInput } from '@/lib/services/PatchService';
 import { z } from 'zod';
 
 const updatePatchPolicySchema = z.object({
@@ -17,7 +17,7 @@ export const DELETE = withErrorHandler(async (_request: NextRequest, { params }:
     const { id: workspaceId, patchId } = await params;
     const user = await requireAuth();
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
-    await WorkspaceSubFeatureService.deletePatchPolicy(workspaceId, patchId);
+    await PatchService.deletePatchPolicy(workspaceId, patchId);
     return apiDeleted();
 });
 
@@ -29,6 +29,6 @@ export const PATCH = withErrorHandler(async (request: NextRequest, { params }: R
     const result = updatePatchPolicySchema.safeParse(await request.json());
     if (!result.success) return apiError(400, 'Invalid request data', result.error.errors);
 
-    const updated = await WorkspaceSubFeatureService.updatePatchPolicy(workspaceId, patchId, result.data as PatchPolicyUpdateInput);
+    const updated = await PatchService.updatePatchPolicy(workspaceId, patchId, result.data as PatchPolicyUpdateInput);
     return apiSuccess(updated);
 });

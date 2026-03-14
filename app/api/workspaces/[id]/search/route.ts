@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceAccess, withErrorHandler } from '@/lib/api/withAuth';
 import { apiSuccess } from '@/lib/api/response';
-import { WorkspaceSubFeatureService } from '@/lib/services/WorkspaceSubFeatureService';
+import { WorkspaceSearchService } from '@/lib/services/WorkspaceSearchService';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,6 +22,6 @@ export const GET = withErrorHandler(async (request: NextRequest, { params }: Rou
     const q = url.searchParams.get('q') || '';
     const limit = parseInt(url.searchParams.get('limit') || '5');
 
-    const result = await WorkspaceSubFeatureService.search(workspaceId, q, limit);
+    const result = await WorkspaceSearchService.search(workspaceId, q, limit);
     return apiSuccess(result);
 });
