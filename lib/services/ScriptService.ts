@@ -1,11 +1,15 @@
 /**
- * ScriptService — Manages automation scripts and their scheduled execution.
+ * ScriptService — Script library CRUD, execution history, and manual deploy.
  *
  * Responsibilities:
  *  - getScripts / getScriptById: fetch scripts with optional language filter
- *  - createScript / updateScript / deleteScript: CRUD for script records
- *  - updateSchedule: modify cron schedule and re-compute nextRunAt
- *  - processDueSchedules: cron-invoked — generate pending executions for eligible targets
+ *  - createScript / deleteScript: manage script records with audit logging
+ *  - getScriptExecutions: paginated execution history with agent + script joins
+ *  - deployScript: mass-dispatch a script to multiple ONLINE agents as PENDING executions
+ *
+ * Extracted to sibling service:
+ *  - ScriptScheduleService → listSchedules / createSchedule / updateSchedule /
+ *                            deleteSchedule / evaluateSchedules / getCronStatus
  */
 import { prisma } from '@/lib/db';
 import { Prisma } from '@prisma/client';
@@ -181,202 +185,6 @@ export class ScriptService {
             total,
             limit,
         };
-    }
-
-    /**
-     * Finds and processes any due script schedules, generating executions for targets.
-     * Extracts complex DB schedule parsing from the cron HTTP route.
-     */
-    static async evaluateSchedules() {
-        logInfo('[SERVICE] Starting script execution scheduler...');
-        const startTime = Date.now();
-        const now = new Date();
-
-        // 1. Find all active schedules that are due
-        const dueSchedules = await prisma.scriptSchedule.findMany({
-            where: {
-                enabled: true,
-                nextRunAt: {
-                    lte: now,
-                },
-            },
-            include: {
-                script: true,
-            },
-        });
-
-        let executionsQueued = 0;
-        let schedulesProcessed = 0;
-        let errors = 0;
-
-        // 2. Process each due schedule
-        for (const schedule of dueSchedules) {
-            try {
-                const targetIds = schedule.targetIds as string[];
-
-                if (targetIds && targetIds.length > 0) {
-                    const agents = await prisma.agentConnection.findMany({
-                        where: { id: { in: targetIds } },
-                        select: { id: true, assetId: true }
-                    });
-
-                    // Create pending script executions for each target agent
-                    const executionPromises = agents.map((agent) =>
-                        prisma.scriptExecution.create({
-                            data: {
-                                scriptId: schedule.scriptId,
-                                scriptName: schedule.script.name,
-                                scriptBody: schedule.script.content,
-                                language: schedule.script.language,
-                                agentId: agent.id,
-                                assetId: agent.assetId,
-                                workspaceId: schedule.workspaceId,
-                                status: 'PENDING',
-                                createdBy: 'system_cron'
-                            }
-                        })
-                    );
-
-                    await Promise.all(executionPromises);
-                    executionsQueued += agents.length;
-
-                    // Log the dispatch
-                    logInfo(`[SERVICE] Dispatched schedule ${schedule.id} (${schedule.name}) to ${targetIds.length} agents.`);
-                }
-
-                // 3. Calculate and update next run time
-                let nextRunAt: Date | null = null;
-                try {
-                    const interval = CronExpressionParser.parse(schedule.cronExpression, { currentDate: now });
-                    nextRunAt = interval.next().toDate();
-                } catch (err) {
-                    logError(`[SERVICE] Invalid cron expression for schedule ${schedule.id}: ${schedule.cronExpression}`, err);
-                }
-
-                await prisma.scriptSchedule.update({
-                    where: { id: schedule.id },
-                    data: {
-                        lastRunAt: now,
-                        nextRunAt: nextRunAt,
-                        runCount: { increment: 1 }
-                    }
-                });
-
-                schedulesProcessed++;
-            } catch (err) {
-                logError(`[SERVICE] Failed to process schedule ${schedule.id}`, err);
-                errors++;
-            }
-        }
-
-        const duration = Date.now() - startTime;
-
-        const stats = {
-            schedulesProcessed,
-            executionsQueued,
-            errors,
-            durationMs: duration
-        };
-
-        logInfo('[SERVICE] Script scheduler complete', stats);
-        return stats;
-    }
-
-    /**
-     * Returns a status snapshot of the script cron system.
-     */
-    static async getCronStatus() {
-        const stats = await prisma.scriptSchedule.aggregate({
-            _count: { id: true },
-            where: { enabled: true },
-        });
-
-        return {
-            status: 'ready' as const,
-            activeSchedules: stats._count.id,
-            cronInfo: {
-                endpoint: '/api/cron/scripts',
-                method: 'POST',
-                recommendedInterval: '* * * * *',
-                requiresAuth: !!process.env.CRON_SECRET,
-            },
-        };
-    }
-
-    // ========================================
-    // SCRIPT SCHEDULES
-    // ========================================
-
-    static async listSchedules(workspaceId: string) {
-        return prisma.scriptSchedule.findMany({
-            where: { workspaceId },
-            include: { script: { select: { id: true, name: true, language: true } } },
-            orderBy: { createdAt: 'desc' },
-        });
-    }
-
-    static async createSchedule(
-        workspaceId: string,
-        data: { name: string; description?: string; scriptId: string; targetIds: string[]; cronExpression: string }
-    ) {
-        // Validate script exists in workspace
-        const script = await prisma.script.findFirst({ where: { id: data.scriptId, workspaceId } });
-        if (!script) throw Object.assign(new Error('Script not found'), { statusCode: 404 });
-
-        // Validate and parse next run time
-        let nextRunAt: Date;
-        try {
-            const interval = CronExpressionParser.parse(data.cronExpression);
-            nextRunAt = interval.next().toDate();
-        } catch {
-            throw Object.assign(new Error('Invalid cron expression'), { statusCode: 400 });
-        }
-
-        return prisma.scriptSchedule.create({
-            data: {
-                workspaceId, scriptId: data.scriptId, name: data.name,
-                description: data.description, targetIds: data.targetIds,
-                cronExpression: data.cronExpression, nextRunAt, enabled: true,
-            },
-            include: { script: { select: { id: true, name: true, language: true } } },
-        });
-    }
-
-    static async updateSchedule(
-        workspaceId: string,
-        scheduleId: string,
-        data: { name?: string; description?: string; targetIds?: string[]; cronExpression?: string; enabled?: boolean }
-    ) {
-        const schedule = await prisma.scriptSchedule.findUnique({ where: { id: scheduleId, workspaceId } });
-        if (!schedule) throw Object.assign(new Error('Schedule not found'), { statusCode: 404 });
-
-        const updateData: Prisma.ScriptScheduleUpdateInput = { ...data };
-
-        if (data.cronExpression && data.cronExpression !== schedule.cronExpression) {
-            try {
-                const interval = CronExpressionParser.parse(data.cronExpression);
-                updateData.nextRunAt = interval.next().toDate();
-            } catch {
-                throw Object.assign(new Error('Invalid cron expression'), { statusCode: 400 });
-            }
-        } else if (data.enabled === true && schedule.enabled === false) {
-            try {
-                const interval = CronExpressionParser.parse(schedule.cronExpression);
-                updateData.nextRunAt = interval.next().toDate();
-            } catch { /* safe fallback — expression was valid before */ }
-        }
-
-        return prisma.scriptSchedule.update({
-            where: { id: scheduleId }, data: updateData,
-            include: { script: { select: { id: true, name: true, language: true } } },
-        });
-    }
-
-    static async deleteSchedule(workspaceId: string, scheduleId: string) {
-        const schedule = await prisma.scriptSchedule.findUnique({ where: { id: scheduleId, workspaceId } });
-        if (!schedule) throw Object.assign(new Error('Schedule not found'), { statusCode: 404 });
-        await prisma.scriptSchedule.delete({ where: { id: scheduleId } });
-        return { message: 'Schedule deleted successfully' };
     }
 
     // ========================================

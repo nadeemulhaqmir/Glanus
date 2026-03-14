@@ -2,7 +2,7 @@ import { apiSuccess, apiError } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { logError } from '@/lib/logger';
 import crypto from 'crypto';
-import { ScriptService } from '@/lib/services/ScriptService';
+import { ScriptScheduleService } from '@/lib/services/ScriptScheduleService';
 
 function verifyCronAuth(request: NextRequest): boolean {
     const cronSecret = request.headers.get('Authorization');
@@ -20,7 +20,7 @@ function verifyCronAuth(request: NextRequest): boolean {
 export async function POST(request: NextRequest) {
     try {
         if (!verifyCronAuth(request)) return apiError(401, 'Unauthorized');
-        const stats = await ScriptService.evaluateSchedules();
+        const stats = await ScriptScheduleService.evaluateSchedules();
         return apiSuccess({ success: true, stats, timestamp: new Date().toISOString() });
     } catch (error: unknown) {
         logError('[CRON] Script scheduler critical error', error);
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
     try {
         if (!verifyCronAuth(request)) return apiError(401, 'Unauthorized');
-        const status = await ScriptService.getCronStatus();
+        const status = await ScriptScheduleService.getCronStatus();
         return apiSuccess({ ...status, timestamp: new Date().toISOString() });
     } catch (error: unknown) {
         return apiError(500, error instanceof Error ? error.message : 'Unknown error');

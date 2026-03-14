@@ -1,7 +1,7 @@
 import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
-import { ScriptService } from '@/lib/services/ScriptService';
+import { ScriptScheduleService } from '@/lib/services/ScriptScheduleService';
 import { z } from 'zod';
 
 const updateScheduleSchema = z.object({
@@ -20,7 +20,7 @@ export const PATCH = withErrorHandler(async (request: NextRequest, { params }: R
     const user = await requireAuth();
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
     const data = updateScheduleSchema.parse(await request.json());
-    const schedule = await ScriptService.updateSchedule(workspaceId, scheduleId, data);
+    const schedule = await ScriptScheduleService.updateSchedule(workspaceId, scheduleId, data);
     return apiSuccess({ schedule });
 });
 
@@ -29,6 +29,6 @@ export const DELETE = withErrorHandler(async (_request: NextRequest, { params }:
     const { id: workspaceId, scheduleId } = await params;
     const user = await requireAuth();
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
-    const result = await ScriptService.deleteSchedule(workspaceId, scheduleId);
+    const result = await ScriptScheduleService.deleteSchedule(workspaceId, scheduleId);
     return apiSuccess(result);
 });

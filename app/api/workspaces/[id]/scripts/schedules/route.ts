@@ -1,7 +1,7 @@
 import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
-import { ScriptService } from '@/lib/services/ScriptService';
+import { ScriptScheduleService } from '@/lib/services/ScriptScheduleService';
 import { z } from 'zod';
 
 const createScheduleSchema = z.object({
@@ -19,7 +19,7 @@ export const GET = withErrorHandler(async (_request: NextRequest, { params }: Ro
     const { id: workspaceId } = await params;
     const user = await requireAuth();
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
-    const schedules = await ScriptService.listSchedules(workspaceId);
+    const schedules = await ScriptScheduleService.listSchedules(workspaceId);
     return apiSuccess({ schedules });
 });
 
@@ -29,6 +29,6 @@ export const POST = withErrorHandler(async (request: NextRequest, { params }: Ro
     const user = await requireAuth();
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
     const data = createScheduleSchema.parse(await request.json());
-    const schedule = await ScriptService.createSchedule(workspaceId, data);
+    const schedule = await ScriptScheduleService.createSchedule(workspaceId, data);
     return apiSuccess({ schedule }, undefined, 201);
 });
