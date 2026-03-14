@@ -9,12 +9,21 @@ import { createAssetSchema, assetQuerySchema, updateAssetSchema } from '@/lib/sc
 import { DynamicFieldService, FieldType } from '@/lib/services/DynamicFieldService';
 
 /**
- * AssetService — Core CRUD + actions + metrics + schema + CSV export.
+ * AssetService — Core asset CRUD and lifecycle management.
  *
- * Extracted responsibilities (see sibling services):
- *  - Bulk operations   → AssetBulkService
- *  - Relationships     → AssetRelationshipService
- *  - Assignment/Script → AssetAssignmentService
+ * Responsibilities:
+ *  - getAssets: paginated, filtered list of workspace assets
+ *  - createAsset: validate, enforce quotas, persist asset + polymorphic sub-entities + dynamic fields
+ *  - getAssetById: fetch full asset detail with QR code
+ *  - updateAsset: update asset + polymorphic sub-entities + dynamic field values
+ *  - deleteAsset: soft-delete with audit trail
+ *
+ * Extracted to sibling services:
+ *  - AssetActionService   → listActions / getActionBySlug / executeAction
+ *  - AssetAnalyticsService → getMetrics / getSchema / exportAssets
+ *  - AssetBulkService     → bulkDelete / bulkUpdate / bulkAssign / bulkAction / importCSV
+ *  - AssetRelationshipService → relationship CRUD
+ *  - AssetAssignmentService   → assign / unassign / script execution
  */
 export class AssetService {
     /**
@@ -520,223 +529,4 @@ export class AssetService {
         return asset;
     }
 
-    // ========================================
-    // ASSET ACTIONS (Category action definitions)
-    // ========================================
-
-    static async listActions(assetId: string) {
-        const asset = await prisma.asset.findUnique({
-            where: { id: assetId },
-            include: {
-                category: {
-                    include: { actionDefinitions: { orderBy: { sortOrder: 'asc' } } },
-                },
-            },
-        });
-
-        if (!asset) throw Object.assign(new Error('Asset not found'), { statusCode: 404 });
-
-        if (!asset.categoryId) {
-            return { assetId, assetName: asset.name, categoryId: null, categoryName: null, actions: [] };
-        }
-
-        const actions = asset.category?.actionDefinitions || [];
-        return {
-            assetId, assetName: asset.name, categoryId: asset.categoryId, categoryName: asset.category?.name,
-            actions: actions.map((action) => ({
-                id: action.id, name: action.name, label: action.label, slug: action.slug,
-                description: action.description, icon: action.icon, actionType: action.actionType,
-                isDestructive: action.isDestructive, requiresConfirmation: action.requiresConfirmation,
-                estimatedDuration: action.estimatedDuration, buttonColor: action.buttonColor,
-                parameters: action.parameters,
-            })),
-        };
-    }
-
-    static async getActionBySlug(assetId: string, actionSlug: string) {
-        const asset = await prisma.asset.findUnique({
-            where: { id: assetId }, select: { id: true, name: true, categoryId: true },
-        });
-        if (!asset) throw Object.assign(new Error('Asset not found'), { statusCode: 404 });
-        if (!asset.categoryId) throw Object.assign(new Error('Asset does not have a dynamic category'), { statusCode: 400 });
-
-        const actions = await prisma.assetActionDefinition.findMany({
-            where: { categoryId: asset.categoryId, isVisible: true },
-            orderBy: { sortOrder: 'asc' },
-            select: {
-                id: true, name: true, label: true, slug: true, description: true, icon: true,
-                actionType: true, isDestructive: true, requiresConfirmation: true,
-                estimatedDuration: true, handlerType: true, parameters: true, buttonColor: true,
-            },
-        });
-
-        const action = actions.find((a) => a.slug === actionSlug);
-        if (!action) throw Object.assign(new Error('Action not found'), { statusCode: 404 });
-
-        return { asset: { id: asset.id, name: asset.name }, action, actions };
-    }
-
-    static async executeAction(assetId: string, actionSlug: string, data: { parameters?: Record<string, unknown>; confirm?: boolean }) {
-        const asset = await prisma.asset.findUnique({
-            where: { id: assetId }, select: { id: true, name: true, categoryId: true },
-        });
-        if (!asset) throw Object.assign(new Error('Asset not found'), { statusCode: 404 });
-        if (!asset.categoryId) throw Object.assign(new Error('Asset does not have a dynamic category'), { statusCode: 400 });
-
-        const actionDefinition = await prisma.assetActionDefinition.findFirst({
-            where: { categoryId: asset.categoryId, slug: actionSlug, isVisible: true },
-        });
-        if (!actionDefinition) throw Object.assign(new Error('Action not found'), { statusCode: 404 });
-
-        if (actionDefinition.isDestructive && actionDefinition.requiresConfirmation && !data.confirm) {
-            throw Object.assign(new Error('Confirmation required for destructive action'), { statusCode: 400 });
-        }
-
-        const execution = await prisma.assetActionExecution.create({
-            data: {
-                assetId, actionDefinitionId: actionDefinition.id,
-                status: 'PENDING', parameters: (data.parameters || {}) as Prisma.InputJsonValue, startedAt: new Date(),
-            },
-        });
-
-        // Dispatch async — import lazily to avoid circular deps
-        const { executeAction } = await import('@/lib/action-handlers');
-        // executeAction arg type is a union of all action definition shapes — cast at boundary only
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        executeAction(actionDefinition as any, asset, data.parameters || {}, execution.id)
-            .then(async (result) => {
-                await prisma.assetActionExecution.update({
-                    where: { id: execution.id },
-                    data: {
-                        status: result.status, result: result.output as Prisma.InputJsonValue,
-                        errorMessage: result.error, completedAt: result.status === 'COMPLETED' ? new Date() : null,
-                    },
-                });
-            })
-            .catch(async (error: unknown) => {
-                const message = error instanceof Error ? error.message : 'Unknown execution error';
-                await prisma.assetActionExecution.update({
-                    where: { id: execution.id },
-                    data: { status: 'FAILED', errorMessage: message, completedAt: new Date() },
-                }).catch(() => { /* best-effort */ });
-            });
-
-        return {
-            execution: { id: execution.id, status: execution.status, startedAt: execution.startedAt },
-            message: 'Action execution started',
-            pollUrl: `/api/executions/${execution.id}`,
-        };
-    }
-
-    // ========================================
-    // ASSET METRICS
-    // ========================================
-
-    static async getMetrics(assetId: string, userId: string, timeRange = '24h') {
-        const now = new Date();
-        const startTime = new Date();
-        switch (timeRange) {
-            case '1h': startTime.setHours(now.getHours() - 1); break;
-            case '7d': startTime.setDate(now.getDate() - 7); break;
-            case '30d': startTime.setDate(now.getDate() - 30); break;
-            default: startTime.setHours(now.getHours() - 24);
-        }
-
-        const asset = await prisma.asset.findFirst({
-            where: { id: assetId, workspace: { members: { some: { userId } } } },
-        });
-        if (!asset) throw Object.assign(new Error('Asset not found or access denied'), { statusCode: 404 });
-
-        const metrics = await prisma.agentMetric.findMany({
-            where: { assetId, timestamp: { gte: startTime } },
-            orderBy: { timestamp: 'asc' },
-        });
-
-        return { metrics, timeRange, count: metrics.length };
-    }
-
-    // ========================================
-    // ASSET SCHEMA (Dynamic fields + actions)
-    // ========================================
-
-    static async getSchema(assetId: string) {
-        const asset = await prisma.asset.findUnique({
-            where: { id: assetId },
-            include: {
-                category: {
-                    select: {
-                        id: true, name: true,
-                        fieldDefinitions: { orderBy: { sortOrder: 'asc' } },
-                        parent: { select: { id: true, name: true } },
-                    },
-                },
-                fieldValues: {
-                    include: {
-                        fieldDefinition: { select: { name: true, label: true, slug: true, fieldType: true } },
-                    },
-                },
-            },
-        });
-
-        if (!asset) throw Object.assign(new Error('Asset not found'), { statusCode: 404 });
-        if (!asset.categoryId) throw Object.assign(new Error('Asset does not have a dynamic category assigned'), { statusCode: 400 });
-
-        const allFields = await DynamicFieldService.resolveInheritedFields(asset.category!.id);
-        const actions = await prisma.assetActionDefinition.findMany({
-            where: { categoryId: asset.category!.id }, orderBy: { name: 'asc' },
-        });
-
-        const fieldValuesMap = new Map(asset.fieldValues.map(fv => [fv.fieldDefinitionId, fv]));
-
-        const fieldsWithValues = allFields.map((field) => {
-            const value = fieldValuesMap.get(field.id);
-            return {
-                ...field,
-                currentValue: value ? {
-                    id: value.id, valueString: value.valueString, valueNumber: value.valueNumber,
-                    valueBoolean: value.valueBoolean, valueDate: value.valueDate, valueJson: value.valueJson,
-                } : null,
-            };
-        });
-
-        return { asset: { id: asset.id, name: asset.name }, category: asset.category, fields: fieldsWithValues, actions };
-    }
-
-    // ========================================
-    // ASSET CSV EXPORT
-    // ========================================
-
-    static async exportAssets(workspaceId: string) {
-        const assets = await prisma.asset.findMany({
-            where: { workspaceId, deletedAt: null },
-            include: {
-                assignedTo: { select: { name: true, email: true } },
-                category: { select: { name: true } },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-
-        const headers = [
-            'ID', 'Name', 'Category', 'Manufacturer', 'Model', 'Serial Number',
-            'Status', 'Location', 'Assigned To', 'Assigned Email',
-            'Purchase Date', 'Purchase Cost', 'Warranty Until', 'Tags',
-            'Description', 'Created At',
-        ];
-
-        const rows = assets.map((asset) => [
-            asset.id, asset.name, asset.category?.name || '', asset.manufacturer || '',
-            asset.model || '', asset.serialNumber || '', asset.status, asset.location || '',
-            asset.assignedTo?.name || '', asset.assignedTo?.email || '',
-            asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
-            asset.purchaseCost || '',
-            asset.warrantyUntil ? new Date(asset.warrantyUntil).toISOString().split('T')[0] : '',
-            Array.isArray(asset.tags) ? asset.tags.join('; ') : '',
-            asset.description?.replace(/"/g, '""') || '',
-            new Date(asset.createdAt).toISOString(),
-        ]);
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const csvContent = [headers.join(','), ...rows.map((row: any[]) => row.map((cell: any) => `"${cell}"`).join(','))].join('\n');
-        return csvContent;
-    }
 }

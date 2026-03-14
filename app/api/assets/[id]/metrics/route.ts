@@ -1,7 +1,7 @@
 import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
-import { AssetService } from '@/lib/services/AssetService';
+import { AssetAnalyticsService } from '@/lib/services/AssetAnalyticsService';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -10,6 +10,6 @@ export const GET = withErrorHandler(async (request: NextRequest, { params }: Rou
     const { id: assetId } = await params;
     const user = await requireAuth();
     const timeRange = new URL(request.url).searchParams.get('timeRange') || '24h';
-    const result = await AssetService.getMetrics(assetId, user.id, timeRange);
+    const result = await AssetAnalyticsService.getMetrics(assetId, user.id, timeRange);
     return apiSuccess(result);
 });

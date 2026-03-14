@@ -1,7 +1,7 @@
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
 import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
-import { AssetService } from '@/lib/services/AssetService';
+import { AssetActionService } from '@/lib/services/AssetActionService';
 import { executeActionSchema } from '@/lib/schemas/dynamic-asset.schemas';
 
 type RouteContext = { params: Promise<{ id: string; actionSlug: string }> };
@@ -13,7 +13,7 @@ type RouteContext = { params: Promise<{ id: string; actionSlug: string }> };
 export const GET = withErrorHandler(async (_request: NextRequest, { params }: RouteContext) => {
     await requireAuth();
     const { id, actionSlug } = await params;
-    const result = await AssetService.getActionBySlug(id, actionSlug);
+    const result = await AssetActionService.getActionBySlug(id, actionSlug);
     return apiSuccess(result);
 });
 
@@ -25,6 +25,6 @@ export const POST = withErrorHandler(async (request: NextRequest, { params }: Ro
     await requireAuth();
     const { id, actionSlug } = await params;
     const data = executeActionSchema.parse(await request.json());
-    const result = await AssetService.executeAction(id, actionSlug, data);
+    const result = await AssetActionService.executeAction(id, actionSlug, data);
     return apiSuccess(result, { status: 202 }); // 202 Accepted
 });

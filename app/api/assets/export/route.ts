@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { apiError } from '@/lib/api/response';
-import { AssetService } from '@/lib/services/AssetService';
+import { AssetAnalyticsService } from '@/lib/services/AssetAnalyticsService';
 
 // GET /api/assets/export - Export workspace assets to CSV
 export const GET = withErrorHandler(async (request: NextRequest) => {
@@ -14,7 +14,7 @@ export const GET = withErrorHandler(async (request: NextRequest) => {
 
     await requireWorkspaceRole(workspaceId, user.id, 'VIEWER');
 
-    const csvContent = await AssetService.exportAssets(workspaceId);
+    const csvContent = await AssetAnalyticsService.exportAssets(workspaceId);
 
     return new NextResponse(csvContent, {
         status: 200,
