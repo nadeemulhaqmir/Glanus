@@ -1,25 +1,24 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
-import { logError } from '@/lib/logger';
 import { NextRequest } from 'next/server';
+import { withErrorHandler } from '@/lib/api/withAuth';
+import { apiSuccess } from '@/lib/api/response';
 import { AgentService } from '@/lib/services/AgentService';
+import { z } from 'zod';
 
-export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const { current_version, platform } = body;
+const CheckUpdateSchema = z.object({
+    current_version: z.string().min(1, 'current_version is required'),
+    platform: z.enum(['WINDOWS', 'MACOS', 'LINUX'], {
+        errorMap: () => ({ message: 'Invalid platform. Must be WINDOWS, MACOS, or LINUX' }),
+    }),
+});
 
-        if (!current_version || !platform) {
-            return apiError(400, 'Missing required fields: current_version, platform');
-        }
-
-        if (!['WINDOWS', 'MACOS', 'LINUX'].includes(platform.toUpperCase())) {
-            return apiError(400, 'Invalid platform. Must be WINDOWS, MACOS, or LINUX');
-        }
-
-        const update = await AgentService.checkForUpdate(current_version, platform);
-        return apiSuccess(update);
-    } catch (error: unknown) {
-        logError('Agent check update failed', error);
-        return apiError(500, 'Internal server error');
-    }
-}
+/**
+ * POST /api/agent/check-update
+ * Public endpoint (agents are not user-session authenticated — they use bearer tokens at heartbeat).
+ * Checks if a newer version of the agent binary is available for the given platform.
+ */
+export const POST = withErrorHandler(async (request: NextRequest) => {
+    const body = await request.json();
+    const { current_version, platform } = CheckUpdateSchema.parse(body);
+    const update = await AgentService.checkForUpdate(current_version, platform);
+    return apiSuccess(update);
+});

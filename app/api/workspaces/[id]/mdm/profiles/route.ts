@@ -1,9 +1,20 @@
 import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
-import { requireAuth, requireWorkspaceRole, withErrorHandler, ApiError } from '@/lib/api/withAuth';
+import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { MdmService } from '@/lib/services/MdmService';
+import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+const CreateProfileSchema = z.object({
+    name: z.string().min(1, 'name is required'),
+    description: z.string().optional(),
+    platform: z.enum(['WINDOWS', 'MACOS', 'LINUX'], {
+        errorMap: () => ({ message: 'platform must be WINDOWS, MACOS, or LINUX' }),
+    }),
+    profileType: z.string().min(1, 'profileType is required'),
+    configPayload: z.unknown(),
+});
 
 // GET /api/workspaces/[id]/mdm/profiles
 export const GET = withErrorHandler(async (req: NextRequest, context: RouteContext) => {
@@ -23,18 +34,7 @@ export const POST = withErrorHandler(async (req: NextRequest, context: RouteCont
     const { id: workspaceId } = await context.params;
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN', req);
 
-    const body = await req.json();
-    if (!body.name || !body.platform || !body.profileType || !body.configPayload) {
-        throw new ApiError(400, 'Missing required fields');
-    }
-
-    const profile = await MdmService.createProfile(workspaceId, {
-        name: body.name,
-        description: body.description,
-        platform: body.platform,
-        profileType: body.profileType,
-        configPayload: body.configPayload,
-    });
-
+    const body = CreateProfileSchema.parse(await req.json());
+    const profile = await MdmService.createProfile(workspaceId, body);
     return apiSuccess(profile, { message: 'MDM profile created successfully' }, 201);
 });

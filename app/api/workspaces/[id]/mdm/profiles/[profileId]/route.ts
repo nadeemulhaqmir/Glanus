@@ -1,9 +1,18 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler, ApiError } from '@/lib/api/withAuth';
 import { MdmService } from '@/lib/services/MdmService';
+import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string; profileId: string }> };
+
+const UpdateProfileSchema = z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    platform: z.enum(['WINDOWS', 'MACOS', 'LINUX']).optional(),
+    profileType: z.string().optional(),
+    configPayload: z.unknown().optional(),
+});
 
 // GET /api/workspaces/[id]/mdm/profiles/[profileId]
 export const GET = withErrorHandler(async (req: NextRequest, context: RouteContext) => {
@@ -23,20 +32,9 @@ export const PUT = withErrorHandler(async (req: NextRequest, context: RouteConte
     const { id: workspaceId, profileId } = await context.params;
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN', req);
 
-    const body = await req.json();
-    try {
-        const profile = await MdmService.updateProfile(workspaceId, profileId, {
-            name: body.name,
-            description: body.description,
-            platform: body.platform,
-            profileType: body.profileType,
-            configPayload: body.configPayload,
-        });
-        return apiSuccess(profile, { message: 'MDM profile updated successfully' });
-    } catch (error: any) {
-        if (error.message.includes('not found')) throw new ApiError(404, 'MDM profile not found');
-        throw new ApiError(500, 'Failed to update MDM profile');
-    }
+    const body = UpdateProfileSchema.parse(await req.json());
+    const profile = await MdmService.updateProfile(workspaceId, profileId, body);
+    return apiSuccess(profile, { message: 'MDM profile updated successfully' });
 });
 
 // DELETE /api/workspaces/[id]/mdm/profiles/[profileId]
@@ -45,11 +43,6 @@ export const DELETE = withErrorHandler(async (req: NextRequest, context: RouteCo
     const { id: workspaceId, profileId } = await context.params;
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN', req);
 
-    try {
-        await MdmService.deleteProfile(workspaceId, profileId);
-        return apiSuccess({ deletedId: profileId }, { message: 'MDM profile deleted successfully' });
-    } catch (error: any) {
-        if (error.message.includes('not found')) throw new ApiError(404, 'MDM profile not found');
-        throw new ApiError(500, 'Failed to delete MDM profile');
-    }
+    await MdmService.deleteProfile(workspaceId, profileId);
+    return apiSuccess({ deletedId: profileId }, { message: 'MDM profile deleted successfully' });
 });
