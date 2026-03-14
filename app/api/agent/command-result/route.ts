@@ -1,8 +1,9 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
-import { logError } from '@/lib/logger';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
+import { withErrorHandler } from '@/lib/api/withAuth';
 import { z } from 'zod';
 import { AgentService } from '@/lib/services/AgentService';
+import { withRateLimit } from '@/lib/security/rateLimit';
 
 const commandResultSchema = z.object({
     authToken: z.string(),
@@ -14,21 +15,11 @@ const commandResultSchema = z.object({
     duration: z.number().optional(),
 });
 
-export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const data = commandResultSchema.parse(body);
+export const POST = withErrorHandler(async (request: NextRequest) => {
+    const rateLimitResponse = await withRateLimit(request, 'api');
+    if (rateLimitResponse) return rateLimitResponse;
 
-        await AgentService.recordCommandResult(data);
-
-        return apiSuccess({ status: 'ok', message: 'Result recorded successfully' });
-    } catch (error: unknown) {
-        if (error instanceof z.ZodError) {
-            return apiError(400, 'Validation failed', error.errors);
-        }
-        const err = error as { statusCode?: number; message?: string };
-        if (err.statusCode) return apiError(err.statusCode, err.message || 'Error');
-        logError('Agent command result failed', error);
-        return apiError(500, 'Failed to record result');
-    }
-}
+    const data = commandResultSchema.parse(await request.json());
+    await AgentService.recordCommandResult(data);
+    return apiSuccess({ status: 'ok', message: 'Result recorded successfully' });
+});
