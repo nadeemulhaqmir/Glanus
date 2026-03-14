@@ -45,24 +45,36 @@ export class WorkspaceReportService {
         const filename = `glanus-${type}-${workspaceId}-${new Date().toISOString().split('T')[0]}.csv`;
 
         if (type === 'asset_inventory') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const assets = await prisma.asset.findMany({
                 where: { workspaceId },
-                include: {
-                    category: true, physicalAsset: true, digitalAsset: true,
+                select: {
+                    id: true, name: true, assetType: true, status: true,
+                    serialNumber: true, location: true, createdAt: true,
+                    category: { select: { name: true } },
+                    physicalAsset: { select: { category: true } },
+                    digitalAsset: { select: { category: true } },
                     agentConnection: {
                         select: {
                             status: true, updatedAt: true, platform: true,
-                            metrics: { orderBy: { timestamp: 'desc' }, take: 1 },
+                            metrics: {
+                                select: { cpuUsage: true, ramUsage: true, diskUsage: true, ramUsed: true, ramTotal: true, diskUsed: true, diskTotal: true },
+                                orderBy: { timestamp: 'desc' },
+                                take: 1,
+                            },
                         },
                     },
-                    aiInsights: { where: { type: 'failure_forecast' }, orderBy: { severity: 'desc' }, take: 1 },
+                    aiInsights: {
+                        where: { type: 'failure_forecast' },
+                        select: { severity: true, title: true },
+                        orderBy: { severity: 'desc' },
+                        take: 1,
+                    },
                 },
                 orderBy: { createdAt: 'desc' },
-            }) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+            });
 
             const headers = 'Asset ID,Name,Category,Type,Status,Serial Number,Location,Agent Status,Last Seen,OS Platform,CPU Usage (%),RAM Usage (%),Disk Usage (%),Active ORACLE Forecast,Created At';
-            const rows = assets.map((asset: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            const rows = assets.map((asset) => {
                 const agent = asset.agentConnection;
                 const m = agent?.metrics?.[0];
                 const forecast = asset.aiInsights[0];
@@ -93,20 +105,26 @@ export class WorkspaceReportService {
         if (type === 'rmm_health') {
             const agents = await prisma.agentConnection.findMany({
                 where: { workspaceId },
-                include: {
+                select: {
+                    id: true, platform: true, agentVersion: true,
+                    status: true, lastSeen: true, cpuUsage: true, ramUsage: true,
                     asset: { select: { name: true } },
-                    scripts: { orderBy: { createdAt: 'desc' }, take: 5 },
+                    scripts: {
+                        select: { scriptName: true, status: true },
+                        orderBy: { createdAt: 'desc' },
+                        take: 1,
+                    },
                 },
                 orderBy: { lastSeen: 'desc' },
-            }) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+            });
 
             const headers = 'Agent ID,Linked Asset,Platform,Agent Version,Status,Last Seen,CPU (Latest),RAM (Latest),Recent Script Execution,Script Status';
-            const rows = agents.map((agent: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            const rows = agents.map((agent) => {
                 const latestScript = agent.scripts[0];
                 return [
-                    agent.id, `"${agent.asset.name}"`, agent.platform, agent.agentVersion,
+                    agent.id, `"${agent.asset?.name ?? 'N/A'}"`, agent.platform, agent.agentVersion,
                     agent.status, agent.lastSeen.toISOString(),
-                    agent.cpuUsage?.toFixed(1) || 'N/A', agent.ramUsage?.toFixed(1) || 'N/A',
+                    agent.cpuUsage?.toFixed(1) ?? 'N/A', agent.ramUsage?.toFixed(1) ?? 'N/A',
                     `"${latestScript?.scriptName || 'None'}"`, latestScript?.status || 'N/A',
                 ].join(',');
             });
@@ -123,12 +141,16 @@ export class WorkspaceReportService {
         if (type === 'cortex_insights') {
             const insights = await prisma.aIInsight.findMany({
                 where: { workspaceId },
-                include: { asset: { select: { name: true } } },
+                select: {
+                    id: true, type: true, severity: true, confidence: true,
+                    title: true, description: true, acknowledged: true, createdAt: true,
+                    asset: { select: { name: true } },
+                },
                 orderBy: { createdAt: 'desc' },
-            }) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+            });
 
             const headers = 'Insight ID,Linked Asset,Type,Severity,Confidence,Title,Description,Status,Created At';
-            const rows = insights.map((i: any) => [ // eslint-disable-line @typescript-eslint/no-explicit-any
+            const rows = insights.map((i) => [
                 i.id, `"${i.asset?.name || 'Workspace Level'}"`, i.type,
                 i.severity || 'INFO',
                 i.confidence ? `${(i.confidence * 100).toFixed(0)}%` : 'N/A',
