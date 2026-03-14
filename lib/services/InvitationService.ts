@@ -10,12 +10,17 @@ export interface InviteInput {
 }
 
 /**
- * InvitationService — Manages workspace invitation lifecycle.
+ * InvitationService — Full workspace invitation lifecycle.
  *
- * Responsibilities:
+ * Responsibilities (admin side):
  *  - listInvitations: fetch all PENDING invitations for a workspace
  *  - createInvitation: validate, create, and send email invite
  *  - revokeInvitation: mark invitation as REVOKED
+ *
+ * Responsibilities (public/token side):
+ *  - verifyInvitation: validate token, check expiry, return invitation details
+ *  - acceptInvitation: validate token + email match, create membership in transaction,
+ *    mark invitation ACCEPTED, write audit log
  */
 export class InvitationService {
     static async listInvitations(workspaceId: string) {
@@ -86,5 +91,94 @@ export class InvitationService {
             data: { status: 'REVOKED' },
         });
         return { revoked: true };
+    }
+
+    /**
+     * Validate a token-based invitation for public display (pre-accept).
+     * Marks the invitation EXPIRED if the expiry date has passed.
+     */
+    static async verifyInvitation(token: string) {
+        const invitation = await prisma.workspaceInvitation.findUnique({
+            where: { token },
+            include: {
+                workspace: { select: { id: true, name: true } },
+                inviter: { select: { id: true, name: true, email: true } },
+            },
+        });
+
+        if (!invitation) throw Object.assign(new Error('Invitation not found or has expired'), { statusCode: 404 });
+
+        if (invitation.status !== 'PENDING') {
+            throw Object.assign(
+                new Error(`Invitation has already been ${invitation.status.toLowerCase()}`),
+                { statusCode: 400 },
+            );
+        }
+
+        if (new Date() > invitation.expiresAt) {
+            await prisma.workspaceInvitation.update({ where: { id: invitation.id }, data: { status: 'EXPIRED' } });
+            throw Object.assign(new Error('This invitation has expired'), { statusCode: 400 });
+        }
+
+        return {
+            email: invitation.email, role: invitation.role,
+            workspace: invitation.workspace, inviter: invitation.inviter,
+            expiresAt: invitation.expiresAt,
+        };
+    }
+
+    /**
+     * Accept a token-based invitation: validate token + email match, create membership
+     * in a transaction, mark invitation ACCEPTED, write audit log.
+     */
+    static async acceptInvitation(token: string, userEmail: string) {
+        const invitation = await prisma.workspaceInvitation.findUnique({
+            where: { token },
+            include: { workspace: true },
+        });
+
+        if (!invitation) throw Object.assign(new Error('Invitation not found'), { statusCode: 404 });
+
+        if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
+            throw Object.assign(new Error('This invitation was sent to a different email address'), { statusCode: 403 });
+        }
+
+        if (invitation.status !== 'PENDING') {
+            throw Object.assign(new Error('Invitation already used or revoked'), { statusCode: 400 });
+        }
+
+        if (new Date() > invitation.expiresAt) {
+            await prisma.workspaceInvitation.update({ where: { id: invitation.id }, data: { status: 'EXPIRED' } });
+            throw Object.assign(new Error('Invitation expired'), { statusCode: 400 });
+        }
+
+        const user = await prisma.user.findUnique({ where: { email: invitation.email } });
+        if (!user) throw Object.assign(new Error('Account not found. Please sign up first.'), { statusCode: 404 });
+
+        const existingMembership = await prisma.workspaceMember.findUnique({
+            where: { workspaceId_userId: { workspaceId: invitation.workspaceId, userId: user.id } },
+        });
+        if (existingMembership) throw Object.assign(new Error('Already a member of this workspace'), { statusCode: 409 });
+
+        const result = await prisma.$transaction(async (tx) => {
+            const membership = await tx.workspaceMember.create({
+                data: { workspaceId: invitation.workspaceId, userId: user.id, role: invitation.role },
+            });
+            await tx.workspaceInvitation.update({
+                where: { id: invitation.id },
+                data: { status: 'ACCEPTED', acceptedAt: new Date() },
+            });
+            return membership;
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                workspaceId: invitation.workspaceId, userId: user.id,
+                action: 'member.invited', resourceType: 'WorkspaceMember', resourceId: result.id,
+                details: { role: invitation.role, invitedBy: invitation.invitedBy, acceptedVia: 'invitation_link' },
+            },
+        });
+
+        return { success: true, workspace: invitation.workspace, membership: result, message: `You've joined ${invitation.workspace.name}!` };
     }
 }

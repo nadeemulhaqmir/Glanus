@@ -1,10 +1,11 @@
 /**
- * AssetActionService — Dynamic asset action dispatch and execution tracking.
+ * AssetActionService — Dynamic asset action dispatch, execution tracking, and status polling.
  *
  * Responsibilities:
  *  - listActions: enumerate available action definitions for an asset (derived from category)
  *  - getActionBySlug: fetch a specific action definition by URL slug
- *  - executeAction: validate, persist, and asynchronously dispatch an action execution
+ *  - executeAction: validate, persist, and asynchronously dispatch an action execution (202 Accepted)
+ *  - getExecution: poll execution status by ID with asset + actionDefinition joins
  *
  * Note: action handler implementations live in lib/action-handlers/
  * Note: AssetService handles CRUD; AssetBulkService handles bulk operations.
@@ -129,5 +130,21 @@ export class AssetActionService {
             message: 'Action execution started',
             pollUrl: `/api/executions/${execution.id}`,
         };
+    }
+
+    /**
+     * Poll the status of an asset action execution by ID.
+     * Joins asset name and action definition name/label/type for the response.
+     */
+    static async getExecution(executionId: string) {
+        const execution = await prisma.assetActionExecution.findUnique({
+            where: { id: executionId },
+            include: {
+                asset: { select: { id: true, name: true } },
+                actionDefinition: { select: { name: true, label: true, actionType: true } },
+            },
+        });
+        if (!execution) throw Object.assign(new Error('Execution not found'), { statusCode: 404 });
+        return execution;
     }
 }

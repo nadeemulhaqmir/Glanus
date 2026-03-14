@@ -1,6 +1,6 @@
 import { apiSuccess } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/withAuth';
-import { AccountService } from '@/lib/services/AccountService';
+import { InvitationService } from '@/lib/services/InvitationService';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -21,6 +21,6 @@ export const POST = withErrorHandler(async (
     if (!session?.user?.email) return apiError(401, 'You must be signed in to accept an invitation');
 
     const { token } = await context.params;
-    const result = await AccountService.acceptInvitation(token, session.user.email);
+    const result = await InvitationService.acceptInvitation(token, session.user.email);
     return apiSuccess(result);
 });

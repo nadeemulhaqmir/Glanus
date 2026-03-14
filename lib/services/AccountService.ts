@@ -11,12 +11,15 @@ import { getPasswordResetEmailTemplate } from '@/lib/email/templates';
  * Encapsulates:
  *   - User registration (email uniqueness, bcrypt hash, audit log)
  *   - Password reset (token verification, bcrypt hash)
+ *   - Forgot password (non-enumerating email dispatch)
  *   - Profile retrieval with workspace memberships
  *   - Profile updates (name, email with uniqueness enforcement)
  *   - Password change (verify current, prevent reuse, bcrypt hash)
  *   - Onboarding completion
- *   - Invitation verification and acceptance
- *   - Execution status polling
+ *
+ * Extracted to sibling services:
+ *   - InvitationService → verifyInvitation / acceptInvitation
+ *   - AssetActionService → getExecution
  */
 export class AccountService {
 
@@ -163,105 +166,5 @@ export class AccountService {
         await prisma.user.update({ where: { id: userId }, data: { onboardingCompleted: true } });
         return { success: true };
     }
-
-    // ========================================
-    // INVITATIONS
-    // ========================================
-
-    static async verifyInvitation(token: string) {
-        const invitation = await prisma.workspaceInvitation.findUnique({
-            where: { token },
-            include: {
-                workspace: { select: { id: true, name: true } },
-                inviter: { select: { id: true, name: true, email: true } },
-            },
-        });
-
-        if (!invitation) throw Object.assign(new Error('Invitation not found or has expired'), { statusCode: 404 });
-
-        if (invitation.status !== 'PENDING') {
-            throw Object.assign(
-                new Error(`Invitation has already been ${invitation.status.toLowerCase()}`),
-                { statusCode: 400 },
-            );
-        }
-
-        if (new Date() > invitation.expiresAt) {
-            await prisma.workspaceInvitation.update({ where: { id: invitation.id }, data: { status: 'EXPIRED' } });
-            throw Object.assign(new Error('This invitation has expired'), { statusCode: 400 });
-        }
-
-        return {
-            email: invitation.email, role: invitation.role,
-            workspace: invitation.workspace, inviter: invitation.inviter,
-            expiresAt: invitation.expiresAt,
-        };
-    }
-
-    static async acceptInvitation(token: string, userEmail: string) {
-        const invitation = await prisma.workspaceInvitation.findUnique({
-            where: { token },
-            include: { workspace: true },
-        });
-
-        if (!invitation) throw Object.assign(new Error('Invitation not found'), { statusCode: 404 });
-
-        if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
-            throw Object.assign(new Error('This invitation was sent to a different email address'), { statusCode: 403 });
-        }
-
-        if (invitation.status !== 'PENDING') {
-            throw Object.assign(new Error('Invitation already used or revoked'), { statusCode: 400 });
-        }
-
-        if (new Date() > invitation.expiresAt) {
-            await prisma.workspaceInvitation.update({ where: { id: invitation.id }, data: { status: 'EXPIRED' } });
-            throw Object.assign(new Error('Invitation expired'), { statusCode: 400 });
-        }
-
-        const user = await prisma.user.findUnique({ where: { email: invitation.email } });
-        if (!user) throw Object.assign(new Error('Account not found. Please sign up first.'), { statusCode: 404 });
-
-        const existingMembership = await prisma.workspaceMember.findUnique({
-            where: { workspaceId_userId: { workspaceId: invitation.workspaceId, userId: user.id } },
-        });
-        if (existingMembership) throw Object.assign(new Error('Already a member of this workspace'), { statusCode: 409 });
-
-        const result = await prisma.$transaction(async (tx) => {
-            const membership = await tx.workspaceMember.create({
-                data: { workspaceId: invitation.workspaceId, userId: user.id, role: invitation.role },
-            });
-            await tx.workspaceInvitation.update({
-                where: { id: invitation.id },
-                data: { status: 'ACCEPTED', acceptedAt: new Date() },
-            });
-            return membership;
-        });
-
-        await prisma.auditLog.create({
-            data: {
-                workspaceId: invitation.workspaceId, userId: user.id,
-                action: 'member.invited', resourceType: 'WorkspaceMember', resourceId: result.id,
-                details: { role: invitation.role, invitedBy: invitation.invitedBy, acceptedVia: 'invitation_link' },
-            },
-        });
-
-        return { success: true, workspace: invitation.workspace, membership: result, message: `You've joined ${invitation.workspace.name}!` };
-    }
-
-    // ========================================
-    // EXECUTION STATUS (action execution polling)
-    // ========================================
-
-    static async getExecution(executionId: string) {
-        const execution = await prisma.assetActionExecution.findUnique({
-            where: { id: executionId },
-            include: {
-                asset: { select: { id: true, name: true } },
-                actionDefinition: { select: { name: true, label: true, actionType: true } },
-            },
-        });
-        if (!execution) throw Object.assign(new Error('Execution not found'), { statusCode: 404 });
-        return execution;
-    }
 }
+
