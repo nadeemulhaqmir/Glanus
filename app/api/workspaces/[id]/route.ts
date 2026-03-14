@@ -1,59 +1,53 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { WorkspaceService } from '@/lib/services/WorkspaceService';
+import { z } from 'zod';
+
+const UpdateWorkspaceSchema = z.object({
+    name: z.string().min(1, 'Workspace name is required').max(100).optional(),
+    description: z.string().max(500).optional(),
+    logoUrl: z.string().url().optional(),
+    website: z.string().url().optional(),
+    industry: z.string().optional(),
+    size: z.string().optional(),
+}).strict();
+
+type RouteContext = { params: Promise<{ id: string }> };
 
 // GET /api/workspaces/[id]
 export const GET = withErrorHandler(async (
     request: NextRequest,
-    context: { params: Promise<{ id: string }> }
+    context: RouteContext,
 ) => {
     const { id } = await context.params;
     const user = await requireAuth();
     await requireWorkspaceRole(id, user.id, 'OWNER', request);
-
-    try {
-        const workspace = await WorkspaceService.getWorkspace(id);
-        return apiSuccess({ workspace });
-    } catch (err: unknown) {
-        const e = err as { statusCode?: number; message?: string };
-        return apiError(e.statusCode || 500, e.message || 'Error');
-    }
+    const workspace = await WorkspaceService.getWorkspace(id);
+    return apiSuccess({ workspace });
 });
 
 // PATCH /api/workspaces/[id]
 export const PATCH = withErrorHandler(async (
     request: NextRequest,
-    context: { params: Promise<{ id: string }> }
+    context: RouteContext,
 ) => {
     const { id } = await context.params;
     const user = await requireAuth();
     await requireWorkspaceRole(id, user.id, 'ADMIN', request);
-
-    const body = await request.json();
-    try {
-        const workspace = await WorkspaceService.updateWorkspace(id, user.id, body);
-        return apiSuccess({ workspace });
-    } catch (err: unknown) {
-        const e = err as { statusCode?: number; message?: string };
-        return apiError(e.statusCode || 500, e.message || 'Error');
-    }
+    const body = UpdateWorkspaceSchema.parse(await request.json());
+    const workspace = await WorkspaceService.updateWorkspace(id, user.id, body);
+    return apiSuccess({ workspace });
 });
 
 // DELETE /api/workspaces/[id]
 export const DELETE = withErrorHandler(async (
     request: NextRequest,
-    context: { params: Promise<{ id: string }> }
+    context: RouteContext,
 ) => {
     const { id } = await context.params;
     const user = await requireAuth();
     await requireWorkspaceRole(id, user.id, 'OWNER', request);
-
-    try {
-        await WorkspaceService.deleteWorkspace(id, user.id);
-        return apiSuccess({ message: 'Workspace deleted' });
-    } catch (err: unknown) {
-        const e = err as { statusCode?: number; message?: string };
-        return apiError(e.statusCode || 500, e.message || 'Error');
-    }
+    await WorkspaceService.deleteWorkspace(id, user.id);
+    return apiSuccess({ message: 'Workspace deleted' });
 });

@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { validateRequest } from '@/lib/validation';
 import { createFieldDefinitionRequestSchema } from '@/lib/schemas/dynamic-asset.schemas';

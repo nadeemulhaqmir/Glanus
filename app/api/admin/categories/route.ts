@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { validateRequest, validateQuery } from '@/lib/validation';
 import { createCategorySchema, categoryQuerySchema } from '@/lib/schemas/dynamic-asset.schemas';
