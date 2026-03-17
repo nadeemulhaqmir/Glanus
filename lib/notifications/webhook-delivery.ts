@@ -8,6 +8,7 @@
 
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
+import { logError } from '@/lib/logger';
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -191,7 +192,7 @@ export function fireWebhookAsync(
 ): void {
     // Fire-and-forget — don't await, don't block the request
     deliverWebhook(workspaceId, eventType, eventData).catch((err) => {
-        console.error(`[Webhook] Delivery error for workspace ${workspaceId}:`, err);
+        logError(`[Webhook] Delivery error for workspace ${workspaceId}`, err);
     });
 }
 
