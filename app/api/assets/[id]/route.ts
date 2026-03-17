@@ -23,12 +23,8 @@ export const PUT = withErrorHandler(async (
     const { id } = await context.params;
     const user = await requireAuth();
 
-    const parsed = updateAssetSchema.safeParse(await request.json());
-    if (!parsed.success) {
-        throw Object.assign(new Error(parsed.error.errors[0].message), { statusCode: 400 });
-    }
-
-    const asset = await AssetService.updateAsset(id, user.id, parsed.data);
+    const parsed = updateAssetSchema.parse(await request.json());
+    const asset = await AssetService.updateAsset(id, user.id, parsed);
     return apiSuccess(asset);
 });
 

@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { InvitationService } from '@/lib/services/InvitationService';
@@ -27,11 +27,10 @@ export const POST = withErrorHandler(async (request: NextRequest, { params }: Ro
     const { workspace } = await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
     const body = await request.json();
-    const validation = inviteSchema.safeParse(body);
-    if (!validation.success) return apiError(400, 'Validation failed', validation.error.errors);
+    const validation = inviteSchema.parse(body);
 
     const result = await InvitationService.createInvitation(
-        workspaceId, user.id, workspace.name, validation.data,
+        workspaceId, user.id, workspace.name, validation,
     );
     return apiSuccess(result, undefined, 201);
 });

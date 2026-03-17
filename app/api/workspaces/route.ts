@@ -34,10 +34,9 @@ export const POST = withErrorHandler(async (request: Request) => {
     if (!rateLimitResult.allowed) return apiError(429, 'Rate limit exceeded');
 
     const body = await request.json();
-    const validation = createWorkspaceSchema.safeParse(body);
-    if (!validation.success) return apiError(400, 'Validation failed', validation.error.errors);
+    const validation = createWorkspaceSchema.parse(body);
 
-    const data = validation.data;
+    const data = validation;
 
     const workspace = await WorkspaceService.createWorkspace(user.id, data as CreateWorkspaceInput);
     return apiSuccess({ workspace }, undefined, 201);

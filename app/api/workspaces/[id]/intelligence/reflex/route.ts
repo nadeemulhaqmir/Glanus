@@ -47,13 +47,12 @@ export const POST = withErrorHandler(async (
 
     const workspaceId = params.id;
     const body = await request.json();
-    const parsed = reflexRuleSchema.safeParse(body);
-    if (!parsed.success) {
+    const parsed = reflexRuleSchema.parse(body)
         return apiError(400, parsed.error.errors[0].message);
     }
 
     const rule = await saveRule(workspaceId, {
-        ...parsed.data,
+        ...parsed,
         workspaceId,
         createdBy: user.id,
     } as Parameters<typeof saveRule>[1]);

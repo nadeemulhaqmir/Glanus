@@ -29,17 +29,13 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         return apiError(403, 'Forbidden - Insufficient permissions');
     }
 
-    const body = await request.json();
-    const parsed = createRemoteSessionSchema.safeParse(body);
-    if (!parsed.success) {
-        return apiError(400, parsed.error.errors[0].message);
-    }
+    const parsed = createRemoteSessionSchema.parse(await request.json());
 
     const session = await RemoteSessionService.createSession({
         userId: user.id,
-        assetId: parsed.data.assetId,
-        notes: parsed.data.notes,
-        offer: parsed.data.offer as Record<string, unknown> | undefined,
+        assetId: parsed.assetId,
+        notes: parsed.notes,
+        offer: parsed.offer as Record<string, unknown> | undefined,
     });
     return apiSuccess(session, undefined, 201);
 });

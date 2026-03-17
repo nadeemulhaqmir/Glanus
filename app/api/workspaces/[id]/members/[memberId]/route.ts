@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { z } from 'zod';
 import { WorkspaceMemberService } from '@/lib/services/WorkspaceMemberService';
@@ -17,11 +17,10 @@ export const PATCH = withErrorHandler(async (
     const { workspace } = await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
     const body = await request.json();
-    const validation = updateRoleSchema.safeParse(body);
-    if (!validation.success) return apiError(400, 'Validation failed', validation.error.errors);
+    const validation = updateRoleSchema.parse(body);
 
     const member = await WorkspaceMemberService.updateMemberRole(
-        workspaceId, memberId, user.id, validation.data.role, workspace.name,
+        workspaceId, memberId, user.id, validation.role, workspace.name,
     );
     return apiSuccess({ member });
 });

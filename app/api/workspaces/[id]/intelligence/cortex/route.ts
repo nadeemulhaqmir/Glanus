@@ -24,11 +24,10 @@ export const POST = withErrorHandler(async (
 
     const workspaceId = params.id;
     const body = await request.json();
-    const parsed = cortexQuerySchema.safeParse(body);
-    if (!parsed.success) {
+    const parsed = cortexQuerySchema.parse(body)
         return apiError(400, parsed.error.errors[0].message);
     }
-    const { agentId } = parsed.data;
+    const { agentId } = parsed;
 
     // Enforce AI credit quota
     await enforceQuota(workspaceId, 'ai_credits');

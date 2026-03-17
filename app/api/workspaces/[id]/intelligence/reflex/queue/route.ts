@@ -25,13 +25,11 @@ export const PUT = withErrorHandler(async (
 
     const workspaceId = params.id;
     const body = await request.json();
-    const parsed = queueActionSchema.safeParse(body);
-
-    if (!parsed.success) {
+    const parsed = queueActionSchema.parse(body)
         return apiError(400, parsed.error.errors[0].message);
     }
 
-    const { itemId, action } = parsed.data;
+    const { itemId, action } = parsed;
 
     try {
         let updatedItem;

@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { stripe } from '@/lib/stripe/client';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { checkoutSchema } from '@/lib/schemas/workspace.schemas';
@@ -17,12 +17,7 @@ export const POST = withErrorHandler(async (
     const user = await requireAuth();
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
-    const body = await request.json();
-    const parsed = checkoutSchema.safeParse(body);
-    if (!parsed.success) {
-        return apiError(400, parsed.error.errors[0].message);
-    }
-    const { priceId } = parsed.data;
+    const { priceId } = checkoutSchema.parse(await request.json());
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 

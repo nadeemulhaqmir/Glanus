@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
 import { WorkspacePartnerService } from '@/lib/services/WorkspacePartnerService';
@@ -18,9 +18,8 @@ export const POST = withErrorHandler(async (request: NextRequest, { params }: Ro
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
     const body = await request.json();
-    const validation = reviewSchema.safeParse(body);
-    if (!validation.success) return apiError(400, 'Validation failed', validation.error.errors);
+    const validation = reviewSchema.parse(body);
 
-    const result = await WorkspacePartnerService.reviewPartner(workspaceId, validation.data);
+    const result = await WorkspacePartnerService.reviewPartner(workspaceId, validation);
     return apiSuccess(result);
 });

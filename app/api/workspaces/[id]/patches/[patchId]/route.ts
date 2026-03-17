@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
-import { apiSuccess, apiError, apiDeleted } from '@/lib/api/response';
+import { apiSuccess, apiDeleted } from '@/lib/api/response';
 import { PatchService, PatchPolicyUpdateInput } from '@/lib/services/PatchService';
 import { z } from 'zod';
 
@@ -26,9 +26,8 @@ export const PATCH = withErrorHandler(async (request: NextRequest, { params }: R
     const user = await requireAuth();
     await requireWorkspaceRole(workspaceId, user.id, 'ADMIN');
 
-    const result = updatePatchPolicySchema.safeParse(await request.json());
-    if (!result.success) return apiError(400, 'Invalid request data', result.error.errors);
+    const result = updatePatchPolicySchema.parse(await request.json())
 
-    const updated = await PatchService.updatePatchPolicy(workspaceId, patchId, result.data as PatchPolicyUpdateInput);
+    const updated = await PatchService.updatePatchPolicy(workspaceId, patchId, result as PatchPolicyUpdateInput);
     return apiSuccess(updated);
 });

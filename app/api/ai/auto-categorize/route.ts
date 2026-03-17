@@ -1,5 +1,5 @@
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { z } from 'zod';
@@ -16,9 +16,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
     await requireAuth();
     const body = await request.json();
-    const parsed = autoCategorizeSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.errors[0].message);
+    const parsed = autoCategorizeSchema.parse(body)
 
-    const result = await AIService.autoCategorizeAsset(parsed.data.description);
+    const result = await AIService.autoCategorizeAsset(parsed.description);
     return apiSuccess(result);
 });

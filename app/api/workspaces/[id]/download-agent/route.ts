@@ -14,11 +14,10 @@ export const POST = withErrorHandler(async (
     await requireWorkspaceAccess(workspaceId, user.id);
 
     const body = await request.json();
-    const parsed = downloadAgentSchema.safeParse(body);
-    if (!parsed.success) {
+    const parsed = downloadAgentSchema.parse(body)
         return apiError(400, parsed.error.errors[0].message);
     }
-    const { platform } = parsed.data;
+    const { platform } = parsed;
 
     // Generate pre-auth token (valid for 7 days)
     const preAuthToken = crypto.randomBytes(32).toString('hex');

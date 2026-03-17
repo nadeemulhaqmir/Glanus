@@ -6,8 +6,10 @@
 import { NextRequest } from 'next/server';
 import { apiSuccess, apiError } from '@/lib/api/response';
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
+import { ApiError } from '@/lib/errors';
 import { resetRateLimit, withRateLimit } from '@/lib/security/rateLimit';
 import { unlockSchema } from '@/lib/schemas/workspace.schemas';
+import { AccountService } from '@/lib/services/AccountService';
 
 // POST /api/auth/unlock - Unlock a locked account (admin only)
 export const POST = withErrorHandler(async (request: NextRequest) => {
@@ -20,12 +22,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         return apiError(401, 'Unauthorized');
     }
 
-    const body = await request.json();
-    const parsed = unlockSchema.safeParse(body);
-    if (!parsed.success) {
-        return apiError(400, parsed.error.errors[0].message);
-    }
-    const { email } = parsed.data;
+    const { email } = unlockSchema.parse(await request.json());
 
     await resetRateLimit(email, 'login');
 

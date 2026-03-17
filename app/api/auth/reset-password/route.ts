@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/withAuth';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { AccountService } from '@/lib/services/AccountService';
@@ -22,9 +22,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     if (rateLimitResponse) return rateLimitResponse;
 
     const body = await request.json();
-    const parsed = resetPasswordSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.errors[0].message);
+    const parsed = resetPasswordSchema.parse(body)
 
-    await AccountService.resetPassword(parsed.data.token, parsed.data.password);
+    await AccountService.resetPassword(parsed.token, parsed.password);
     return apiSuccess({ message: 'Password has been reset successfully. You can now sign in.' });
 });

@@ -12,10 +12,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     if (rateLimitResponse) return rateLimitResponse;
 
     const user = await requireAuth();
-    const parsed = bulkOpsSchema.safeParse(await request.json());
-    if (!parsed.success) return apiError(400, parsed.error.errors[0].message);
+    const parsed = bulkOpsSchema.parse(await request.json())
 
-    const { operation, assetIds, data } = parsed.data;
+    const { operation, assetIds, data } = parsed;
 
     switch (operation) {
         case 'DELETE':

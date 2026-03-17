@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
 import { z } from 'zod';
 import { PartnerService } from '@/lib/services/PartnerService';
@@ -28,9 +28,8 @@ export const GET = withErrorHandler(async () => {
 export const PATCH = withErrorHandler(async (request: Request) => {
     const user = await requireAuth();
     const body = await request.json();
-    const validation = updatePartnerSchema.safeParse(body);
-    if (!validation.success) return apiError(400, 'Validation failed', validation.error.errors);
+    const validation = updatePartnerSchema.parse(body)
 
-    const partner = await PartnerService.updateMyProfile(user.email!, validation.data);
+    const partner = await PartnerService.updateMyProfile(user.email!, validation);
     return apiSuccess({ partner });
 });

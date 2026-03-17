@@ -40,14 +40,12 @@ export const POST = withErrorHandler(async (
     await requireWorkspaceRole(params.id, user.id, 'ADMIN');
 
     const body = await request.json();
-    const data = createScriptSchema.safeParse(body);
-
-    if (!data.success) {
+    const data = createScriptSchema.parse(body)
         return apiError(400, data.error.errors[0].message);
     }
 
     try {
-        const script = await ScriptService.createScript(params.id, user.id, data.data);
+        const script = await ScriptService.createScript(params.id, user.id, data);
         return apiSuccess({ script }, { message: 'Script created successfully' }, 201);
     } catch (_error) {
         return apiError(500, 'Failed to create script');

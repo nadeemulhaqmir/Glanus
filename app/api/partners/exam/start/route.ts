@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
@@ -16,9 +16,8 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
 
     const user = await requireAuth();
     const body = await request.json();
-    const validation = startExamSchema.safeParse(body);
-    if (!validation.success) return apiError(400, 'Validation failed', validation.error.errors);
+    const validation = startExamSchema.parse(body)
 
-    const result = await PartnerExamService.startExam(user.email!, validation.data.level);
+    const result = await PartnerExamService.startExam(user.email!, validation.level);
     return apiSuccess(result);
 });

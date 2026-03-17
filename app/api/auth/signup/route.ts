@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { withErrorHandler } from '@/lib/api/withAuth';
 import { withRateLimit } from '@/lib/security/rateLimit';
 import { AccountService } from '@/lib/services/AccountService';
@@ -22,10 +22,9 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     if (rateLimitResponse) return rateLimitResponse;
 
     const body = await request.json();
-    const parsed = signupSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.errors[0].message);
+    const parsed = signupSchema.parse(body);
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password } = parsed;
 
     const user = await AccountService.register(name, email, password);
     return apiSuccess({ user, message: 'Account created successfully' }, undefined, 201);
