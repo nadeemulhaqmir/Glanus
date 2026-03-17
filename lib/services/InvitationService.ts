@@ -1,3 +1,13 @@
+/**
+ * InvitationService — Workspace member invitation lifecycle management.
+ *
+ * Responsibilities:
+ *  - sendInvitation: create a signed invitation token and dispatch the email
+ *  - verifyInvitation: validate a token and return invitation metadata (pre-join)
+ *  - acceptInvitation: consume the token and add the user as a workspace member
+ *  - revokeInvitation: cancel a pending invitation before it is accepted
+ *  - listInvitations: list all pending invitations for a workspace
+ */
 import { prisma } from '@/lib/db';
 import { logError } from '@/lib/logger';
 import { sendEmail } from '@/lib/email/sendgrid';

@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAdmin, withErrorHandler } from '@/lib/api/withAuth';
 import { z } from 'zod';
@@ -16,15 +16,7 @@ export const PATCH = withErrorHandler(async (
 ) => {
     const { id } = await context.params;
     const user = await requireAdmin();
-    const body = await request.json();
-    const validation = updatePartnerSchema.safeParse(body);
-    if (!validation.success) return apiError(400, 'Validation failed', validation.error.errors);
-
-    try {
-        const result = await PartnerModerationService.moderatePartner(id, validation.data.action, user.email!, validation.data.reason);
-        return apiSuccess(result);
-    } catch (err: unknown) {
-        const e = err as { statusCode?: number; message?: string };
-        return apiError(e.statusCode || 500, e.message || 'Error');
-    }
+    const data = updatePartnerSchema.parse(await request.json());
+    const result = await PartnerModerationService.moderatePartner(id, data.action, user.email!, data.reason);
+    return apiSuccess(result);
 });

@@ -1,3 +1,13 @@
+/**
+ * AssetService — CMDB asset lifecycle management for workspace inventories.
+ *
+ * Responsibilities:
+ *  - createAsset: create a new CMDB asset with dynamic field values and QR code generation
+ *  - updateAsset: patch an existing asset's core fields and dynamic field values
+ *  - deleteAsset: soft-remove an asset from the workspace inventory
+ *  - getAsset / listAssets: workspace-scoped asset queries with filtering and pagination
+ *  - bulkCreateAssets: CSV / batch ingestion with dynamic field mapping
+ */
 import { prisma } from '@/lib/db';
 import { Prisma, AssetType, AssetStatus, HardwareCategory, SoftwareCategory, LicenseType, HostType } from '@prisma/client';
 import { generateAssetQRCode } from '@/lib/generateQRCode';

@@ -1,3 +1,13 @@
+/**
+ * AIService — OpenAI-powered assistant layer for workspace intelligence features.
+ *
+ * Responsibilities:
+ *  - processAICommand: route natural-language commands to workspace actions (assets, agents, scripts)
+ *  - autoCategorizeAsset: classify an asset into the workspace's category taxonomy using AI
+ *  - generateAssetDescription: produce a structured AI description for a given asset
+ *
+ * Note: token usage is metered through enforceQuota + incrementAICredits.
+ */
 import OpenAI from 'openai';
 import { enforceQuota, incrementAICredits } from '@/lib/workspace/quotas';
 import { getOpenAIClient, prompts, defaultModel } from '@/lib/ai/openai';

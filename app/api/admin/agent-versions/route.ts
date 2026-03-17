@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { apiSuccess, apiError } from '@/lib/api/response';
-import { requireAuth, withErrorHandler } from '@/lib/api/withAuth';
+import { apiSuccess } from '@/lib/api/response';
+import { requireAdmin, withErrorHandler } from '@/lib/api/withAuth';
 import { z } from 'zod';
 import { AdminService } from '@/lib/services/AdminService';
 
@@ -16,23 +16,15 @@ const agentVersionSchema = z.object({
 
 // GET /api/admin/agent-versions
 export const GET = withErrorHandler(async () => {
-    const user = await requireAuth();
-    if (user.role !== 'ADMIN') return apiError(403, 'Forbidden. Requires Platform Administrator privileges.');
+    await requireAdmin();
     const versions = await AdminService.listAgentVersions();
     return apiSuccess({ versions });
 });
 
 // POST /api/admin/agent-versions
 export const POST = withErrorHandler(async (request: NextRequest) => {
-    const user = await requireAuth();
-    if (user.role !== 'ADMIN') return apiError(403, 'Forbidden. Requires Platform Administrator privileges.');
-    const body = await request.json();
-    const data = agentVersionSchema.parse(body);
-    try {
-        const version = await AdminService.publishAgentVersion(data);
-        return apiSuccess({ version }, undefined, 201);
-    } catch (err: unknown) {
-        const e = err as { statusCode?: number; message?: string };
-        return apiError(e.statusCode || 500, e.message || 'Failed to publish agent version');
-    }
+    await requireAdmin();
+    const data = agentVersionSchema.parse(await request.json());
+    const version = await AdminService.publishAgentVersion(data);
+    return apiSuccess({ version }, undefined, 201);
 });

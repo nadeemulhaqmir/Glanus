@@ -1,3 +1,12 @@
+/**
+ * WorkspaceApiKeyService — Manages programmatic API access keys for workspace automation.
+ *
+ * Responsibilities:
+ *  - createApiKey: generate a scoped API key (one-time plaintext display), store hashed
+ *  - listApiKeys: return all keys for a workspace (never the plaintext)
+ *  - revokeApiKey: delete a key, logging the revocation in the audit trail
+ *  - validateApiKey: verify a bearer token from inbound API requests
+ */
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
 

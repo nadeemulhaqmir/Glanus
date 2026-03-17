@@ -1,3 +1,15 @@
+/**
+ * WorkspaceWebhookService — Manages outbound webhook endpoints for workspace event notifications.
+ *
+ * Responsibilities:
+ *  - listWebhooks: return all webhook endpoints configured for a workspace
+ *  - createWebhook: register a new endpoint with event filters and secret
+ *  - updateWebhook: patch endpoint URL, events, or enabled state
+ *  - deleteWebhook: remove a webhook endpoint
+ *  - testWebhook: fire a synthetic ping event to validate the endpoint
+ *
+ * Note: actual delivery on events is handled by WebhookNotificationService.
+ */
 import { prisma } from '@/lib/db';
 
 export interface WebhookInput {

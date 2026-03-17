@@ -1,3 +1,13 @@
+/**
+ * AdminService — Platform-level administration operations for super-admin users.
+ *
+ * Responsibilities:
+ *  - getAdminStats: platform-wide usage statistics (users, workspaces, assets, agents)
+ *  - createAgentVersion / listAgentVersions: manage agent binary version registry
+ *  - updateAgentVersion / deleteAgentVersion: lifecycle management for agent releases
+ *
+ * Note: all methods require requireAdmin() at the route layer.
+ */
 import { prisma } from '@/lib/db';
 
 export type AgentVersionInput = {
