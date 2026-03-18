@@ -25,11 +25,6 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
         return apiError(401, 'Unauthorized');
     }
 
-    try {
-        const results = await SystemMaintenanceService.executeDataCleanup();
-
-        return apiSuccess(results);
-    } catch (error: unknown) {
-        return apiError(500, 'Cleanup failed', error instanceof Error ? error.message : 'Unknown error');
-    }
+    const results = await SystemMaintenanceService.executeDataCleanup();
+    return apiSuccess(results);
 });

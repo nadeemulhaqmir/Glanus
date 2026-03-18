@@ -1,7 +1,8 @@
 import { apiSuccess, apiError } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
+import { withErrorHandler } from '@/lib/api/withAuth';
 import { notificationOrchestrator } from '@/lib/services/NotificationOrchestratorService';
-import { logInfo, logError } from '@/lib/logger';
+import { logInfo } from '@/lib/logger';
 import crypto from 'crypto';
 import { AlertService } from '@/lib/services/AlertService';
 import { WorkspaceAuditService } from '@/lib/services/WorkspaceAuditService';
@@ -24,54 +25,45 @@ function verifyCronSecret(request: NextRequest): boolean {
 }
 
 // POST /api/cron/process-alerts — Run alert processing cycle
-export async function POST(request: NextRequest) {
-    try {
-        if (!verifyCronSecret(request)) return apiError(401, 'Unauthorized');
+export const POST = withErrorHandler(async (request: NextRequest) => {
+    if (!verifyCronSecret(request)) return apiError(401, 'Unauthorized');
 
-        logInfo('[CRON] Starting alert processing...');
-        const startTime = Date.now();
+    logInfo('[CRON] Starting alert processing...');
+    const startTime = Date.now();
 
-        const results = await notificationOrchestrator.processAll();
-        const oracleResults = await AlertService.evaluateOracleMatrix();
-        const duration = Date.now() - startTime;
+    const results = await notificationOrchestrator.processAll();
+    const oracleResults = await AlertService.evaluateOracleMatrix();
+    const duration = Date.now() - startTime;
 
-        const stats = {
-            workspaces: results.length,
-            alertsTriggered: results.reduce((sum, r) => sum + r.alertsTriggered, 0),
-            emailsSent: results.reduce((sum, r) => sum + r.emailsSent, 0),
-            webhooksSent: results.reduce((sum, r) => sum + r.webhooksSent, 0),
-            aiInsightsGenerated: oracleResults.insightsGenerated,
-            errors: results.reduce((sum, r) => sum + r.errors.length, 0) + oracleResults.aiErrors,
-            duration,
-        };
+    const stats = {
+        workspaces: results.length,
+        alertsTriggered: results.reduce((sum, r) => sum + r.alertsTriggered, 0),
+        emailsSent: results.reduce((sum, r) => sum + r.emailsSent, 0),
+        webhooksSent: results.reduce((sum, r) => sum + r.webhooksSent, 0),
+        aiInsightsGenerated: oracleResults.insightsGenerated,
+        errors: results.reduce((sum, r) => sum + r.errors.length, 0) + oracleResults.aiErrors,
+        duration,
+    };
 
-        logInfo('[CRON] Alert processing complete', stats);
-        return apiSuccess({ success: true, stats, results, timestamp: new Date().toISOString() });
-    } catch (error: unknown) {
-        logError('[CRON] Alert processing error', error);
-        return apiError(500, error instanceof Error ? error.message : 'Unknown error');
-    }
-}
+    logInfo('[CRON] Alert processing complete', stats);
+    return apiSuccess({ success: true, stats, results, timestamp: new Date().toISOString() });
+});
 
 // GET /api/cron/process-alerts — Status/health check
-export async function GET(request: NextRequest) {
-    try {
-        if (!verifyCronSecret(request)) return apiError(401, 'Unauthorized');
+export const GET = withErrorHandler(async (request: NextRequest) => {
+    if (!verifyCronSecret(request)) return apiError(401, 'Unauthorized');
 
-        const alertSystem = await WorkspaceAuditService.getStats();
+    const alertSystem = await WorkspaceAuditService.getStats();
 
-        return apiSuccess({
-            status: 'ready',
-            alertSystem,
-            cronInfo: {
-                endpoint: '/api/cron/process-alerts',
-                method: 'POST',
-                recommendedInterval: '*/5 * * * *',
-                requiresAuth: !!process.env.CRON_SECRET,
-            },
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error: unknown) {
-        return apiError(500, error instanceof Error ? error.message : 'Unknown error');
-    }
-}
+    return apiSuccess({
+        status: 'ready',
+        alertSystem,
+        cronInfo: {
+            endpoint: '/api/cron/process-alerts',
+            method: 'POST',
+            recommendedInterval: '*/5 * * * *',
+            requiresAuth: !!process.env.CRON_SECRET,
+        },
+        timestamp: new Date().toISOString(),
+    });
+});

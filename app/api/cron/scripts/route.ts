@@ -1,6 +1,6 @@
 import { apiSuccess, apiError } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
-import { logError } from '@/lib/logger';
+import { withErrorHandler } from '@/lib/api/withAuth';
 import crypto from 'crypto';
 import { ScriptScheduleService } from '@/lib/services/ScriptScheduleService';
 
@@ -16,28 +16,20 @@ function verifyCronAuth(request: NextRequest): boolean {
 /**
  * POST /api/cron/scripts
  * Background job to process scheduled scripts.
+ * Protected by CRON_SECRET bearer token (timing-safe comparison).
  */
-export async function POST(request: NextRequest) {
-    try {
-        if (!verifyCronAuth(request)) return apiError(401, 'Unauthorized');
-        const stats = await ScriptScheduleService.evaluateSchedules();
-        return apiSuccess({ success: true, stats, timestamp: new Date().toISOString() });
-    } catch (error: unknown) {
-        logError('[CRON] Script scheduler critical error', error);
-        return apiError(500, error instanceof Error ? error.message : 'Unknown error');
-    }
-}
+export const POST = withErrorHandler(async (request: NextRequest) => {
+    if (!verifyCronAuth(request)) return apiError(401, 'Unauthorized');
+    const stats = await ScriptScheduleService.evaluateSchedules();
+    return apiSuccess({ success: true, stats, timestamp: new Date().toISOString() });
+});
 
 /**
  * GET /api/cron/scripts
  * Get cron job status/info (for debugging).
  */
-export async function GET(request: NextRequest) {
-    try {
-        if (!verifyCronAuth(request)) return apiError(401, 'Unauthorized');
-        const status = await ScriptScheduleService.getCronStatus();
-        return apiSuccess({ ...status, timestamp: new Date().toISOString() });
-    } catch (error: unknown) {
-        return apiError(500, error instanceof Error ? error.message : 'Unknown error');
-    }
-}
+export const GET = withErrorHandler(async (request: NextRequest) => {
+    if (!verifyCronAuth(request)) return apiError(401, 'Unauthorized');
+    const status = await ScriptScheduleService.getCronStatus();
+    return apiSuccess({ ...status, timestamp: new Date().toISOString() });
+});
