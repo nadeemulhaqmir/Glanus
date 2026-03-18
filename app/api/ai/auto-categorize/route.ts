@@ -15,9 +15,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     if (rateLimitResponse) return rateLimitResponse;
 
     await requireAuth();
-    const body = await request.json();
-    const parsed = autoCategorizeSchema.parse(body)
-
+    const parsed = autoCategorizeSchema.parse(await request.json());
     const result = await AIService.autoCategorizeAsset(parsed.description);
     return apiSuccess(result);
 });

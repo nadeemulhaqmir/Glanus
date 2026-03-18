@@ -23,7 +23,7 @@ export const GET = withErrorHandler(async (
     const { searchParams } = new URL(request.url);
 
     if (searchParams.get('queue') === 'true') {
-        const queue = getActionQueue(workspaceId);
+        const queue = await getActionQueue(workspaceId);
         return apiSuccess({ queue });
     }
 
@@ -46,10 +46,7 @@ export const POST = withErrorHandler(async (
     await requireWorkspaceRole(params.id, user.id, 'ADMIN');
 
     const workspaceId = params.id;
-    const body = await request.json();
-    const parsed = reflexRuleSchema.parse(body)
-        return apiError(400, parsed.error.errors[0].message);
-    }
+    const parsed = reflexRuleSchema.parse(await request.json());
 
     const rule = await saveRule(workspaceId, {
         ...parsed,

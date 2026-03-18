@@ -23,11 +23,7 @@ export const POST = withErrorHandler(async (
     await requireWorkspaceRole(params.id, user.id, 'MEMBER');
 
     const workspaceId = params.id;
-    const body = await request.json();
-    const parsed = cortexQuerySchema.parse(body)
-        return apiError(400, parsed.error.errors[0].message);
-    }
-    const { agentId } = parsed;
+    const { agentId } = cortexQuerySchema.parse(await request.json());
 
     // Enforce AI credit quota
     await enforceQuota(workspaceId, 'ai_credits');

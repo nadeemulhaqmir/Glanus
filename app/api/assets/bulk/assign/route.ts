@@ -8,9 +8,7 @@ import { AssetBulkService } from '@/lib/services/AssetBulkService';
 export const POST = withErrorHandler(async (request: NextRequest) => {
     const user = await requireAuth();
 
-    const body = await request.json();
-    const parsed = bulkAssignSchema.parse(body)
-
+    const parsed = bulkAssignSchema.parse(await request.json());
     const result = await AssetBulkService.bulkAssign(parsed.assetIds, parsed.userId, user.id);
     return apiSuccess(result);
 });

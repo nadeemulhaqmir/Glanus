@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { ScriptService, createScriptSchema } from '@/lib/services/ScriptService';
 
 /**
@@ -18,12 +18,8 @@ export const GET = withErrorHandler(async (
     const searchParams = request.nextUrl.searchParams;
     const language = searchParams.get('language');
 
-    try {
-        const scripts = await ScriptService.getScripts(params.id, language);
-        return apiSuccess({ scripts });
-    } catch (_error) {
-        return apiError(500, 'Failed to fetch scripts');
-    }
+    const scripts = await ScriptService.getScripts(params.id, language);
+    return apiSuccess({ scripts });
 });
 
 /**
@@ -39,15 +35,7 @@ export const POST = withErrorHandler(async (
     // Only IT_STAFF level (ADMIN/OWNER roles usually) should author global scripts 
     await requireWorkspaceRole(params.id, user.id, 'ADMIN');
 
-    const body = await request.json();
-    const data = createScriptSchema.parse(body)
-        return apiError(400, data.error.errors[0].message);
-    }
-
-    try {
-        const script = await ScriptService.createScript(params.id, user.id, data);
-        return apiSuccess({ script }, { message: 'Script created successfully' }, 201);
-    } catch (_error) {
-        return apiError(500, 'Failed to create script');
-    }
+    const data = createScriptSchema.parse(await request.json());
+    const script = await ScriptService.createScript(params.id, user.id, data);
+    return apiSuccess({ script }, { message: 'Script created successfully' }, 201);
 });

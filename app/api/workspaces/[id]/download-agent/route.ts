@@ -1,4 +1,4 @@
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceAccess, withErrorHandler } from '@/lib/api/withAuth';
 import { downloadAgentSchema } from '@/lib/schemas/workspace.schemas';
@@ -13,11 +13,7 @@ export const POST = withErrorHandler(async (
     const user = await requireAuth();
     await requireWorkspaceAccess(workspaceId, user.id);
 
-    const body = await request.json();
-    const parsed = downloadAgentSchema.parse(body)
-        return apiError(400, parsed.error.errors[0].message);
-    }
-    const { platform } = parsed;
+    const { platform } = downloadAgentSchema.parse(await request.json());
 
     // Generate pre-auth token (valid for 7 days)
     const preAuthToken = crypto.randomBytes(32).toString('hex');

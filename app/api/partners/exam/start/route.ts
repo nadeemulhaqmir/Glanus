@@ -15,9 +15,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     if (rateLimitResponse) return rateLimitResponse;
 
     const user = await requireAuth();
-    const body = await request.json();
-    const validation = startExamSchema.parse(body)
-
+    const validation = startExamSchema.parse(await request.json());
     const result = await PartnerExamService.startExam(user.email!, validation.level);
     return apiSuccess(result);
 });

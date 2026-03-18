@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, requireWorkspaceRole, withErrorHandler } from '@/lib/api/withAuth';
-import { apiSuccess, apiError } from '@/lib/api/response';
+import { apiSuccess } from '@/lib/api/response';
 import { approveAction, rejectAction } from '@/lib/reflex/automation';
 import { z } from 'zod';
 
@@ -24,23 +24,11 @@ export const PUT = withErrorHandler(async (
     await requireWorkspaceRole(params.id, user.id, 'MEMBER');
 
     const workspaceId = params.id;
-    const body = await request.json();
-    const parsed = queueActionSchema.parse(body)
-        return apiError(400, parsed.error.errors[0].message);
-    }
+    const { itemId, action } = queueActionSchema.parse(await request.json());
 
-    const { itemId, action } = parsed;
+    const updatedItem = action === 'approve'
+        ? await approveAction(workspaceId, itemId)
+        : await rejectAction(workspaceId, itemId);
 
-    try {
-        let updatedItem;
-        if (action === 'approve') {
-            updatedItem = await approveAction(workspaceId, itemId);
-        } else {
-            updatedItem = await rejectAction(workspaceId, itemId);
-        }
-
-        return apiSuccess({ item: updatedItem });
-    } catch (_error) {
-        return apiError(404, 'Action not found or not in pending state');
-    }
+    return apiSuccess({ item: updatedItem });
 });

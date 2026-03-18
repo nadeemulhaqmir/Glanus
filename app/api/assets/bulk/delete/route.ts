@@ -8,9 +8,7 @@ import { AssetBulkService } from '@/lib/services/AssetBulkService';
 export const POST = withErrorHandler(async (request: NextRequest) => {
     const user = await requireAuth();
 
-    const body = await request.json();
-    const parsed = bulkDeleteSchema.parse(body)
-
+    const parsed = bulkDeleteSchema.parse(await request.json());
     const result = await AssetBulkService.bulkDelete(parsed.assetIds, user.id, user.email!);
     return apiSuccess(result);
 });

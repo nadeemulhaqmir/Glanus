@@ -30,9 +30,7 @@ export const POST = withErrorHandler(async (request: Request) => {
     const rateLimitResult = await checkRateLimit(`partner-signup-${clientIp}`, 'api');
     if (!rateLimitResult.allowed) return apiError(429, 'Rate limit exceeded');
 
-    const body = await request.json();
-    const validation = partnerSignupSchema.parse(body)
-
+    const validation = partnerSignupSchema.parse(await request.json());
     const partner = await PartnerService.applyAsPartner({ ...validation, userId: user.id, userEmail: user.email! });
     return apiSuccess({ partner, message: 'Partner application submitted successfully.' }, undefined, 201);
 });

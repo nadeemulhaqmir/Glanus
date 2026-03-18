@@ -27,9 +27,7 @@ export const GET = withErrorHandler(async () => {
 // PATCH /api/partners/me
 export const PATCH = withErrorHandler(async (request: Request) => {
     const user = await requireAuth();
-    const body = await request.json();
-    const validation = updatePartnerSchema.parse(body)
-
+    const validation = updatePartnerSchema.parse(await request.json());
     const partner = await PartnerService.updateMyProfile(user.email!, validation);
     return apiSuccess({ partner });
 });

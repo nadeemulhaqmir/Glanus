@@ -21,9 +21,7 @@ export const POST = withErrorHandler(async (request: NextRequest) => {
     const rateLimitResponse = await withRateLimit(request, 'strict-api');
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await request.json();
-    const parsed = resetPasswordSchema.parse(body)
-
+    const parsed = resetPasswordSchema.parse(await request.json());
     await AccountService.resetPassword(parsed.token, parsed.password);
     return apiSuccess({ message: 'Password has been reset successfully. You can now sign in.' });
 });
