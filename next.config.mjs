@@ -24,7 +24,8 @@ const nextConfig = {
 
     typescript: {
         ignoreBuildErrors: true,
-    }
+    },
+    serverExternalPackages: ['jsdom', 'whatwg-url', '@exodus/bytes', 'html-encoding-sniffer'],
 
 }
 
