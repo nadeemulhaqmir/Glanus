@@ -84,5 +84,8 @@
     "html-encoding-sniffer": "2.0.1",
     "whatwg-url": "14.0.0",
     "@exodus/bytes": "1.13.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
