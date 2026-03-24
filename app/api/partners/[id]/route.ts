@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import { apiSuccess, apiError } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
