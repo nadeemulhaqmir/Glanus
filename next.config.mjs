@@ -4,7 +4,6 @@ import { withSentryConfig } from '@sentry/nextjs'
 const nextConfig = {
     reactStrictMode: true,
     output: 'standalone',
-    serverExternalPackages: ['ssh2', 'node-ssh', 'isomorphic-dompurify', 'jsdom'],
     images: {
         remotePatterns: [
             {
@@ -25,7 +24,7 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
-    serverExternalPackages: ['jsdom', 'whatwg-url', '@exodus/bytes', 'html-encoding-sniffer'],
+    serverExternalPackages: ['ssh2', 'cpu-features', 'node-ssh', 'isomorphic-dompurify', 'jsdom', 'whatwg-url', '@exodus/bytes', 'html-encoding-sniffer'],
 
 }
 
