@@ -23,3 +23,5 @@ logs/
 test-results/
 playwright-report/
 blob-report/
+package-lock.json
+package-lock.json

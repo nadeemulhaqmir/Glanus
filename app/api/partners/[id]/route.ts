@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { apiSuccess, apiError } from '@/lib/api/response';
 import { NextRequest } from 'next/server';
 import { withErrorHandler } from '@/lib/api/withAuth';
